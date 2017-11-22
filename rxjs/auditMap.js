@@ -14,8 +14,9 @@ Observable.prototype.auditMap = function (project) {
       innerSubscription = null
 
       if (pending) {
+        const value = pending
         pending = null
-        _tryNext(pending)
+        _tryNext(value)
       }
     }
 
