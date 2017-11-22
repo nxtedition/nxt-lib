@@ -2,9 +2,7 @@ const { Observable } = require('rxjs')
 
 Observable.prototype.auditMap = function (project) {
   return Observable.create(o => {
-    let source = this
-    let buffer = []
-    let active = 0
+    let pending = null
     let innerSubscription = null
     let outerSubscription = null
 
@@ -13,10 +11,11 @@ Observable.prototype.auditMap = function (project) {
     }
 
     function _innerComplete () {
-      active -= 1
+      innerSubscription = null
 
-      if (active === 0 && buffer.length) {
-        _tryNext(buffer.shift())
+      if (pending) {
+        pending = null
+        _tryNext(pending)
       }
     }
 
@@ -25,25 +24,20 @@ Observable.prototype.auditMap = function (project) {
     }
 
     function _tryNext (value) {
-      let result
       try {
-        result = project(value)
+        const result = project(value)
+        const observable = typeof result.then === 'function' ? Observable.fromPromise(result) : result
+        innerSubscription = observable.subscribe(_innerNext, _error, _innerComplete)
       } catch (err) {
         o.error(err)
-        return
       }
-
-      active += 1
-
-      const observable = typeof result.then === 'function' ? Observable.fromPromise(result) : result
-      innerSubscription = observable.subscribe(_innerNext, _error, _innerComplete)
     }
 
     function _next (value) {
-      if (active === 0) {
-        _tryNext(value)
+      if (innerSubscription) {
+        pending = value
       } else {
-        buffer = [ value ]
+        _tryNext(value)
       }
     }
 
@@ -51,7 +45,7 @@ Observable.prototype.auditMap = function (project) {
       o.complete()
     }
 
-    outerSubscription = source.subscribe(_next, _error, _complete)
+    outerSubscription = this.subscribe(_next, _error, _complete)
 
     return () => {
       if (innerSubscription) {
