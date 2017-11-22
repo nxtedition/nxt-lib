@@ -13,19 +13,15 @@ Observable.prototype.auditMap = function (project) {
     }
 
     function _innerComplete () {
-      --active
-      if (buffer.length > 0) {
-        _next(buffer.shift())
+      active -= 1
+
+      if (active === 0 && buffer.length) {
+        _tryNext(buffer.shift())
       }
     }
 
     function _innerNext (val) {
       o.next(val)
-    }
-
-    function _innerSub (result) {
-      result = typeof result.then === 'function' ? Observable.fromPromise(result) : result
-      innerSubscription = result.subscribe(_innerNext, _error, _innerComplete)
     }
 
     function _tryNext (value) {
@@ -36,16 +32,18 @@ Observable.prototype.auditMap = function (project) {
         o.error(err)
         return
       }
-      active++
 
-      _innerSub(result)
+      active += 1
+
+      const observable = typeof result.then === 'function' ? Observable.fromPromise(result) : result
+      innerSubscription = observable.subscribe(_innerNext, _error, _innerComplete)
     }
 
     function _next (value) {
-      if (active > 0) {
-        buffer = [ value ]
-      } else {
+      if (active === 0) {
         _tryNext(value)
+      } else {
+        buffer = [ value ]
       }
     }
 
