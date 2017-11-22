@@ -5,18 +5,27 @@ Observable.prototype.auditMap = function (project) {
     let source = this
     let buffer = []
     let active = 0
+    let innerSubscription = null
+    let outerSubscription = null
+
+    function _error (err) {
+      o.error(err)
+    }
+
+    function _innerComplete () {
+      --active
+      if (buffer.length > 0) {
+        _next(buffer.shift())
+      }
+    }
+
+    function _innerNext (val) {
+      o.next(val)
+    }
 
     function _innerSub (result) {
-      // TODO Works only with Promise
-      result
-        .then(val => {
-          --active
-          o.next(val)
-          if (buffer.length > 0) {
-            _next(buffer.shift())
-          }
-        })
-        .catch(err => o.error(err))
+      result = typeof result.then === 'function' ? Observable.fromPromise(result) : result
+      innerSubscription = result.subscribe(_innerNext, _error, _innerComplete)
     }
 
     function _tryNext (value) {
@@ -40,10 +49,17 @@ Observable.prototype.auditMap = function (project) {
       }
     }
 
-    return source.subscribe(
-      _next,
-      err => o.error(err),
-      () => o.complete()
-    )
+    function _complete () {
+      o.complete()
+    }
+
+    outerSubscription = source.subscribe(_next, _error, _complete)
+
+    return () => {
+      if (innerSubscription) {
+        innerSubscription.unsubscribe()
+      }
+      outerSubscription.unsubscribe()
+    }
   })
 }
