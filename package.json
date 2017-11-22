@@ -1,14 +1,13 @@
 {
   "name": "@nxtedition/lib",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "precommit": "standard",
     "commitmsg": "validate-commit-msg"
   },
   "author": "Robert Nagy <robert.nagy@boffins.se>",
   "license": "UNLICENSED",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "husky": "^0.14.3",
     "nodemon": "^1.12.0",
