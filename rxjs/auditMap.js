@@ -1,6 +1,6 @@
 const { Observable } = require('rxjs')
 
-Observable.prototype.auditMap = function (project) {
+Observable.prototype.auditMap = function auditMap (project) {
   return Observable.create(o => {
     let pending = null
     let innerSubscription = null
