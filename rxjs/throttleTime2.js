@@ -2,28 +2,33 @@ const { Observable } = require('rxjs')
 
 Observable.prototype.throttleTime2 = function throttleTime2 (duration) {
   return Observable.create(o => {
-    let hasFirst
+    let interval
     let nextValue
-    let timeout
+    let hasNextValue = false
 
     const subscription = this.subscribe({
       next: value => {
-        if (!hasFirst) {
-          hasFirst = true
+        if (!interval) {
           o.next(value)
+          interval = setInterval(() => {
+            if (hasNextValue) {
+              o.next(nextValue)
+              hasNextValue = false
+            } else {
+              clearInterval(interval)
+            }
+          }, duration)
         } else {
           nextValue = value
-          timeout = timeout || setTimeout(() => {
-            o.next(nextValue)
-            timeout = null
-          }, duration)
+          hasNextValue = true
         }
       },
       error: err => o.error(err),
       complete: () => {
-        if (timeout) {
-          clearTimeout(timeout)
+        clearTimeout(interval)
+        if (hasNextValue) {
           o.next(nextValue)
+          hasNextValue = false
         }
         o.complete()
       }
