@@ -16,6 +16,7 @@ Observable.prototype.throttleTime2 = function throttleTime2 (duration) {
               hasNextValue = false
             } else {
               clearInterval(interval)
+              interval = null
             }
           }, duration)
         } else {
