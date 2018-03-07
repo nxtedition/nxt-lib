@@ -1,13 +1,21 @@
 const { Observable } = require('rxjs')
 
-module.exports = function cached (fn, { minAge, maxAge } = {}, keySelector = key => key) {
+module.exports = function cached (fn, options, keySelector = key => key) {
   const cache = new Map()
   const array = []
 
-  if (minAge === undefined) {
-    // NOTE: backwards compat
-    minAge = maxAge !== undefined ? maxAge : 1000
+  if (Number.isFinite(options)) {
+    options = { minAge: options }
+  } else if (options == null) {
+    options = { minAge: 1000 }
   }
+
+  if (options.minAge === undefined) {
+    // NOTE: backwards compat
+    options.minAge = options.maxAge !== undefined ? options.maxAge : 1000
+  }
+
+  const { minAge } = options
 
   function prune () {
     let pos = 0
