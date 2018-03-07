@@ -1,8 +1,13 @@
 const { Observable } = require('rxjs')
 
-module.exports = function cached (fn, { maxAge = 1000 }, keySelector = key => key) {
+module.exports = function cached (fn, { minAge, maxAge } = {}, keySelector = key => key) {
   const cache = new Map()
   const array = []
+
+  if (minAge === undefined) {
+    // NOTE: backwards compat
+    minAge = maxAge !== undefined ? maxAge : 1000
+  }
 
   function prune () {
     let pos = 0
@@ -12,7 +17,7 @@ module.exports = function cached (fn, { maxAge = 1000 }, keySelector = key => ke
     while (pos < end) {
       const { refs, key, connection, timestamp } = array[pos]
 
-      if (refs === 0 && timestamp + maxAge > now) {
+      if (refs === 0 && timestamp + minAge > now) {
         end -= 1
         connection.unsubscribe()
         array[pos] = array[end]
@@ -24,7 +29,7 @@ module.exports = function cached (fn, { maxAge = 1000 }, keySelector = key => ke
     array.length = end
   }
 
-  setInterval(prune, maxAge)
+  setInterval(prune, minAge)
 
   return function (...args) {
     const key = keySelector(...args)
