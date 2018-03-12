@@ -27,7 +27,7 @@ Observable.prototype.throttleTime2 = function throttleTime2 (duration) {
       error: err => o.error(err),
       complete: () => {
         if (interval) {
-          clearTimeout(interval)
+          clearInterval(interval)
           interval = null
         }
         if (hasNextValue) {
