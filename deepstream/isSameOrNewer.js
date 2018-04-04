@@ -1,6 +1,6 @@
 module.exports.splitRev = function (s) {
   if (!s) {
-    return [ 0, '00000000000000' ]
+    return [ -1, '00000000000000' ]
   }
 
   const i = s.length - 15
