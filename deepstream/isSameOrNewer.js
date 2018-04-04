@@ -3,7 +3,7 @@ module.exports = function isSameOrNewer (a, b) {
     return true
   }
   if (b.startsWith('INF')) {
-    return false
+    return a.startsWith('INF')
   }
   if (!a) {
     return false
