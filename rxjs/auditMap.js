@@ -2,8 +2,8 @@ const { Observable } = require('rxjs')
 
 Observable.prototype.auditMap = function auditMap (project) {
   return Observable.create(o => {
-    let pending = null
-    let hasPending = false
+    let pendingValue = null
+    let hasPendingValue = false
     let isComplete = false
 
     let innerSubscription = null
@@ -16,10 +16,10 @@ Observable.prototype.auditMap = function auditMap (project) {
     function _innerComplete () {
       innerSubscription = null
 
-      if (hasPending) {
-        const value = pending
-        pending = null
-        hasPending = false
+      if (hasPendingValue) {
+        const value = pendingValue
+        pendingValue = null
+        hasPendingValue = false
         _tryNext(value)
       } else if (isComplete) {
         o.complete()
@@ -42,8 +42,8 @@ Observable.prototype.auditMap = function auditMap (project) {
 
     function _next (value) {
       if (innerSubscription) {
-        pending = value
-        hasPending = true
+        pendingValue = value
+        hasPendingValue = true
       } else {
         _tryNext(value)
       }
