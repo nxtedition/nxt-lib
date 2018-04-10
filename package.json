@@ -1,6 +1,6 @@
 {
   "name": "@nxtedition/lib",
-  "version": "1.3.9",
+  "version": "1.3.10",
   "scripts": {
     "precommit": "standard",
     "commitmsg": "validate-commit-msg"
