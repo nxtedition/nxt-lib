@@ -10,8 +10,8 @@
   "dependencies": {},
   "devDependencies": {
     "husky": "^0.14.3",
-    "nodemon": "^1.12.0",
-    "standard": "^10.0.3",
+    "nodemon": "^1.17.3",
+    "standard": "^11.0.1",
     "validate-commit-msg": "^2.14.0"
   }
 }
