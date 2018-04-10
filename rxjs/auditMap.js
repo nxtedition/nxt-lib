@@ -4,6 +4,8 @@ Observable.prototype.auditMap = function auditMap (project) {
   return Observable.create(o => {
     let pending = null
     let hasPending = false
+    let isComplete = false
+
     let innerSubscription = null
     let outerSubscription = null
 
@@ -14,14 +16,14 @@ Observable.prototype.auditMap = function auditMap (project) {
     function _innerComplete () {
       innerSubscription = null
 
-      if (!hasPending) {
-        return
+      if (hasPending) {
+        const value = pending
+        pending = null
+        hasPending = false
+        _tryNext(value)
+      } else if (isComplete) {
+        o.complete()
       }
-
-      const value = pending
-      pending = null
-      hasPending = false
-      _tryNext(value)
     }
 
     function _innerNext (val) {
@@ -48,7 +50,10 @@ Observable.prototype.auditMap = function auditMap (project) {
     }
 
     function _complete () {
-      o.complete()
+      isComplete = true
+      if (!innerSubscription) {
+        o.complete()
+      }
     }
 
     outerSubscription = this.subscribe(_next, _error, _complete)
