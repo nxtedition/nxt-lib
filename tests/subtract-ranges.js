@@ -2,6 +2,8 @@ const subtractRanges = require('../src/subtract-ranges')
 const mergeRanges = require('merge-ranges')
 const assert = require('assert')
 
+/* global describe it */
+
 // Note that subtract ranges expects merged ranges as input.
 
 describe('subtractRanges', function () {

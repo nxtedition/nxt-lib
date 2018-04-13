@@ -1,50 +1,25 @@
+const mergeRanges = require('merge-ranges')
 
-module.exports = function subtractRanges (_positiveRanges, negativeRanges) {
-  const positiveRanges = _positiveRanges.slice(0)
-  const difference = []
+module.exports = function subtractRanges (a, b) {
+  a = mergeRanges(a)
+  b = mergeRanges(b)
 
-  let positiveRange
-  while (positiveRanges.length) {
-    positiveRange = positiveRanges.shift()
+  const c = []
 
-    for (const negativeRange of negativeRanges) {
-      // complete cover
-      if (
-        negativeRange[0] <= positiveRange[0] &&
-        positiveRange[1] <= negativeRange[1]
-      ) {
-        positiveRange = null
-        break
+  while (a.length > 0) {
+    const ar = a.shift()
+    const br = b.find(br => ar[0] < br[1] && br[0] < ar[1])
+    if (!br) {
+      c.push(ar)
+    } else {
+      if (br[1] < ar[1]) {
+        a.unshift([ br[1], ar[1] ])
       }
-
-      // right cover
-      if (
-        negativeRange[0] < positiveRange[1] &&
-        positiveRange[1] <= negativeRange[1]
-      ) {
-        positiveRange = [positiveRange[0], negativeRange[0]]
-      }
-
-      // left cover
-      if (
-        negativeRange[0] <= positiveRange[0] &&
-        positiveRange[0] < negativeRange[1]
-      ) {
-        positiveRange = [negativeRange[1], positiveRange[1]]
-      }
-
-      // splitting
-      if (
-        negativeRange[0] < positiveRange[1] &&
-        positiveRange[0] < negativeRange[1]
-      ) {
-        positiveRanges.unshift([negativeRange[1], positiveRange[1]])
-        positiveRange = [positiveRange[0], negativeRange[0]]
+      if (ar[0] < br[0]) {
+        a.unshift([ ar[0], br[0] ])
       }
     }
-
-    positiveRange && difference.push(positiveRange)
   }
 
-  return difference
+  return c
 }
