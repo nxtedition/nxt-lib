@@ -2,12 +2,15 @@
   "name": "@nxtedition/lib",
   "version": "1.4.3",
   "files": [
-    "src/*"
+    "deepstream/*",
+    "rxjs/*",
+    "util/*",
+    "subtract-ranges.js"
   ],
   "scripts": {
     "precommit": "standard",
     "commitmsg": "validate-commit-msg && mocha",
-    "postbuild": "cp -r src/* .",
+    "prepare": "cp -r src/* .",
     "test": "mocha"
   },
   "author": "Robert Nagy <robert.nagy@boffins.se>",
