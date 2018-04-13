@@ -31,7 +31,7 @@ describe('subtractRanges', function () {
     ])
 
     const expected = mergeRanges([
-        [50, 60]
+      [50, 60]
     ])
 
     const difference = subtractRanges(positive, negative)
@@ -70,8 +70,8 @@ describe('subtractRanges', function () {
     ])
 
     const expected = mergeRanges([
-        [10, 15],
-        [55, 60]
+      [10, 15],
+      [55, 60]
     ])
 
     const difference = subtractRanges(positive, negative)
@@ -95,13 +95,13 @@ describe('subtractRanges', function () {
     ])
 
     const expected = mergeRanges([
-        [10, 11],
-        [12, 20],
-        [30, 31],
-        [32, 33],
-        [34, 40],
-        [50, 51],
-        [52, 53]
+      [10, 11],
+      [12, 20],
+      [30, 31],
+      [32, 33],
+      [34, 40],
+      [50, 51],
+      [52, 53]
     ])
 
     const difference = subtractRanges(positive, negative)
