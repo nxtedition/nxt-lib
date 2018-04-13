@@ -7,7 +7,7 @@
   "scripts": {
     "precommit": "standard",
     "commitmsg": "validate-commit-msg",
-    "postinstall": "mv src/* . ; rm -rf src",
+    "prepare": "cp -r src/* .",
     "test": "mocha tests/*"
   },
   "author": "Robert Nagy <robert.nagy@boffins.se>",
