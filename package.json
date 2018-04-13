@@ -6,9 +6,9 @@
   ],
   "scripts": {
     "precommit": "standard",
-    "commitmsg": "validate-commit-msg",
+    "commitmsg": "validate-commit-msg && mocha",
     "prepare": "cp -r src/* .",
-    "test": "mocha tests/*"
+    "test": "mocha"
   },
   "author": "Robert Nagy <robert.nagy@boffins.se>",
   "license": "UNLICENSED",
