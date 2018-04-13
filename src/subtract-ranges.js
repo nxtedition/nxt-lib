@@ -1,8 +1,5 @@
-const mergeRanges = require('merge-ranges')
-
 module.exports = function subtractRanges (a, b) {
-  a = mergeRanges(a.slice(0))
-  b = mergeRanges(b.slice(0))
+  a = a.slice(0)
 
   const c = []
 
