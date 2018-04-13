@@ -7,7 +7,7 @@
   "scripts": {
     "precommit": "standard",
     "commitmsg": "validate-commit-msg && mocha",
-    "prepublishOnly": "cp -r src/* .",
+    "postbuild": "cp -r src/* .",
     "test": "mocha"
   },
   "author": "Robert Nagy <robert.nagy@boffins.se>",
