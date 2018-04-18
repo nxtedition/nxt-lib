@@ -6,7 +6,7 @@ module.exports.splitRev = function (s) {
   const i = s.length - 15
   const ver = s.slice(0, i)
 
-  return [ ver === 'INF' ? Number.Infinity : parseInt(ver, 10), s.slice(i + 1) ]
+  return [ ver === 'INF' ? Infinity : parseInt(ver, 10), s.slice(i + 1) ]
 }
 
 module.exports.isSameOrNewer = function (a, b) {
