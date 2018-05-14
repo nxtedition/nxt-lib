@@ -3,7 +3,7 @@ module.exports.splitRev = function (s) {
     return [ -1, '00000000000000' ]
   }
 
-  const i = s.length - 15
+  const i = s.indexOf('-')
   const ver = s.slice(0, i)
 
   return [ ver === 'INF' ? Infinity : parseInt(ver, 10), s.slice(i + 1) ]
