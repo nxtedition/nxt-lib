@@ -5,7 +5,8 @@
     "deepstream/*",
     "rxjs/*",
     "util/*",
-    "subtract-ranges.js"
+    "subtract-ranges.js",
+    "merge-ranges.js"
   ],
   "scripts": {
     "precommit": "standard",
