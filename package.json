@@ -6,6 +6,7 @@
     "rxjs/*",
     "util/*",
     "subtract-ranges.js",
+    "serializers.js",
     "merge-ranges.js"
   ],
   "scripts": {
