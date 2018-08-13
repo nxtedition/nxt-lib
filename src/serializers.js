@@ -17,6 +17,7 @@ module.exports = {
   },
   res: res => ({
     statusCode: res.statusCode,
+    bytesWritten: res.bytesWritten,
     headers: res.getHeaders()
   }),
   req: req => ({
@@ -24,6 +25,7 @@ module.exports = {
     method: req.method,
     url: req.url,
     headers: req.headers,
+    bytesRead: req.bytesRead,
     remoteAddress: req.socket && req.socket.remoteAddress,
     remotePort: req.socket && req.socket.remotePort
   })
