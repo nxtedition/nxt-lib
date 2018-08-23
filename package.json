@@ -19,12 +19,13 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "husky": "^0.14.3",
-    "mocha": "^5.1.0",
-    "nodemon": "^1.17.3",
+    "mocha": "^5.2.0",
+    "nodemon": "^1.18.3",
     "standard": "^11.0.1",
     "validate-commit-msg": "^2.14.0"
   },
   "dependencies": {
-    "merge-ranges": "^1.0.2"
+    "merge-ranges": "^1.0.2",
+    "xuid": "^3.0.2"
   }
 }
