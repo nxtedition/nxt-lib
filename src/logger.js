@@ -1,10 +1,11 @@
 const serializers = require('./serializers')
 const pino = require('pino')
 
-let logger
+const isProduction = process.env.NODE_ENV === 'production'
 
 module.exports.createLogger = function ({
-  extreme = process.env.NODE_ENV === 'production',
+  extreme = isProduction,
+  prettyPrint = !isProduction,
   flushInterval = 10000,
   ...options
 } = {}, onTerminate = fn => fn(null)) {
@@ -16,15 +17,16 @@ module.exports.createLogger = function ({
     } else {
       let exitSignal
       try {
-        exitSignal = await onTerminate(logger)
+        exitSignal = await onTerminate(finalLogger)
       } catch (err) {
         exitSignal = err.exitSignal || 1
-        logger.warn({ err })
+        finalLogger.warn({ err })
       }
       process.exit(!exitSignal ? 0 : exitSignal)
     }
   }
 
+  let logger
   let handler
 
   if (!extreme) {
