@@ -17,5 +17,4 @@ const logger = createLogger(config.logger, () => new Promise((resolve, reject) =
 const server = http
   .createServer((req, res) => middleware({ req, res, config, logger }))
   .listen(config.http.port)
-
 ```
