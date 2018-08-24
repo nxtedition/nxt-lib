@@ -8,7 +8,8 @@
     "subtract-ranges.js",
     "serializers.js",
     "merge-ranges.js",
-    "http.js"
+    "http.js",
+    "logger.js"
   ],
   "scripts": {
     "precommit": "standard",
