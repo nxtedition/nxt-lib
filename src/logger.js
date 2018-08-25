@@ -6,7 +6,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 module.exports.createLogger = function ({
   extreme = isProduction,
   prettyPrint = !isProduction,
-  flushInterval = 10000,
+  flushInterval = 1000,
   ...options
 } = {}, onTerminate = fn => fn(null)) {
   const finalHandler = async (err, finalLogger, evt) => {
