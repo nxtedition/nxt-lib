@@ -2,12 +2,14 @@ const xuid = require('xuid')
 const createLogger = require('./logger')
 const createError = require('http-errors')
 
+const defaultLogger = createLogger()
+
 module.exports.notFound = () => {
   throw createError.NotFound()
 }
 
 module.exports.request = async function request (ctx, next) {
-  const { req, res, logger = createLogger() } = ctx
+  const { req, res, logger = defaultLogger } = ctx
   const startTime = Date.now()
 
   try {
