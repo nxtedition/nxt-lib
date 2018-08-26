@@ -57,7 +57,7 @@ module.exports.request = async function request (ctx, next) {
 }
 
 module.exports.upgrade = async function upgrade (ctx, next) {
-  const { req, socket, logger } = ctx
+  const { req, res, socket = res, logger } = ctx
 
   try {
     req.id = req.id || req.headers['request-id'] || xuid()
