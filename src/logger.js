@@ -30,10 +30,10 @@ module.exports.createLogger = function ({
   let handler
 
   if (!extreme) {
-    logger = pino({ serializers, ...options })
+    logger = pino({ serializers, prettyPrint, ...options })
     handler = (err, evt) => finalHandler(err, logger, evt)
   } else {
-    logger = pino({ serializers, ...options }, pino.extreme())
+    logger = pino({ serializers, prettyPrint, ...options }, pino.extreme())
     handler = pino.final(logger, finalHandler)
     setInterval(() => {
       logger.flush()
