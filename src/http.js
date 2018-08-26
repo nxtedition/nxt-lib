@@ -1,11 +1,12 @@
 const xuid = require('xuid')
+const statuses = require('statuses')
 
 module.exports.request = async function request (ctx, next) {
   const { req, res, logger } = ctx
   const startTime = Date.now()
 
   try {
-    req.id = req.headers['request-id'] || xuid()
+    req.id = req.id || req.headers['request-id'] || xuid()
     req.log = logger.child({ req })
     req.log.debug('request started')
 
@@ -29,18 +30,8 @@ module.exports.request = async function request (ctx, next) {
     const responseTime = Date.now() - startTime
     req.log.debug({ res, responseTime }, `request ${req.aborted ? 'aborted' : 'completed'}`)
   } catch (err) {
+    const statusCode = getStatusCode(err)
     const responseTime = Date.now() - startTime
-
-    let statusCode = err.statusCode
-    if (!statusCode) {
-      if (err.code === 'ENOENT') {
-        statusCode = 404
-      } else if (err.code === 'EEXIST') {
-        statusCode = 409
-      } else {
-        statusCode = 500
-      }
-    }
 
     res.log = req.log || logger
     res.on('error', function (err) {
@@ -63,4 +54,61 @@ module.exports.request = async function request (ctx, next) {
       res.destroy()
     }
   }
+}
+
+module.exports.upgrade = async function upgrade (ctx, next) {
+  const { req, socket, logger } = ctx
+
+  try {
+    req.id = req.id || req.headers['request-id'] || xuid()
+    req.log = logger.child({ req })
+    req.log.debug('stream started')
+
+    await next()
+
+    if (!socket.destroyed) {
+      await new Promise((resolve, reject) => {
+        req
+          .on('error', reject)
+        socket
+          .on('error', reject)
+          .on('close', resolve)
+      })
+    }
+
+    req.log.debug(`stream completed`)
+  } catch (err) {
+    const statusCode = getStatusCode(err)
+
+    socket.log = req.log || logger
+    socket.on('error', function (err) {
+      this.log.warn({ err }, 'stream error')
+    })
+
+    if (statusCode >= 400 && statusCode < 500) {
+      socket.log.warn({ err }, 'stream failed')
+    } else {
+      socket.log.error({ err }, 'stream error')
+    }
+
+    if (socket.writable) {
+      socket.end(Buffer.from(`HTTP/1.1 ${statusCode} ${statuses[statusCode]}\r\n\r\n`, 'ascii'))
+    } else {
+      socket.destroy()
+    }
+  }
+}
+
+function getStatusCode (err) {
+  let statusCode = err.statusCode
+  if (!statusCode) {
+    if (err.code === 'ENOENT') {
+      statusCode = 404
+    } else if (err.code === 'EEXIST') {
+      statusCode = 409
+    } else {
+      statusCode = 500
+    }
+  }
+  return statusCode
 }

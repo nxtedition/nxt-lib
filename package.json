@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "merge-ranges": "^1.0.2",
+    "statuses": "^1.5.0",
     "xuid": "^3.0.2"
   }
 }
