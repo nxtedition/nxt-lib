@@ -6,6 +6,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 module.exports.createLogger = function ({
   extreme = isProduction,
   prettyPrint = !isProduction,
+  level = isProduction ? 'info' : 'trace',
   flushInterval = 1000,
   ...options
 } = {}, onTerminate = fn => fn(null)) {
@@ -30,10 +31,10 @@ module.exports.createLogger = function ({
   let handler
 
   if (!extreme) {
-    logger = pino({ serializers, prettyPrint, ...options })
+    logger = pino({ serializers, prettyPrint, level, ...options })
     handler = (err, evt) => finalHandler(err, logger, evt)
   } else {
-    logger = pino({ serializers, prettyPrint, ...options }, pino.extreme())
+    logger = pino({ serializers, prettyPrint, level, ...options }, pino.extreme())
     handler = pino.final(logger, finalHandler)
     setInterval(() => {
       logger.flush()
