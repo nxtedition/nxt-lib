@@ -8,6 +8,7 @@ module.exports.createLogger = function ({
   prettyPrint = !isProduction,
   level = isProduction ? 'info' : 'trace',
   flushInterval = 1000,
+  stream,
   ...options
 } = {}, onTerminate = fn => fn(null)) {
   const finalHandler = async (err, finalLogger, evt) => {
@@ -31,10 +32,10 @@ module.exports.createLogger = function ({
   let handler
 
   if (!extreme) {
-    logger = pino({ serializers, prettyPrint, level, ...options })
+    logger = pino({ serializers, prettyPrint, level, ...options }, stream)
     handler = (err, evt) => finalHandler(err, logger, evt)
   } else {
-    logger = pino({ serializers, prettyPrint, level, ...options }, pino.extreme())
+    logger = pino({ serializers, prettyPrint, level, ...options }, stream || pino.extreme())
     handler = pino.final(logger, finalHandler)
     setInterval(() => {
       logger.flush()
