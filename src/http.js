@@ -38,6 +38,8 @@ module.exports.request = async function request (ctx, next) {
       this.log.warn({ err }, 'request error')
     })
 
+    res.statusCode = statusCode
+
     if (statusCode >= 400 && statusCode < 500) {
       res.log.warn({ err, res, responseTime }, 'request failed')
     } else {
@@ -48,7 +50,6 @@ module.exports.request = async function request (ctx, next) {
       for (const name of res.getHeaderNames()) {
         res.removeHeader(name)
       }
-      res.statusCode = statusCode
       res.end()
     } else {
       res.destroy()
