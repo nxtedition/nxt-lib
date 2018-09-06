@@ -14,7 +14,7 @@ module.exports.createLogger = function ({
   const finalHandler = async (err, finalLogger, evt) => {
     finalLogger.info(`${evt} caught`)
     if (err) {
-      finalLogger.error(err, 'error caused exit')
+      finalLogger.error({ err }, 'error caused exit')
       process.exit(1)
     } else {
       let exitSignal
