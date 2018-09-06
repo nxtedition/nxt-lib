@@ -91,6 +91,8 @@ module.exports.upgrade = async function upgrade (ctx, next) {
       socket.log.error({ err }, 'stream error')
     }
 
+    res.statusCode = statusCode
+
     if (socket.writable) {
       socket.end(Buffer.from(`HTTP/1.1 ${statusCode} ${statuses[statusCode]}\r\n\r\n`, 'ascii'))
     } else {
