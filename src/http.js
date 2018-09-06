@@ -38,21 +38,20 @@ module.exports.request = async function request (ctx, next) {
       this.log.warn({ err }, 'request error')
     })
 
-    res.statusCode = statusCode
+    if (!res.headersSent && !res.finished && res.writable) {
+      for (const name of res.getHeaderNames()) {
+        res.removeHeader(name)
+      }
+      res.statusCode = statusCode
+      res.end()
+    } else {
+      res.destroy()
+    }
 
     if (statusCode >= 400 && statusCode < 500) {
       res.log.warn({ err, res, responseTime }, 'request failed')
     } else {
       res.log.error({ err, res, responseTime }, 'request error')
-    }
-
-    if (!res.headersSent && !res.finished && res.writable) {
-      for (const name of res.getHeaderNames()) {
-        res.removeHeader(name)
-      }
-      res.end()
-    } else {
-      res.destroy()
     }
   }
 }
