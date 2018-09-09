@@ -100,15 +100,13 @@ module.exports.upgrade = async function upgrade (ctx, next) {
 }
 
 function getStatusCode (err) {
-  let statusCode = err.statusCode
-  if (!statusCode) {
-    if (err.code === 'ENOENT') {
-      statusCode = 404
-    } else if (err.code === 'EEXIST') {
-      statusCode = 409
-    } else {
-      statusCode = 500
-    }
+  if (err.statusCode) {
+    return err.statusCode
+  } else if (err.code === 'ENOENT') {
+    return 404
+  } else if (err.code === 'EEXIST') {
+    return 409
+  } else {
+    return 500
   }
-  return statusCode
 }
