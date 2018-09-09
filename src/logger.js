@@ -44,8 +44,8 @@ module.exports.createLogger = function ({
 
   process.on('beforeExit', () => handler(null, 'beforeExit'))
   process.on('exit', () => handler(null, 'exit'))
-  process.on('uncaughtException', (err) => handler(err, 'uncaughtException'))
-  process.on('unhandledRejection', (err) => handler(err, 'unhandledRejection'))
+  process.on('uncaughtException', err => handler(err, 'uncaughtException'))
+  process.on('unhandledRejection', err => handler(err, 'unhandledRejection'))
   process.on('SIGINT', () => handler(null, 'SIGINT'))
   process.on('SIGQUIT', () => handler(null, 'SIGQUIT'))
   process.on('SIGTERM', () => handler(null, 'SIGTERM'))
