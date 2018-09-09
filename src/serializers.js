@@ -18,7 +18,7 @@ module.exports = {
   res: res => ({
     statusCode: res.statusCode,
     bytesWritten: res.bytesWritten,
-    headers: res.getHeaders()
+    headers: typeof res.getHeaders === 'function' ? res.getHeaders() : res.headers
   }),
   req: req => ({
     id: req.id,
