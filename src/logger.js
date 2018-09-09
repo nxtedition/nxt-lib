@@ -10,7 +10,7 @@ module.exports.createLogger = function ({
   flushInterval = 1000,
   stream,
   ...options
-} = {}, onTerminate = fn => fn(null)) {
+} = {}, onTerminate) {
   const finalHandler = async (err, finalLogger, evt) => {
     finalLogger.info(`${evt} caught`)
     if (err) {
@@ -19,7 +19,7 @@ module.exports.createLogger = function ({
     } else {
       let exitSignal
       try {
-        exitSignal = await onTerminate(finalLogger)
+        exitSignal = onTerminate ? await onTerminate(finalLogger) : null
       } catch (err) {
         exitSignal = err.exitSignal || 1
         finalLogger.warn({ err })
