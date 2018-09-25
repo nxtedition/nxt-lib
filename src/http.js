@@ -1,5 +1,6 @@
 const xuid = require('xuid')
 const statuses = require('statuses')
+const createError = require('http-errors')
 
 module.exports.request = async function request (ctx, next) {
   const { req, res, logger } = ctx
@@ -12,7 +13,13 @@ module.exports.request = async function request (ctx, next) {
 
     res.setHeader('request-id', req.id)
 
-    await next()
+    const timeoutPromise = new Promise((resolve, reject) => {
+      req.on('timeout', () => {
+        reject(new createError.RequestTimeout())
+      })
+    })
+
+    await Promise.race([ timeoutPromise, next() ])
 
     if (!req.aborted && !res.finished) {
       await new Promise((resolve, reject) => {

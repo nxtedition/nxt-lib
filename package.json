@@ -27,6 +27,7 @@
     "validate-commit-msg": "^2.14.0"
   },
   "dependencies": {
+    "http-errors": "^1.7.1",
     "merge-ranges": "^1.0.2",
     "statuses": "^1.5.0",
     "xuid": "^3.0.2"
