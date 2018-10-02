@@ -8,13 +8,16 @@ module.exports.createLogger = function ({
   prettyPrint = !isProduction,
   level = isProduction ? 'info' : 'trace',
   flushInterval = 1000,
-  stream,
+  stream = pino.destination(),
   ...options
 } = {}, onTerminate) {
   const finalHandler = async (err, finalLogger, evt) => {
     finalLogger.info(`${evt} caught`)
     if (err) {
       finalLogger.error({ err }, 'error caused exit')
+      if (stream && stream.flushSync) {
+        stream.flushSync()
+      }
       process.exit(1)
     } else {
       let exitSignal
