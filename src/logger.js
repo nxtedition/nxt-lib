@@ -8,7 +8,9 @@ module.exports.createLogger = function ({
   prettyPrint = !isProduction,
   level = isProduction ? 'info' : 'trace',
   flushInterval = 1000,
-  stream = pino.destination(),
+  stream = process.stdout.write !== process.stdout.constructor.prototype.write
+    ? process.stdout
+    : pino.destination(),
   ...options
 } = {}, onTerminate) {
   const finalHandler = async (err, finalLogger, evt) => {
