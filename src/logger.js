@@ -36,16 +36,14 @@ module.exports.createLogger = function ({
 
   if (!stream && process.stdout.write !== process.stdout.constructor.prototype.write) {
     stream = process.stdout
-  } else if (extreme) {
-    stream = pino.extreme()
-  } else {
-    stream = pino.destination()
   }
 
   if (!extreme || (stream && !stream.flushSync)) {
+    stream = stream || pino.destination()
     logger = pino({ serializers, prettyPrint, level, ...options }, stream)
     handler = (err, evt) => finalHandler(err, logger, evt)
   } else {
+    stream = stream || pino.extreme()
     logger = pino({ serializers, prettyPrint, level, ...options }, stream)
     handler = pino.final(logger, finalHandler)
     setInterval(() => {
