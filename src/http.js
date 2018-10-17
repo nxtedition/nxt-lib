@@ -25,8 +25,8 @@ module.exports.request = async function request (ctx, next) {
 
   try {
     req.id = req.id || req.headers['request-id'] || xuid()
-    req.log = logger.child({ req: { id: req.id } })
-    req.log.debug({ req }, 'request started')
+    req.log = logger.child({ req })
+    req.log.debug('request started')
 
     res.setHeader('request-id', req.id)
 
