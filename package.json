@@ -1,6 +1,6 @@
 {
   "name": "@nxtedition/lib",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "files": [
     "deepstream/*",
     "rxjs/*",
