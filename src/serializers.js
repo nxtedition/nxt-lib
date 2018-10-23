@@ -3,7 +3,8 @@ module.exports = {
     const obj = {
       type: err.constructor.name,
       message: err.message,
-      stack: err.stack
+      stack: err.stack,
+      data: err.data
     }
 
     for (var key in err) {
