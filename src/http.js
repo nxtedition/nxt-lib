@@ -41,7 +41,7 @@ module.exports.request = async function request (ctx, next) {
     const responseTime = Date.now() - startTime
     req.log.debug({ res, responseTime }, `request ${req.aborted ? 'aborted' : 'completed'}`)
   } catch (err) {
-    const statusCode = getStatusCode(err)
+    const statusCode = err.statusCode || 500
     const responseTime = Date.now() - startTime
 
     res.log = req.log || logger
@@ -89,7 +89,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
 
     req.log.debug(`stream completed`)
   } catch (err) {
-    const statusCode = getStatusCode(err)
+    const statusCode = err.statusCode || 500
 
     socket.log = req.log || logger
     socket.on('error', function (err) {
@@ -107,17 +107,5 @@ module.exports.upgrade = async function upgrade (ctx, next) {
     } else {
       socket.destroy()
     }
-  }
-}
-
-function getStatusCode (err) {
-  if (err.statusCode) {
-    return err.statusCode
-  } else if (err.code === 'ENOENT') {
-    return 404
-  } else if (err.code === 'EEXIST') {
-    return 409
-  } else {
-    return 500
   }
 }
