@@ -1,4 +1,4 @@
-const { Observable } = require('rxjs')
+const { Observable, ReplaySubject } = require('rxjs')
 
 module.exports = function cached (fn, options, keySelector = key => key) {
   const cache = new Map()
@@ -47,11 +47,11 @@ module.exports = function cached (fn, options, keySelector = key => key) {
 
       if (!entry) {
         try {
-          const observable = fn(...args).publishReplay(1)
+          const observable = new ReplaySubject(1)
           entry = {
             key,
             observable,
-            connection: observable.connect(),
+            connection: fn(...args).subscribe(observable),
             refs: 0,
             timestamp: Date.now()
           }
