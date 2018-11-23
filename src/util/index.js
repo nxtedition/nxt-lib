@@ -1,3 +1,4 @@
 module.exports = {
-  cached: require('./cached')
+  cached: require('./cached'),
+  applyMatches: require('./apply-matches')
 }

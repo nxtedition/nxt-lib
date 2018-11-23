@@ -2,7 +2,6 @@
   "name": "@nxtedition/lib",
   "version": "1.8.29",
   "files": [
-    "deepstream/*",
     "rxjs/*",
     "util/*",
     "subtract-ranges.js",
@@ -12,21 +11,57 @@
     "logger.js"
   ],
   "scripts": {
-    "precommit": "standard",
-    "commitmsg": "validate-commit-msg && mocha",
     "prepare": "cp -r src/* .",
-    "test": "mocha"
+    "test": "jest"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "files=`git diff --cached --diff-filter=d --name-only | grep '\\.js$' || true` && ( [ -z \"$files\" ] || eslint --format=unix $files )",
+      "commit-msg": "validate-commit-msg"
+    }
   },
   "author": "Robert Nagy <robert.nagy@boffins.se>",
   "license": "UNLICENSED",
+  "eslintConfig": {
+    "extends": [
+      "standard"
+    ],
+    "overrides": [
+      {
+        "files": [
+          "*.test.js"
+        ],
+        "env": {
+          "jest": true
+        },
+        "plugins": [
+          "jest"
+        ],
+        "rules": {
+          "jest/no-disabled-tests": "warn",
+          "jest/no-focused-tests": "error",
+          "jest/no-identical-title": "error",
+          "jest/prefer-to-have-length": "warn",
+          "jest/valid-expect": "error"
+        }
+      }
+    ]
+  },
   "devDependencies": {
-    "husky": "^0.14.3",
-    "mocha": "^5.2.0",
-    "nodemon": "^1.18.4",
+    "eslint": "^5.9.0",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-jest": "^22.0.0",
+    "eslint-plugin-node": "^8.0.0",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0",
+    "husky": "^1.2.0",
+    "jest": "^23.6.0",
+    "nodemon": "^1.18.6",
     "standard": "^12.0.1",
     "validate-commit-msg": "^2.14.0"
   },
   "dependencies": {
+    "eslint-plugin-import": "^2.14.0",
     "http-errors": "^1.7.1",
     "merge-ranges": "^1.0.2",
     "statuses": "^1.5.0",

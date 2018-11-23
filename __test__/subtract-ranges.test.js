@@ -2,12 +2,10 @@ const subtractRanges = require('../src/subtract-ranges')
 const mergeRanges = require('merge-ranges')
 const assert = require('assert')
 
-/* global describe it */
-
 // Note that subtract ranges expects merged ranges as input.
 
 describe('subtractRanges', function () {
-  it('should return the positive ranges if nothing is subtracted', function () {
+  test('should return the positive ranges if nothing is subtracted', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40]
@@ -21,7 +19,7 @@ describe('subtractRanges', function () {
     assert.deepStrictEqual(difference, expected)
   })
 
-  it('should remove ranges that are completely covered', function () {
+  test('should remove ranges that are completely covered', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40],
@@ -40,7 +38,7 @@ describe('subtractRanges', function () {
     assert.deepStrictEqual(difference, expected)
   })
 
-  it('should treat range-ends as non-inclusive', function () {
+  test('should treat range-ends as non-inclusive', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40],
@@ -58,7 +56,7 @@ describe('subtractRanges', function () {
     assert.deepStrictEqual(difference, expected)
   })
 
-  it('should remove parts of ranges that are partially covered', function () {
+  test('should remove parts of ranges that are partially covered', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40],
@@ -80,7 +78,7 @@ describe('subtractRanges', function () {
     assert.deepStrictEqual(difference, expected)
   })
 
-  it('should split ranges in two, if only their center is covered', function () {
+  test('should split ranges in two, if only their center is covered', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40],
@@ -110,7 +108,7 @@ describe('subtractRanges', function () {
     assert.deepStrictEqual(difference, expected)
   })
 
-  it('should not modify the original arrays', function () {
+  test('should not modify the original arrays', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40],
