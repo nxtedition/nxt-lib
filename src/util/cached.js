@@ -46,17 +46,13 @@ module.exports = function cached (fn, options, keySelector = key => key) {
       let entry = cache.get(key)
 
       if (!entry) {
-        try {
-          const observable = new ReplaySubject(1)
-          entry = {
-            key,
-            observable,
-            connection: fn(...args).subscribe(observable),
-            refs: 0,
-            timestamp: Date.now()
-          }
-        } catch (err) {
-          return o.error(err)
+        const observable = new ReplaySubject(1)
+        entry = {
+          key,
+          observable,
+          connection: fn(...args).subscribe(observable),
+          refs: 0,
+          timestamp: Date.now()
         }
 
         cache.set(key, entry)
