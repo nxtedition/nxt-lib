@@ -17,7 +17,7 @@ function applyMatchesImpl (str, matches) {
     const { pre, body, post } = match
 
     res += pre
-    res += matches[applyMatchesImpl(body, matches)] || ''
+    res += fp.getOr('', applyMatchesImpl(body, matches), matches)
     str = post
   }
 }
