@@ -61,6 +61,7 @@
     "validate-commit-msg": "^2.14.0"
   },
   "dependencies": {
+    "balanced-match": "^1.0.0",
     "eslint-plugin-import": "^2.14.0",
     "http-errors": "^1.7.1",
     "merge-ranges": "^1.0.2",
