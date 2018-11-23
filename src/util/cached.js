@@ -23,11 +23,11 @@ module.exports = function cached (fn, options, keySelector = key => key) {
     let now = Date.now()
 
     while (pos < end) {
-      const { refs, key, connection, timestamp } = array[pos]
+      const { refs, key, subscription, timestamp } = array[pos]
 
       if (refs === 0 && timestamp + minAge > now) {
         end -= 1
-        connection.unsubscribe()
+        subscription.unsubscribe()
         array[pos] = array[end]
         cache.delete(key)
       } else {
@@ -50,7 +50,7 @@ module.exports = function cached (fn, options, keySelector = key => key) {
         entry = {
           key,
           observable,
-          connection: fn(...args).subscribe(observable),
+          subscription: fn(...args).subscribe(observable),
           refs: 0,
           timestamp: Date.now()
         }
