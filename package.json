@@ -50,6 +50,7 @@
   "devDependencies": {
     "eslint": "^5.9.0",
     "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-jest": "^22.0.0",
     "eslint-plugin-node": "^8.0.0",
     "eslint-plugin-promise": "^4.0.1",
@@ -62,7 +63,6 @@
   },
   "dependencies": {
     "balanced-match": "^1.0.0",
-    "eslint-plugin-import": "^2.14.0",
     "http-errors": "^1.7.1",
     "merge-ranges": "^1.0.2",
     "statuses": "^1.5.0",
