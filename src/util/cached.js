@@ -25,7 +25,7 @@ module.exports = function cached (fn, options, keySelector = key => key) {
     while (pos < end) {
       const { refs, key, subscription, timestamp } = array[pos]
 
-      if (refs === 0 && timestamp + minAge > now) {
+      if (refs === 0 && timestamp + minAge < now) {
         end -= 1
         subscription.unsubscribe()
         array[pos] = array[end]
