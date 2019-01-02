@@ -1,8 +1,7 @@
 const balanced = require('balanced-match')
 const moment = require('moment')
 
-module.exports = async function resolveTemplate (template, resolver) {
-  const { map, ds } = resolver
+module.exports = async function resolveTemplate (template, context, { ds }) {
   let response = ''
   const match = balanced('{{', '}}', template)
   if (!match) {
@@ -10,14 +9,14 @@ module.exports = async function resolveTemplate (template, resolver) {
   }
   var { pre, body, post } = match
   response += pre
-  response += await parseExpression(body, map, ds)
+  response += await parseExpression(body, context, { ds })
   if (post) {
-    response += await resolveTemplate(post, { map, ds })
+    response += await resolveTemplate(post, context, { ds })
   }
   return response
 }
 
-async function parseExpression (expression, context, ds) {
+async function parseExpression (expression, context, { ds }) {
   const parts = expression.split('|')
   const baseValuePath = parts.shift().trim()
   const baseValue = getProperty(context, baseValuePath)
