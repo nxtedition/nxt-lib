@@ -16,9 +16,8 @@ module.exports = async function resolveTemplate (template, context, { ds }) {
 }
 
 async function parseExpression (expression, context, { ds }) {
-  const parts = expression.split('|')
-  const baseValuePath = parts.shift().trim()
-  const baseValue = getProperty(context, baseValuePath)
+  const parts = expression.split(/\s*\|\s*/)
+  const baseValue = getProperty(context, parts.shift())
 
   return parts.reduce(await applyFilter(ds), Promise.resolve(baseValue))
 }
@@ -30,9 +29,8 @@ function getProperty (obj, desc) {
 }
 
 function applyFilter (ds) {
-  return async (valuePromise, rawFilter) => {
+  return async (valuePromise, filter) => {
     const value = await valuePromise
-    const filter = rawFilter.trim()
     const regExp = /\('([^)]+)'\)/
     const filterValueArr = regExp.exec(filter)
     const filterValue = filterValueArr && filterValueArr[1]
