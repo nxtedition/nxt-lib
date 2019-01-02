@@ -7,7 +7,7 @@ module.exports = async function resolveTemplate (template, context, { ds }) {
   if (!match) {
     return template
   }
-  var { pre, body, post } = match
+  const { pre, body, post } = match
   response += pre
   response += await parseExpression(body, context, { ds })
   if (post) {
@@ -25,7 +25,7 @@ async function parseExpression (expression, context, { ds }) {
 }
 
 function getProperty (obj, desc) {
-  var arr = desc.split('.')
+  const arr = desc.split('.')
   while (arr.length && (obj = obj[arr.shift()]));
   return obj
 }
