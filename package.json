@@ -65,6 +65,7 @@
     "balanced-match": "^1.0.0",
     "http-errors": "^1.7.1",
     "merge-ranges": "^1.0.2",
+    "moment": "^2.23.0",
     "statuses": "^1.5.0",
     "xuid": "^3.0.2"
   },
