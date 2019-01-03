@@ -4,9 +4,8 @@ const get = require('lodash/get')
 
 module.exports = async function resolveTemplate (template, context, { ds } = {}) {
   let response = template
-  let match = false
   while (true) {
-    match = balanced('{{', '}}', response)
+    const match = balanced('{{', '}}', response)
     if (!match) {
       return response
     }
