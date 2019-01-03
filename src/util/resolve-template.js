@@ -20,6 +20,8 @@ async function parseExpression (expression, context, { ds }) {
   const [ basePath, ...parts ] = expression.split(/\s*\|\s*/)
   const baseValue = get(context, basePath)
 
+  // TODO (fix): Parsing errors...
+
   return parts.reduce(async (valuePromise, filter) => {
     const value = await valuePromise
 
