@@ -17,3 +17,13 @@ test('append', async (done) => {
   expect(await resolveTemplate(`{{test | append('1')}}`, { test: '111' })).toBe('1111')
   done()
 })
+
+test('ds', async (done) => {
+  const ds = {
+    record: {
+      get: () => ({ foo: 'bar' })
+    }
+  }
+  expect(await resolveTemplate(`{{test | ds() | pluck('foo')}}`, { test: 'foo' }, { ds })).toBe('bar')
+  done()
+})
