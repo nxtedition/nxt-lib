@@ -30,7 +30,7 @@ async function parseExpression (expression, context, { ds }) {
       return moment(value).format(filterValue)
     } else if (/^append\(/.test(filter)) {
       return value + filterValue
-    } else if (/^pluck\(/.test(filter)) {
+    } else if (/^(pluck|get)\(/.test(filter)) {
       return value[filterValue]
     } else if (/^join\(/.test(filter)) {
       return value.join(filterValue)
