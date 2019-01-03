@@ -1,5 +1,6 @@
 const balanced = require('balanced-match')
 const moment = require('moment')
+const get = require('lodash/get')
 
 module.exports = async function resolveTemplate (template, context, { ds }) {
   let response = template
@@ -16,20 +17,10 @@ module.exports = async function resolveTemplate (template, context, { ds }) {
 }
 
 async function parseExpression (expression, context, { ds }) {
-  const parts = expression.split(/\s*\|\s*/)
-  const baseValue = getProperty(context, parts.shift())
+  const [ basePath, ...parts ] = expression.split(/\s*\|\s*/)
+  const baseValue = get(context, basePath)
 
-  return parts.reduce(await applyFilter(ds), Promise.resolve(baseValue))
-}
-
-function getProperty (obj, desc) {
-  const arr = desc.split('.')
-  while (arr.length && (obj = obj[arr.shift()]));
-  return obj
-}
-
-function applyFilter (ds) {
-  return async (valuePromise, filter) => {
+  return parts.reduce(async (valuePromise, filter) => {
     const value = await valuePromise
     const regExp = /\('([^)]+)'\)/
     const filterValueArr = regExp.exec(filter)
@@ -46,5 +37,5 @@ function applyFilter (ds) {
     } else if (/^ds/.test(filter)) {
       return ds.record.get(value)
     }
-  }
+  }, baseValue)
 }
