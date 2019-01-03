@@ -22,20 +22,31 @@ async function parseExpression (expression, context, { ds }) {
 
   return parts.reduce(async (valuePromise, filter) => {
     const value = await valuePromise
+
     const regExp = /\('([^)]+)'\)/
     const filterValueArr = regExp.exec(filter)
     const filterValue = filterValueArr && filterValueArr[1]
 
     if (/^moment\(/.test(filter)) {
-      return moment(value).format(filterValue)
-    } else if (/^append\(/.test(filter)) {
-      return value + filterValue
-    } else if (/^(pluck|get)\(/.test(filter)) {
+      return moment(parseInt(value)).format(filterValue)
+    }
+
+    if (/^append\(/.test(filter)) {
+      return String(value) + filterValue
+    }
+
+    if (/^(pluck|get)\(/.test(filter)) {
       return value[filterValue]
-    } else if (/^join\(/.test(filter)) {
+    }
+
+    if (/^join\(/.test(filter)) {
       return value.join(filterValue)
-    } else if (/^ds/.test(filter)) {
+    }
+
+    if (/^ds\(/.test(filter)) {
       return ds.record.get(value)
     }
+
+    return value
   }, baseValue)
 }
