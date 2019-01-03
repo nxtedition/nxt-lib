@@ -12,3 +12,8 @@ test('nested', async (done) => {
   expect(await resolveTemplate('{{{{foo}}}}', { test: '111', foo: 'test' })).toBe('111')
   done()
 })
+
+test('append', async (done) => {
+  expect(await resolveTemplate(`{{test | append('1')}}`, { test: '111' })).toBe('1111')
+  done()
+})
