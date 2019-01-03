@@ -1,4 +1,5 @@
 const { resolveTemplate } = require('../src/util')
+const Observable = require('rxjs')
 
 test('replaces strings', async (done) => {
   expect(await resolveTemplate('{{test}}', { test: '111' })).toBe('111')
@@ -21,7 +22,7 @@ test('append', async (done) => {
 test('ds', async (done) => {
   const ds = {
     record: {
-      get: () => ({ foo: 'bar' })
+      observe: () => Observable.of({ foo: 'bar' })
     }
   }
   expect(await resolveTemplate(`{{test | ds() | pluck('foo')}}`, { test: 'foo' }, { ds })).toBe('bar')

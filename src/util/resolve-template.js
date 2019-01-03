@@ -1,57 +1,64 @@
 const balanced = require('balanced-match')
 const moment = require('moment')
 const get = require('lodash/get')
+const rx = require('rxjs/operators')
+const Observable = require('rxjs')
 
-module.exports = async function resolveTemplate (template, context, { ds } = {}) {
-  let response = template
-  while (true) {
-    const match = balanced('{{', '}}', response)
-    if (!match) {
-      return response
-    }
+module.exports.onResolveTemplate = onResolveTemplate
 
-    const { pre, body, post } = match
-
-    const expr = await resolveTemplate(body, context, { ds })
-    const value = await parseExpression(expr, context, { ds })
-
-    response = `${pre}${value}${post}`
-  }
+module.exports.resolveTemplate = async function (template, context, options) {
+  return onResolveTemplate(template, context, options)
+    .pipe(
+      rx.first()
+    )
+    .toPromise()
 }
 
-async function parseExpression (expression, context, { ds }) {
-  const [ basePath, ...parts ] = expression.split(/\s*\|\s*/)
+// TODO (perf): Optimize.
+// TODO (fix): Error handling.
+function onResolveTemplate (template, context, options) {
+  const match = balanced('{{', '}}', template)
+  if (!match) {
+    return Observable.of(template)
+  }
+
+  const { pre, body, post } = match
+
+  return onResolveTemplate(body, context, options)
+    .pipe(
+      rx.switchMap(expr => onParseExpression(expr, context, options)),
+      rx.map(value => `${pre}${value || ''}${post}`),
+      rx.switchMap(template => onResolveTemplate(template, context, options))
+    )
+}
+
+function onParseExpression (expression, context, options) {
+  const ds = options ? options.ds : null
+
+  const FILTERS = {
+    moment: (format) => value => Observable.of(moment(value).format(format)),
+    append: (post) => value => Observable.of(String(value) + post),
+    prepend: (pre) => value => Observable.of(pre + String(value)),
+    pluck: (path) => value => Observable.of(get(value, path)),
+    first: () => value => Observable.of(Array.isArray(value) ? value[0] : null),
+    int: () => value => parseInt(value),
+    ds: () => value => ds ? ds.record.observe(value) : Observable.of(null)
+  }
+
+  const [ basePath, ...filters ] = expression.split(/\s*\|\s*/)
   const baseValue = get(context, basePath)
 
-  // TODO (fix): Parsing errors...
-
-  return parts.reduce(async (valuePromise, filter) => {
-    const value = await valuePromise
-
-    const regExp = /\('([^)]+)'\)/
-    const filterValueArr = regExp.exec(filter)
-    const filterValue = filterValueArr && filterValueArr[1]
-
-    if (/^moment\(/.test(filter)) {
-      return moment(parseInt(value)).format(filterValue)
-    }
-
-    if (/^append\(/.test(filter)) {
-      return String(value) + filterValue
-    }
-
-    if (/^(pluck|get)\(/.test(filter)) {
-      return value[filterValue]
-    }
-
-    if (/^join\(/.test(filter)) {
-      return value.join(filterValue)
-    }
-
-    if (/^ds\(/.test(filter)) {
-      return ds.record.get(value)
-    }
-
-    return value
-  }, baseValue)
+  // TODO (fix): Better parsing...
+  return filters
+    .map(filter => filter.match(/([^(]+)\((.*)\)/) || [])
+    .reduce((value$, [ , name, args ]) => value$
+      .pipe(
+        rx.switchMap(value => {
+          const filter = FILTERS[name]
+          return filter ? filter(...args
+            .split(/\s*,\s*/)
+            .map(x => x.slice(1, -1))
+          )(value) : Observable.of(value)
+        })
+      ), Observable.of(baseValue))
 }
