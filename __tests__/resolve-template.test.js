@@ -7,3 +7,8 @@ test('replaces strings', async (done) => {
   expect(await resolveTemplate('test{{test.foo}}test{{test.bar.baz}}test', { test: { foo: '111', bar: { baz: '222' } } })).toBe('test111test222test')
   done()
 })
+
+test('nested', async (done) => {
+  expect(await resolveTemplate('{{{{foo}}}}', { test: '111', foo: 'test' })).toBe('111')
+  done()
+})

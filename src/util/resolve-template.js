@@ -10,8 +10,12 @@ module.exports = async function resolveTemplate (template, context, { ds } = {})
     if (!match) {
       return response
     }
+
     const { pre, body, post } = match
-    const value = await parseExpression(body, context, { ds })
+
+    const expr = await resolveTemplate(body, context, { ds })
+    const value = await parseExpression(expr, context, { ds })
+
     response = `${pre}${value}${post}`
   }
 }
