@@ -40,6 +40,7 @@ function onParseExpression (expression, context, options) {
     append: (post) => value => Observable.of(String(value) + post),
     prepend: (pre) => value => Observable.of(pre + String(value)),
     pluck: (path) => value => Observable.of(get(value, path)),
+    join: (delimiter) => value => Observable.of(Array.isArray(value) ? value.join(delimiter) : null),
     first: () => value => Observable.of(Array.isArray(value) ? value[0] : null),
     int: () => value => parseInt(value),
     ds: () => value => ds ? ds.record.observe(value) : Observable.of(null)
