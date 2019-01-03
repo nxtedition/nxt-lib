@@ -2,7 +2,7 @@ const balanced = require('balanced-match')
 const moment = require('moment')
 const get = require('lodash/get')
 
-module.exports = async function resolveTemplate (template, context, { ds }) {
+module.exports = async function resolveTemplate (template, context, { ds } = {}) {
   let response = template
   let match = false
   while (true) {
