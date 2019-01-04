@@ -9,12 +9,13 @@ const fromPairs = require('lodash/fromPairs')
 const flatten = require('lodash/fp/flatten')
 const capitalize = require('lodash/capitalize')
 const startCase = require('lodash/startCase')
+const isString = require('lodash/isString')
 const uniq = require('lodash/uniq')
 const words = require('lodash/words')
 
 module.exports.onResolveTemplate = onResolveTemplate
 
-module.exports.resolveTemplate = async function (template, context, options) {
+module.exports.resolveTemplate = async function (template, context, options = {}) {
   return onResolveTemplate(template, context, options)
     .pipe(
       rx.first()
@@ -24,7 +25,7 @@ module.exports.resolveTemplate = async function (template, context, options) {
 
 // TODO (perf): Optimize.
 // TODO (fix): Error handling.
-function onResolveTemplate (template, context, options) {
+function onResolveTemplate (template, context, options = {}) {
   const match = balanced('{{', '}}', template)
   if (!match) {
     return Observable.of(template)
@@ -35,12 +36,19 @@ function onResolveTemplate (template, context, options) {
   return onResolveTemplate(body, context, options)
     .pipe(
       rx.switchMap(expr => onParseExpression(expr, context, options)),
-      rx.map(value => Array.isArray(value) || isPlainObject(value)
-        ? JSON.stringify(value)
-        : value || ''
-      ),
-      rx.map(value => `${pre}${value}${post}`),
-      rx.switchMap(template => onResolveTemplate(template, context, options))
+      rx.switchMap(value => {
+        if (!pre && !post && !isString(value)) {
+          return Observable.of(value)
+        }
+
+        if (value == null) {
+          value = ''
+        } else if (Array.isArray(value) || isPlainObject(value)) {
+          value = JSON.stringify(value)
+        }
+
+        return onResolveTemplate(`${pre}${value}${post}`, context, options)
+      })
     )
 }
 
