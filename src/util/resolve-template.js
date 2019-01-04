@@ -9,7 +9,6 @@ const fromPairs = require('lodash/fromPairs')
 const flatten = require('lodash/fp/flatten')
 const capitalize = require('lodash/capitalize')
 const startCase = require('lodash/startCase')
-const isString = require('lodash/isString')
 const uniq = require('lodash/uniq')
 const words = require('lodash/words')
 
@@ -37,7 +36,7 @@ function onResolveTemplate (template, context, options = {}) {
     .pipe(
       rx.switchMap(expr => onParseExpression(expr, context, options)),
       rx.switchMap(value => {
-        if (!pre && !post && !isString(value)) {
+        if (!pre && !post) {
           return Observable.of(value)
         }
 
