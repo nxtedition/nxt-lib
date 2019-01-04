@@ -54,8 +54,9 @@ function onParseExpression (expression, context, options) {
     // any
     boolean: () => value => Observable.of(Boolean(value)),
     string: () => value => Observable.of(String(value)),
-    array: () => value => Observable.of([value]),
+    array: () => value => Observable.of([ value ]),
     tojson: (indent) => value => Observable.of(JSON.stringify(value, null, indent)),
+    fromjson: () => value => Observable.of(JSON6.parse(value)),
     // number
     lt: (x) => value => Observable.of(value < x),
     lte: (x) => value => Observable.of(value <= x),
@@ -85,6 +86,7 @@ function onParseExpression (expression, context, options) {
     lower: () => value => Observable.of(String(value).toLowerCase()),
     upper: () => value => Observable.of(String(value).toUpperCase()),
     capitalize: () => value => Observable.of(capitalize(String(value))),
+    split: (delimiter) => value => Observable.of(String(value).split(delimiter)),
     title: () => value => Observable.of(startCase(String(value))),
     replace: (a, b) => value => Observable.of(String(value).replace(a, b)),
     trim: () => value => Observable.of(String(value).trim()),
@@ -134,19 +136,17 @@ function onParseExpression (expression, context, options) {
     unique: () => value => Observable.of(Array.isArray(value) ? uniq(value) : null),
     // collection
     pluck: (path) => value => Observable.of(get(value, path)),
-    map: (f, ...args) => value => {
-      const filter = f && FILTERS[f]
+    map: (filterName, ...args) => value => {
+      const filter = FILTERS[filterName]
 
       if (!filter) {
         return Observable.of(value)
       }
 
       if (Array.isArray(value)) {
-        if (value.length === 0) {
-          return Observable.of([])
-        }
-
-        return Observable.combineLatest(value.map(x => filter(...args)(x)))
+        return value.length === 0
+          ? Observable.of([])
+          : Observable.combineLatest(value.map(x => filter(...args)(x)))
       }
 
       // like lodash mapValues
@@ -166,11 +166,11 @@ function onParseExpression (expression, context, options) {
 
       return Observable.of(value)
     },
-    select: (f, ...args) => value => {
-      const filter = f ? FILTERS[f] : FILTERS.boolean
+    select: (filterName, ...args) => value => {
+      const filter = filterName ? FILTERS[filterName] : FILTERS.boolean
 
       if (!filter) {
-        throw new Error(`unexpected filter in select(): ${f}`)
+        throw new Error(`unexpected filter in select(): ${filterName}`)
       }
 
       if (Array.isArray(value)) {
@@ -207,29 +207,23 @@ function onParseExpression (expression, context, options) {
     }
   }
 
-  const [ basePath, ...filters ] = expression.split(/\s*\|\s*/)
-  const baseValue = get(context, basePath.trim())
+  const [ basePath, ...filters ] = expression.trim().split(/\s*\|\s*/)
+  const baseValue = get(context, basePath)
 
   return filters
     .map(filter => filter.match(/([^(]+)\((.*)\)/) || [])
-    .reduce((value$, [ , name, argsStr ]) => value$
+    .reduce((value$, [ , filterName, argsStr ]) => value$
       .pipe(
         rx.switchMap(value => {
-          const filter = FILTERS[name]
+          const filter = FILTERS[filterName]
 
           if (!filter) {
-            return Observable.of(value)
+            throw new Error(`unexpected filter: ${filterName}`)
           }
 
           const args = argsStr
             .split(/\s*,\s*/)
-            .map(argStr => {
-              try {
-                return JSON6.parse(argStr)
-              } catch (err) {
-                return err.message // TODO improve
-              }
-            })
+            .map(JSON6.parse)
 
           return filter(...args)(value)
         })

@@ -73,7 +73,6 @@
     "xuid": "^3.0.2"
   },
   "peerDependencies": {
-    "json-6": "^1.0.2",
     "pino": "^5.6.2",
     "pino-pretty": "^2.2.1",
     "rxjs": "^6.3.3"
