@@ -68,10 +68,10 @@ function onParseExpression (expression, context, options) {
         : (value == null ? defaultValue : value)
     ),
     // number
+    le: (x) => value => Observable.of(value <= x),
     lt: (x) => value => Observable.of(value < x),
-    lte: (x) => value => Observable.of(value <= x),
+    ge: (x) => value => Observable.of(value >= x),
     gt: (x) => value => Observable.of(value > x),
-    gte: (x) => value => Observable.of(value >= x),
     int: (fallback, radix) => value => Observable.of(parseInt(value, radix) || fallback),
     float: (fallback) => value => Observable.of(parseFloat(value) || fallback),
     mul: (x) => value => Observable.of(x * value),
