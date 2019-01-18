@@ -4,7 +4,9 @@ const rx = require('rxjs/operators')
 const Observable = require('rxjs')
 const JSON6 = require('json-6')
 const get = require('lodash/get')
+const isEqual = require('lodash/isEqual')
 const isPlainObject = require('lodash/isPlainObject')
+const isString = require('lodash/isString')
 const fromPairs = require('lodash/fromPairs')
 const flatten = require('lodash/fp/flatten')
 const capitalize = require('lodash/capitalize')
@@ -67,6 +69,13 @@ function onParseExpression (expression, context, options) {
         ? (!value ? defaultValue : value)
         : (value == null ? defaultValue : value)
     ),
+    eq: (x) => value => Observable.of(value === x),
+    ne: (x) => value => Observable.of(value !== x),
+    isArray: () => value => Observable.of(Array.isArray(value)),
+    isEqual: (x) => value => Observable.of(isEqual(value, x)),
+    isNully: () => value => Observable.of(value == null),
+    isNumber: () => value => Observable.of(Number.isFinite(value)),
+    isString: () => value => Observable.of(isString(value)),
     // number
     le: (x) => value => Observable.of(value <= x),
     lt: (x) => value => Observable.of(value < x),
