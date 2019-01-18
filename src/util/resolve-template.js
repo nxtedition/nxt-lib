@@ -73,7 +73,7 @@ function onParseExpression (expression, context, options) {
     ne: (x) => value => Observable.of(value !== x),
     isArray: () => value => Observable.of(Array.isArray(value)),
     isEqual: (x) => value => Observable.of(isEqual(value, x)),
-    isNully: () => value => Observable.of(value == null),
+    isNil: () => value => Observable.of(value == null),
     isNumber: () => value => Observable.of(Number.isFinite(value)),
     isString: () => value => Observable.of(isString(value)),
     // number
