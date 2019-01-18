@@ -56,14 +56,17 @@ function onParseExpression (expression, context, options) {
 
   // DOCS inspiration; http://jinja.pocoo.org/docs/2.10/templates/#builtin-filters
   const FILTERS = {
-    // undefined
-    default: (fallback) => value => Observable.of(value === undefined ? fallback : value),
     // any
     boolean: () => value => Observable.of(Boolean(value)),
     string: () => value => Observable.of(String(value)),
     array: () => value => Observable.of([ value ]),
     tojson: (indent) => value => Observable.of(JSON.stringify(value, null, indent)),
     fromjson: () => value => Observable.of(JSON6.parse(value)),
+    default: (defaultValue, notJustNully) => value => Observable.of(
+      notJustNully
+        ? (!value ? defaultValue : value)
+        : (value == null ? defaultValue : value)
+    ),
     // number
     lt: (x) => value => Observable.of(value < x),
     lte: (x) => value => Observable.of(value <= x),
