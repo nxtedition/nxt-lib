@@ -48,9 +48,9 @@ describe('select', () => {
     expect(await resolveTemplate(`{{ test | select() }}`, { test: [ 1 ] })).toMatchObject([ 1 ])
   })
   test('filters arrays', async () => {
-    expect(await resolveTemplate(`{{ test | select('gte', 2) }}`, { test: [ 1, 2 ] })).toMatchObject([ 2 ])
+    expect(await resolveTemplate(`{{ test | select('ge', 2) }}`, { test: [ 1, 2 ] })).toMatchObject([ 2 ])
   })
   test('filters objects', async () => {
-    expect(await resolveTemplate(`{{ test | select('gte', 2) }}`, { test: { a: 1, b: 2 } })).toMatchObject({ b: 2 })
+    expect(await resolveTemplate(`{{ test | select('ge', 2) }}`, { test: { a: 1, b: 2 } })).toMatchObject({ b: 2 })
   })
 })

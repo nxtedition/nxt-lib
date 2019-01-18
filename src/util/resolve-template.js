@@ -4,7 +4,9 @@ const rx = require('rxjs/operators')
 const Observable = require('rxjs')
 const JSON6 = require('json-6')
 const get = require('lodash/get')
+const isEqual = require('lodash/isEqual')
 const isPlainObject = require('lodash/isPlainObject')
+const isString = require('lodash/isString')
 const fromPairs = require('lodash/fromPairs')
 const flatten = require('lodash/fp/flatten')
 const capitalize = require('lodash/capitalize')
@@ -56,19 +58,29 @@ function onParseExpression (expression, context, options) {
 
   // DOCS inspiration; http://jinja.pocoo.org/docs/2.10/templates/#builtin-filters
   const FILTERS = {
-    // undefined
-    default: (fallback) => value => Observable.of(value === undefined ? fallback : value),
     // any
     boolean: () => value => Observable.of(Boolean(value)),
     string: () => value => Observable.of(String(value)),
     array: () => value => Observable.of([ value ]),
     tojson: (indent) => value => Observable.of(JSON.stringify(value, null, indent)),
     fromjson: () => value => Observable.of(JSON6.parse(value)),
+    default: (defaultValue, notJustNully) => value => Observable.of(
+      notJustNully
+        ? (!value ? defaultValue : value)
+        : (value == null ? defaultValue : value)
+    ),
+    eq: (x) => value => Observable.of(value === x),
+    ne: (x) => value => Observable.of(value !== x),
+    isArray: () => value => Observable.of(Array.isArray(value)),
+    isEqual: (x) => value => Observable.of(isEqual(value, x)),
+    isNil: () => value => Observable.of(value == null),
+    isNumber: () => value => Observable.of(Number.isFinite(value)),
+    isString: () => value => Observable.of(isString(value)),
     // number
+    le: (x) => value => Observable.of(value <= x),
     lt: (x) => value => Observable.of(value < x),
-    lte: (x) => value => Observable.of(value <= x),
+    ge: (x) => value => Observable.of(value >= x),
     gt: (x) => value => Observable.of(value > x),
-    gte: (x) => value => Observable.of(value >= x),
     int: (fallback, radix) => value => Observable.of(parseInt(value, radix) || fallback),
     float: (fallback) => value => Observable.of(parseFloat(value) || fallback),
     mul: (x) => value => Observable.of(x * value),
