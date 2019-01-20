@@ -76,6 +76,7 @@ function onParseExpression (expression, context, options) {
     isNil: () => value => Observable.of(value == null),
     isNumber: () => value => Observable.of(Number.isFinite(value)),
     isString: () => value => Observable.of(isString(value)),
+    ternary: (a, b) => value => Observable.of(value ? a : b),
     // number
     le: (x) => value => Observable.of(value <= x),
     lt: (x) => value => Observable.of(value < x),
