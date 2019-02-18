@@ -206,7 +206,7 @@ function onParseExpression (expression, context, options) {
         charAt: (...args) => value => value.charAt(...args),
         startsWith: () => value => value.startsWith(),
         endsWith: () => value => value.endsWith(),
-        includes: () => value => value.includes(),
+        includes: (...args) => value => value.includes(...args),
         trim: () => value => value.trim(),
         trimStart: () => value => value.trimStart(),
         trimEnd: () => value => value.trimEnd(),
