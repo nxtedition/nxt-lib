@@ -72,18 +72,14 @@ function asObservable (obj) {
 
 function asFilter (transform, pred, obj) {
   return mapValues(obj, (factory) => (...args) => {
-    try {
-      const fn = factory(...args)
-      return value => {
-        try {
-          value = transform ? transform(value) : value
-          return !pred || pred(value) ? fn(value) : null
-        } catch (err) {
-          return null
-        }
+    const fn = factory(...args)
+    return value => {
+      try {
+        value = transform ? transform(value) : value
+        return !pred || pred(value) ? fn(value) : null
+      } catch (err) {
+        return null
       }
-    } catch (err) {
-      return null
     }
   })
 }
