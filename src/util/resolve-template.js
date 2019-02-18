@@ -102,7 +102,17 @@ function onParseExpression (expression, context, options) {
     // string
     append: (post) => value => Observable.of(String(value) + post),
     prepend: (pre) => value => Observable.of(pre + String(value)),
-    ds: (str) => value => ds ? ds.record.observe((value || '') + (str || '')) : Observable.of(null),
+    ds: (name, path) => value => {
+      if (!ds) {
+        return Observable.of(null)
+      }
+
+      return ds.record
+        .observe((value || '') + (name || ''))
+        .pipe(
+          rx.map(val => path ? get(val, path) : val)
+        )
+    },
     lower: () => value => Observable.of(String(value).toLowerCase()),
     upper: () => value => Observable.of(String(value).toUpperCase()),
     capitalize: () => value => Observable.of(capitalize(String(value))),

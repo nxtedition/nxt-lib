@@ -10,6 +10,7 @@ test('replaces strings', async () => {
 
 test('nested', async () => {
   expect(await resolveTemplate('{{{{foo}}}}', { test: '111', foo: 'test' })).toBe('111')
+  expect(await resolveTemplate('{{ asd | default("{{test}}")}}', { test: '111', foo: 'test' })).toBe('111')
 })
 
 test('append', async () => {
