@@ -74,7 +74,7 @@ function asFilter (transform, pred, obj) {
 
         return Observable.of(value)
       } catch (err) {
-        return null
+        return Observable.of(null)
       }
     }
   })
