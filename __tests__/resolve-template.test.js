@@ -1,6 +1,10 @@
 const { resolveTemplate } = require('../src/util')
 const Observable = require('rxjs')
 
+test('path var', async () => {
+  expect(await resolveTemplate('{{test.foo}}', { test: { foo: '111' } })).toBe('111')
+})
+
 test('replaces strings', async () => {
   expect(await resolveTemplate('{{test}}', { test: '111' })).toBe('111')
   expect(await resolveTemplate('pre{{test}}post', { test: '111' })).toBe('pre111post')

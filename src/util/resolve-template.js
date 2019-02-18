@@ -12,6 +12,7 @@ const flatten = require('lodash/fp/flatten')
 const capitalize = require('lodash/capitalize')
 const startCase = require('lodash/startCase')
 const uniq = require('lodash/uniq')
+const mapValues = require('lodash/mapValues')
 const words = require('lodash/words')
 
 module.exports.onResolveTemplate = onResolveTemplate
@@ -27,215 +28,279 @@ module.exports.resolveTemplate = async function (template, context, options = {}
 // TODO (perf): Optimize.
 // TODO (fix): Error handling.
 function onResolveTemplate (template, context, options = {}) {
-  const match = balanced('{{', '}}', template)
-  if (!match) {
-    return Observable.of(template)
+  try {
+    const match = balanced('{{', '}}', template)
+    if (!match) {
+      return Observable.of(template)
+    }
+
+    const { pre, body, post } = match
+
+    return onResolveTemplate(body, context, options)
+      .pipe(
+        rx.switchMap(expr => onParseExpression(expr, context, options)),
+        rx.switchMap(value => {
+          if (!pre && !post) {
+            return Observable.of(value)
+          }
+
+          if (value == null) {
+            value = ''
+          } else if (Array.isArray(value) || isPlainObject(value)) {
+            value = JSON.stringify(value)
+          }
+
+          return onResolveTemplate(`${pre}${value}${post}`, context, options)
+        })
+      )
+  } catch (err) {
+    return Observable.throwError(err)
   }
+}
 
-  const { pre, body, post } = match
+function asObservable (obj) {
+  return mapValues(obj, (factory) => (...args) => {
+    const fn = factory(...args)
+    return value => {
+      try {
+        const res = fn(value)
+        return Observable.isObservable(res) ? res : Observable.of(res)
+      } catch (err) {
+        return Observable.throwError(err)
+      }
+    }
+  })
+}
 
-  return onResolveTemplate(body, context, options)
-    .pipe(
-      rx.switchMap(expr => onParseExpression(expr, context, options)),
-      rx.switchMap(value => {
-        if (!pre && !post) {
-          return Observable.of(value)
-        }
-
-        if (value == null) {
-          value = ''
-        } else if (Array.isArray(value) || isPlainObject(value)) {
-          value = JSON.stringify(value)
-        }
-
-        return onResolveTemplate(`${pre}${value}${post}`, context, options)
-      })
-    )
+function check (pred, msg, obj) {
+  return mapValues(obj, (factory) => (...args) => {
+    const fn = factory(...args)
+    return value => pred(value) ? fn(value) : Observable.throwError(msg)
+  })
 }
 
 function onParseExpression (expression, context, options) {
   const ds = options ? options.ds : null
 
   // DOCS inspiration; http://jinja.pocoo.org/docs/2.10/templates/#builtin-filters
-  const FILTERS = {
+  const FILTERS = asObservable({
     // any
-    boolean: () => value => Observable.of(Boolean(value)),
-    string: () => value => Observable.of(String(value)),
-    array: () => value => Observable.of([ value ]),
-    tojson: (indent) => value => Observable.of(JSON.stringify(value, null, indent)),
-    fromjson: () => value => Observable.of(JSON6.parse(value)),
-    default: (defaultValue, notJustNully) => value => Observable.of(
+    boolean: () => value => Boolean(value),
+    string: () => value => String(value),
+    number: () => value => Number(value),
+    date: () => value => new Date(value),
+    array: () => value => [ value ],
+    int: (fallback, radix) => value => {
+      const int = parseInt(value)
+      return Number.isFinite(int) ? int : fallback
+    },
+    float: (fallback) => value => {
+      const float = parseFloat(value)
+      return Number.isFinite(float) ? float : fallback
+    },
+    default: (defaultValue, notJustNully) => value =>
       notJustNully
         ? (!value ? defaultValue : value)
-        : (value == null ? defaultValue : value)
-    ),
-    eq: (x) => value => Observable.of(value === x),
-    ne: (x) => value => Observable.of(value !== x),
-    isArray: () => value => Observable.of(Array.isArray(value)),
-    isEqual: (x) => value => Observable.of(isEqual(value, x)),
-    isNil: () => value => Observable.of(value == null),
-    isNumber: () => value => Observable.of(Number.isFinite(value)),
-    isString: () => value => Observable.of(isString(value)),
-    ternary: (a, b) => value => Observable.of(value ? a : b),
+        : (value == null ? defaultValue : value),
+    eq: (x) => value => value === x,
+    ne: (x) => value => value !== x,
+    isDate: () => value => value instanceof Date,
+    isArray: () => value => Array.isArray(value),
+    isEqual: (x) => value => isEqual(value, x),
+    isNil: () => value => value == null,
+    isNumber: () => value => Number.isFinite(value),
+    isString: () => value => isString(value),
+    ternary: (a, b) => value => value ? a : b,
     // number
-    le: (x) => value => Observable.of(value <= x),
-    lt: (x) => value => Observable.of(value < x),
-    ge: (x) => value => Observable.of(value >= x),
-    gt: (x) => value => Observable.of(value > x),
-    int: (fallback, radix) => value => Observable.of(parseInt(value, radix) || fallback),
-    float: (fallback) => value => Observable.of(parseFloat(value) || fallback),
-    mul: (x) => value => Observable.of(x * value),
-    div: (x) => value => Observable.of(x / value),
-    mod: (x) => value => Observable.of(x % value),
-    add: (x) => value => Observable.of(x + value),
-    sub: (x) => value => Observable.of(x - value),
-    abs: () => value => Observable.of(Math.abs(value)),
-    max: (...args) => value => Observable.of(Array.isArray(value)
-      ? Math.max(...value, ...args)
-      : Math.max(value, ...args)),
-    min: (...args) => value => Observable.of(Array.isArray(value)
-      ? Math.min(...value, ...args)
-      : Math.min(value, ...args)),
-    round: () => value => Observable.of(Math.round(value)),
+    ...check(value => Number.isFinite(value), 'expected number', {
+      le: (x) => value => value <= x,
+      lt: (x) => value => value < x,
+      ge: (x) => value => value >= x,
+      gt: (x) => value => value > x,
+      mul: (x) => value => x * value,
+      div: (x) => value => x / value,
+      mod: (x) => value => x % value,
+      add: (x) => value => x + value,
+      sub: (x) => value => x - value,
+      abs: () => value => Math.abs(value),
+      round: () => value => Math.round(value),
+      floor: () => value => Math.floor(value),
+      ceil: () => value => Math.ceil(value)
+    }),
+    ...check(value => Array.isArray(value) || Number.isFinite(value), 'expected array or number', {
+      max: (...args) => value => Array.isArray(value)
+        ? Math.max(...value, ...args)
+        : Math.max(value, ...args),
+      min: (...args) => value => Array.isArray(value)
+        ? Math.min(...value, ...args)
+        : Math.min(value, ...args)
+    }),
     // date
-    moment: (format) => value => Observable.of(moment(value).format(format)),
+    ...check(value => value instanceof Date, 'expected date', {
+      moment: (format) => value => moment(value).format(format)
+    }),
     // string
-    append: (post) => value => Observable.of(String(value) + post),
-    prepend: (pre) => value => Observable.of(pre + String(value)),
-    ds: (name, path) => value => {
-      if (!ds) {
-        return Observable.of(null)
-      }
+    ...check(value => typeof value === 'string', 'expected string', {
+      tojson: (indent) => value => JSON.stringify(value, null, indent),
+      fromjson: () => value => JSON6.parse(value),
+      append: (post) => value => value + post,
+      prepend: (pre) => value => pre + value,
+      ds: (name, path) => value => {
+        if (!ds) {
+          return null
+        }
 
-      return ds.record
-        .observe((value || '') + (name || ''))
-        .pipe(
-          rx.map(val => path ? get(val, path) : val)
-        )
-    },
-    lower: () => value => Observable.of(String(value).toLowerCase()),
-    upper: () => value => Observable.of(String(value).toUpperCase()),
-    capitalize: () => value => Observable.of(capitalize(String(value))),
-    split: (delimiter) => value => Observable.of(String(value).split(delimiter)),
-    title: () => value => Observable.of(startCase(String(value))),
-    replace: (a, b) => value => Observable.of(String(value).replace(a, b)),
-    trim: () => value => Observable.of(String(value).trim()),
-    trimLeft: () => value => Observable.of(String(value).trimLeft()),
-    trimRight: () => value => Observable.of(String(value).trimRight()),
-    truncate: (length = 255, killwords = false, end = '...', leeway = 0) => value => {
-      const s = String(value)
+        return ds.record
+          .observe((value || '') + (name || ''))
+          .pipe(
+            rx.map(val => path ? get(val, path) : val)
+          )
+      },
+      lower: () => value => value.toLowerCase(),
+      upper: () => value => value.toUpperCase(),
+      match: (...args) => {
+        if (args.some(val => typeof val !== 'string')) {
+          throw new Error('invalid argument')
+        }
 
-      if (length < end.length) {
-        length = end.length
-      }
+        return value => value.match(new RegExp(...args))
+      },
+      capitalize: () => value => capitalize(value),
+      split: (delimiter) => value => value.split(delimiter),
+      title: () => value => startCase(value),
+      replace: (...args) => {
+        if (args.some(val => typeof val !== 'string')) {
+          throw new Error('invalid argument')
+        }
 
-      if (leeway < 0) {
-        leeway = 0
-      }
+        if (args.length === 3) {
+          const [ pattern, flags, str ] = args
+          return value => value.replace(new RegExp(pattern, flags), str)
+        } else if (args.length === 2) {
+          const [ a, b ] = args
+          return value => value.replace(a, b)
+        } else {
+          throw new Error('invalid argument')
+        }
+      },
+      trim: () => value => value.trim(),
+      trimLeft: () => value => value.trimLeft(),
+      trimRight: () => value => value.trimRight(),
+      truncate: (length = 255, killwords = false, end = '...', leeway = 0) => value => {
+        const s = String(value)
 
-      if (s.length <= length + leeway) {
-        return Observable.of(s)
-      }
+        if (length < end.length) {
+          length = end.length
+        }
 
-      if (killwords) {
-        return Observable.of(s.slice(0, length - end.length) + end)
-      }
+        if (leeway < 0) {
+          leeway = 0
+        }
 
-      return Observable.of(s
-        .slice(0, length - end.length)
-        .trimRight()
-        .split(' ')
-        .slice(0, -1)
-        .join(' ') + end
-      )
-    },
-    wordcount: () => value => Observable.of(words(String(value)).length),
+        if (s.length <= length + leeway) {
+          return s
+        }
+
+        if (killwords) {
+          return s.slice(0, length - end.length) + end
+        }
+
+        return s
+          .slice(0, length - end.length)
+          .trimRight()
+          .split(' ')
+          .slice(0, -1)
+          .join(' ') + end
+      },
+      wordcount: () => value => Observable.of(words(value).length)
+    }),
     // array
-    slice: (start, end) => value => Observable.of(Array.isArray(value) ? value.slice(start, end) : null),
-    reverse: () => value => Observable.of(Array.isArray(value) ? [...value].reverse() : null),
-    join: (delimiter) => value => Observable.of(Array.isArray(value)
-      ? value.join(delimiter)
-      : null),
-    first: () => value => Observable.of(Array.isArray(value) ? value[0] : null),
-    last: () => value => Observable.of(Array.isArray(value) && value.length > 0
-      ? value[value.length - 1]
-      : null),
-    length: () => value => Observable.of(Array.isArray(value) ? value.length : 0),
-    sort: () => value => Observable.of(Array.isArray(value) ? [...value].sort() : null),
-    sum: () => value => Observable.of(Array.isArray(value) ? value.reduce((a, b) => a + b, 0) : 0),
-    unique: () => value => Observable.of(Array.isArray(value) ? uniq(value) : null),
+    ...check(value => Array.isArray(value), 'expected array', {
+      slice: (start, end) => value => value.slice(start, end),
+      reverse: () => value => [...value].reverse(),
+      join: (delimiter) => value => value.join(delimiter),
+      first: () => value => value[0],
+      last: () => value => value[value.length - 1],
+      length: () => value => value.length,
+      sort: () => value => [...value].sort(),
+      sum: () => value => value.reduce((a, b) => a + b, 0),
+      unique: () => value => uniq(value),
+      flatten: () => value => flatten(value)
+    }),
     // collection
-    pluck: (path) => value => Observable.of(get(value, path)),
-    map: (filterName, ...args) => value => {
-      const filter = FILTERS[filterName]
+    ...check(value => Array.isArray(value) || isPlainObject(value), 'expected collection', {
+      pluck: (path) => value => get(value, path),
+      map: (filterName, ...args) => value => {
+        const filter = FILTERS[filterName]
 
-      if (!filter) {
+        if (!filter) {
+          return Observable.of(value)
+        }
+
+        if (Array.isArray(value)) {
+          return value.length === 0
+            ? Observable.of([])
+            : Observable.combineLatest(value.map(x => filter(...args)(x)))
+        }
+
+        // like lodash mapValues
+        if (isPlainObject(value)) {
+          const entries = Object.entries(value)
+
+          if (entries.length === 0) {
+            return Observable.of({})
+          }
+
+          const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
+            rx.map(x => [k, x])
+          ))
+
+          return Observable.combineLatest(pair$s).pipe(rx.map(fromPairs))
+        }
+
+        return Observable.of(value)
+      },
+      select: (filterName, ...args) => value => {
+        const filter = filterName ? FILTERS[filterName] : FILTERS.boolean
+
+        if (!filter) {
+          throw new Error(`unexpected filter in select(): ${filterName}`)
+        }
+
+        if (Array.isArray(value)) {
+          if (value.length === 0) {
+            return Observable.of([])
+          }
+
+          return Observable
+            .combineLatest(value.map(x => filter(...args)(x).pipe(
+              rx.map(ok => ok ? [x] : [])
+            ))).pipe(
+              rx.map(flatten)
+            )
+        }
+
+        // like lodash pickBy
+        if (isPlainObject(value)) {
+          const entries = Object.entries(value)
+
+          if (entries.length === 0) {
+            return Observable.of({})
+          }
+
+          const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
+            rx.map(ok => ok ? [k, v] : [])
+          ))
+
+          return Observable.combineLatest(pair$s).pipe(
+            rx.map(fromPairs)
+          )
+        }
+
         return Observable.of(value)
       }
-
-      if (Array.isArray(value)) {
-        return value.length === 0
-          ? Observable.of([])
-          : Observable.combineLatest(value.map(x => filter(...args)(x)))
-      }
-
-      // like lodash mapValues
-      if (isPlainObject(value)) {
-        const entries = Object.entries(value)
-
-        if (entries.length === 0) {
-          return Observable.of({})
-        }
-
-        const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
-          rx.map(x => [k, x])
-        ))
-
-        return Observable.combineLatest(pair$s).pipe(rx.map(fromPairs))
-      }
-
-      return Observable.of(value)
-    },
-    select: (filterName, ...args) => value => {
-      const filter = filterName ? FILTERS[filterName] : FILTERS.boolean
-
-      if (!filter) {
-        throw new Error(`unexpected filter in select(): ${filterName}`)
-      }
-
-      if (Array.isArray(value)) {
-        if (value.length === 0) {
-          return Observable.of([])
-        }
-
-        return Observable
-          .combineLatest(value.map(x => filter(...args)(x).pipe(
-            rx.map(ok => ok ? [x] : [])
-          ))).pipe(
-            rx.map(flatten)
-          )
-      }
-
-      // like lodash pickBy
-      if (isPlainObject(value)) {
-        const entries = Object.entries(value)
-
-        if (entries.length === 0) {
-          return Observable.of({})
-        }
-
-        const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
-          rx.map(ok => ok ? [k, v] : [])
-        ))
-
-        return Observable.combineLatest(pair$s).pipe(
-          rx.map(fromPairs)
-        )
-      }
-
-      return Observable.of(value)
-    }
-  }
+    })
+  })
 
   const [ basePath, ...filters ] = expression.trim().split(/\s*\|\s*/)
   const baseValue = get(context, basePath)
