@@ -27,14 +27,14 @@ module.exports.resolveTemplate = async function (template, context, options = {}
     .toPromise()
 }
 
-// TODO (perf): Optimize.
-// TODO (fix): Error handling.
 function onResolveTemplate (template, context, options = {}) {
   try {
     const match = balanced('{{', '}}', template)
     if (!match) {
       return Observable.of(template)
     }
+
+    // TODO (perf): Pre-compile
 
     const { pre, body, post } = match
 
