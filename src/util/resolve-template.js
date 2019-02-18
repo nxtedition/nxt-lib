@@ -2,13 +2,15 @@ const balanced = require('balanced-match')
 const moment = require('moment')
 const rx = require('rxjs/operators')
 const Observable = require('rxjs')
-const JSON6 = require('json-6')
+const JSON5 = require('json-5')
 const get = require('lodash/get')
 const isEqual = require('lodash/isEqual')
 const isPlainObject = require('lodash/isPlainObject')
 const isString = require('lodash/isString')
 const fromPairs = require('lodash/fromPairs')
+const flattenDepth = require('lodash/fp/flattenDepth')
 const flatten = require('lodash/fp/flatten')
+const flattenDeep = require('lodash/fp/flattenDeep')
 const capitalize = require('lodash/capitalize')
 const startCase = require('lodash/startCase')
 const uniq = require('lodash/uniq')
@@ -72,10 +74,13 @@ function asObservable (obj) {
   })
 }
 
-function check (pred, msg, obj) {
+function check (transform, pred, msg, obj) {
   return mapValues(obj, (factory) => (...args) => {
     const fn = factory(...args)
-    return value => pred(value) ? fn(value) : Observable.throwError(msg)
+    return value => {
+      value = transform ? transform(value) : value
+      return !pred || pred(value) ? fn(value) : Observable.throwError(msg)
+    }
   })
 }
 
@@ -86,12 +91,14 @@ function onParseExpression (expression, context, options) {
   const FILTERS = asObservable({
     // any
     boolean: () => value => Boolean(value),
+    tojson: (indent) => value => JSON.stringify(value, null, indent),
+    tojson5: () => value => JSON5.stringify(value),
     string: () => value => String(value),
     number: () => value => Number(value),
-    date: () => value => new Date(value),
+    date: (...args) => value => moment(value, ...args),
     array: () => value => [ value ],
     int: (fallback, radix) => value => {
-      const int = parseInt(value)
+      const int = parseInt(value, radix)
       return Number.isFinite(int) ? int : fallback
     },
     float: (fallback) => value => {
@@ -112,194 +119,229 @@ function onParseExpression (expression, context, options) {
     isString: () => value => isString(value),
     ternary: (a, b) => value => value ? a : b,
     // number
-    ...check(value => Number.isFinite(value), 'expected number', {
-      le: (x) => value => value <= x,
-      lt: (x) => value => value < x,
-      ge: (x) => value => value >= x,
-      gt: (x) => value => value > x,
-      mul: (x) => value => x * value,
-      div: (x) => value => x / value,
-      mod: (x) => value => x % value,
-      add: (x) => value => x + value,
-      sub: (x) => value => x - value,
-      abs: () => value => Math.abs(value),
-      round: () => value => Math.round(value),
-      floor: () => value => Math.floor(value),
-      ceil: () => value => Math.ceil(value)
-    }),
-    ...check(value => Array.isArray(value) || Number.isFinite(value), 'expected array or number', {
-      max: (...args) => value => Array.isArray(value)
-        ? Math.max(...value, ...args)
-        : Math.max(value, ...args),
-      min: (...args) => value => Array.isArray(value)
-        ? Math.min(...value, ...args)
-        : Math.min(value, ...args)
-    }),
+    ...check(
+      value => Number(value),
+      value => Number.isFinite(value),
+      'expected number',
+      {
+        le: (x) => value => value <= x,
+        lt: (x) => value => value < x,
+        ge: (x) => value => value >= x,
+        gt: (x) => value => value > x,
+        mul: (x) => value => x * value,
+        div: (x) => value => x / value,
+        mod: (x) => value => x % value,
+        add: (x) => value => x + value,
+        sub: (x) => value => x - value,
+        abs: () => value => Math.abs(value),
+        round: () => value => Math.round(value),
+        floor: () => value => Math.floor(value),
+        ceil: () => value => Math.ceil(value)
+      }
+    ),
+    ...check(
+      value => (Array.isArray(value) ? value : [ value ]).map(x => Number(x)).filter(x => Number.isFinite(x)),
+      value => value.every(x => Number.isFinite(x)),
+      'expected array or number',
+      {
+        min: (...args) => value => Math.min(...value, ...args),
+        max: (...args) => value => Math.max(...value, ...args)
+      }
+    ),
     // date
-    ...check(value => value instanceof Date, 'expected date', {
-      moment: (format) => value => moment(value).format(format)
-    }),
+    ...check(
+      value => moment(value),
+      value => value.isValid(),
+      'expected date',
+      {
+        moment: (...args) => value => value.format(...args)
+      }
+    ),
     // string
-    ...check(value => typeof value === 'string', 'expected string', {
-      tojson: (indent) => value => JSON.stringify(value, null, indent),
-      fromjson: () => value => JSON6.parse(value),
-      append: (post) => value => value + post,
-      prepend: (pre) => value => pre + value,
-      ds: (name, path) => value => {
-        if (!ds) {
-          return null
-        }
+    ...check(
+      value => value == null || isPlainObject(value) || Array.isArray(value) ? '' : String(value),
+      value => typeof value === 'string',
+      'expected string',
+      {
+        fromjson: () => value => JSON.parse(value),
+        fromjson5: () => value => JSON5.parse(value),
+        append: (post) => value => value + post,
+        prepend: (pre) => value => pre + value,
+        ds: (name, path) => value => ds
+          ? ds.record
+            .observe((value || '') + (name || ''))
+            .pipe(
+              rx.map(val => path ? get(val, path) : val)
+            )
+          : null,
+        lower: () => value => value.toLowerCase(),
+        upper: () => value => value.toUpperCase(),
+        match: (...args) => {
+          if (args.some(val => typeof val !== 'string')) {
+            throw new Error('invalid argument')
+          }
 
-        return ds.record
-          .observe((value || '') + (name || ''))
-          .pipe(
-            rx.map(val => path ? get(val, path) : val)
-          )
-      },
-      lower: () => value => value.toLowerCase(),
-      upper: () => value => value.toUpperCase(),
-      match: (...args) => {
-        if (args.some(val => typeof val !== 'string')) {
-          throw new Error('invalid argument')
-        }
+          return value => value.match(new RegExp(...args))
+        },
+        capitalize: () => value => capitalize(value),
+        split: (delimiter) => value => value.split(delimiter),
+        title: () => value => startCase(value),
+        replace: (...args) => {
+          if (args.some(val => typeof val !== 'string')) {
+            throw new Error('invalid argument')
+          }
 
-        return value => value.match(new RegExp(...args))
-      },
-      capitalize: () => value => capitalize(value),
-      split: (delimiter) => value => value.split(delimiter),
-      title: () => value => startCase(value),
-      replace: (...args) => {
-        if (args.some(val => typeof val !== 'string')) {
-          throw new Error('invalid argument')
-        }
+          if (args.length === 3) {
+            const [ pattern, flags, str ] = args
+            return value => value.replace(new RegExp(pattern, flags), str)
+          } else if (args.length === 2) {
+            const [ a, b ] = args
+            return value => value.replace(a, b)
+          } else {
+            throw new Error('invalid argument')
+          }
+        },
+        padStart: (...args) => value => value.padStart(...args),
+        padEnd: (...args) => value => value.padEnd(...args),
+        charAt: (...args) => value => value.charAt(...args),
+        startsWith: () => value => value.startsWith(),
+        endsWith: () => value => value.endsWith(),
+        includes: () => value => value.includes(),
+        trim: () => value => value.trim(),
+        trimStart: () => value => value.trimStart(),
+        trimEnd: () => value => value.trimEnd(),
+        trimLeft: () => value => value.trimLeft(),
+        trimRight: () => value => value.trimRight(),
+        truncate: (length = 255, killwords = false, end = '...', leeway = 0) => value => {
+          const s = String(value)
 
-        if (args.length === 3) {
-          const [ pattern, flags, str ] = args
-          return value => value.replace(new RegExp(pattern, flags), str)
-        } else if (args.length === 2) {
-          const [ a, b ] = args
-          return value => value.replace(a, b)
-        } else {
-          throw new Error('invalid argument')
-        }
-      },
-      trim: () => value => value.trim(),
-      trimLeft: () => value => value.trimLeft(),
-      trimRight: () => value => value.trimRight(),
-      truncate: (length = 255, killwords = false, end = '...', leeway = 0) => value => {
-        const s = String(value)
+          if (length < end.length) {
+            length = end.length
+          }
 
-        if (length < end.length) {
-          length = end.length
-        }
+          if (leeway < 0) {
+            leeway = 0
+          }
 
-        if (leeway < 0) {
-          leeway = 0
-        }
+          if (s.length <= length + leeway) {
+            return s
+          }
 
-        if (s.length <= length + leeway) {
+          if (killwords) {
+            return s.slice(0, length - end.length) + end
+          }
+
           return s
-        }
-
-        if (killwords) {
-          return s.slice(0, length - end.length) + end
-        }
-
-        return s
-          .slice(0, length - end.length)
-          .trimRight()
-          .split(' ')
-          .slice(0, -1)
-          .join(' ') + end
-      },
-      wordcount: () => value => Observable.of(words(value).length)
-    }),
+            .slice(0, length - end.length)
+            .trimRight()
+            .split(' ')
+            .slice(0, -1)
+            .join(' ') + end
+        },
+        wordcount: () => value => Observable.of(words(value).length)
+      }
+    ),
     // array
-    ...check(value => Array.isArray(value), 'expected array', {
-      slice: (start, end) => value => value.slice(start, end),
-      reverse: () => value => [...value].reverse(),
-      join: (delimiter) => value => value.join(delimiter),
-      first: () => value => value[0],
-      last: () => value => value[value.length - 1],
-      length: () => value => value.length,
-      sort: () => value => [...value].sort(),
-      sum: () => value => value.reduce((a, b) => a + b, 0),
-      unique: () => value => uniq(value),
-      flatten: () => value => flatten(value)
-    }),
+    ...check(
+      value => Array.isArray(value) ? value : [],
+      value => Array.isArray(value),
+      'expected array',
+      {
+        slice: (start, end) => value => value.slice(start, end),
+        reverse: () => value => [ ...value ].reverse(),
+        join: (delimiter) => value => value.join(delimiter),
+        first: () => value => value[0],
+        last: () => value => value[value.length - 1],
+        length: () => value => value.length,
+        sort: () => value => [ ...value ].sort(),
+        sum: () => value => value.reduce((a, b) => a + b, 0),
+        unique: () => value => uniq(value),
+        uniq: () => value => uniq(value),
+        flatten: (depth = 1) => value => flattenDepth(value, depth),
+        flattenDeep: () => value => flattenDeep(value)
+      }
+    ),
     // collection
-    ...check(value => Array.isArray(value) || isPlainObject(value), 'expected collection', {
-      pluck: (path) => value => get(value, path),
-      map: (filterName, ...args) => value => {
-        const filter = FILTERS[filterName]
+    ...check(
+      value => Array.isArray(value) || isPlainObject(value) ? value : [],
+      value => Array.isArray(value) || isPlainObject(value),
+      'expected collection',
+      {
+        pluck: (path) => value => get(value, path),
+        values: () => value => Object.values(value),
+        keys: () => value => Object.keys(value),
+        entries: () => value => Object.entries(value),
+        map: (filterName, ...args) => value => {
+          const filter = FILTERS[filterName]
 
-        if (!filter) {
+          if (!filter) {
+            return Observable.of(value)
+          }
+
+          if (Array.isArray(value)) {
+            return value.length === 0
+              ? Observable.of([])
+              : Observable.combineLatest(value.map(x => filter(...args)(x)))
+          }
+
+          // like lodash mapValues
+          if (isPlainObject(value)) {
+            const entries = Object.entries(value)
+
+            if (entries.length === 0) {
+              return Observable.of({})
+            }
+
+            const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
+              rx.map(x => [k, x])
+            ))
+
+            return Observable.combineLatest(pair$s).pipe(rx.map(fromPairs))
+          }
+
+          return Observable.of(value)
+        },
+        select: (filterName, ...args) => value => {
+          const filter = filterName ? FILTERS[filterName] : FILTERS.boolean
+
+          if (!filter) {
+            throw new Error(`unexpected filter in select(): ${filterName}`)
+          }
+
+          if (Array.isArray(value)) {
+            if (value.length === 0) {
+              return Observable.of([])
+            }
+
+            return Observable
+              .combineLatest(value.map(x => filter(...args)(x).pipe(
+                rx.map(ok => ok ? [x] : [])
+              ))).pipe(
+                rx.map(flatten)
+              )
+          }
+
+          // like lodash pickBy
+          if (isPlainObject(value)) {
+            const entries = Object.entries(value)
+
+            if (entries.length === 0) {
+              return Observable.of({})
+            }
+
+            const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
+              rx.map(ok => ok ? [k, v] : [])
+            ))
+
+            return Observable.combineLatest(pair$s).pipe(
+              rx.map(fromPairs)
+            )
+          }
+
           return Observable.of(value)
         }
-
-        if (Array.isArray(value)) {
-          return value.length === 0
-            ? Observable.of([])
-            : Observable.combineLatest(value.map(x => filter(...args)(x)))
-        }
-
-        // like lodash mapValues
-        if (isPlainObject(value)) {
-          const entries = Object.entries(value)
-
-          if (entries.length === 0) {
-            return Observable.of({})
-          }
-
-          const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
-            rx.map(x => [k, x])
-          ))
-
-          return Observable.combineLatest(pair$s).pipe(rx.map(fromPairs))
-        }
-
-        return Observable.of(value)
-      },
-      select: (filterName, ...args) => value => {
-        const filter = filterName ? FILTERS[filterName] : FILTERS.boolean
-
-        if (!filter) {
-          throw new Error(`unexpected filter in select(): ${filterName}`)
-        }
-
-        if (Array.isArray(value)) {
-          if (value.length === 0) {
-            return Observable.of([])
-          }
-
-          return Observable
-            .combineLatest(value.map(x => filter(...args)(x).pipe(
-              rx.map(ok => ok ? [x] : [])
-            ))).pipe(
-              rx.map(flatten)
-            )
-        }
-
-        // like lodash pickBy
-        if (isPlainObject(value)) {
-          const entries = Object.entries(value)
-
-          if (entries.length === 0) {
-            return Observable.of({})
-          }
-
-          const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
-            rx.map(ok => ok ? [k, v] : [])
-          ))
-
-          return Observable.combineLatest(pair$s).pipe(
-            rx.map(fromPairs)
-          )
-        }
-
-        return Observable.of(value)
       }
-    })
+    )
   })
 
   const [ basePath, ...filters ] = expression.trim().split(/\s*\|\s*/)
@@ -318,7 +360,7 @@ function onParseExpression (expression, context, options) {
 
           const args = argsStr
             .split(/\s*,\s*/)
-            .map(JSON6.parse)
+            .map(JSON5.parse)
 
           return filter(...args)(value)
         })
