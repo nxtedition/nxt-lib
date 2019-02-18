@@ -386,11 +386,12 @@ function onParseExpression (expression, context, options) {
             throw new Error(`unexpected filter: ${filterName}`)
           }
 
-          const args = argsStr
-            ? argsStr
-              .split(/\s*,\s*/)
-              .map(JSON5.parse)
+          const tokens = argsStr
+            ? argsStr.split(/\s*,\s*/)
             : []
+
+          const args = tokens
+            .map(x => x ? JSON5.parse(x) : x)
 
           return filter(...args)(value)
         })
