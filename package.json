@@ -65,6 +65,7 @@
     "balanced-match": "^1.0.0",
     "http-errors": "^1.7.1",
     "json-6": "^1.0.2",
+    "json5": "^2.1.0",
     "lodash": "^4.17.11",
     "merge-ranges": "^1.0.2",
     "moment": "^2.23.0",

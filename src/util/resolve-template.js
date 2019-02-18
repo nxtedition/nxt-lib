@@ -2,7 +2,7 @@ const balanced = require('balanced-match')
 const moment = require('moment')
 const rx = require('rxjs/operators')
 const Observable = require('rxjs')
-const JSON5 = require('json-5')
+const JSON5 = require('json5')
 const get = require('lodash/get')
 const isEqual = require('lodash/isEqual')
 const isPlainObject = require('lodash/isPlainObject')
@@ -206,7 +206,6 @@ function onParseExpression (expression, context, options) {
         charAt: (...args) => value => value.charAt(...args),
         startsWith: () => value => value.startsWith(),
         endsWith: () => value => value.endsWith(),
-        includes: (...args) => value => value.includes(...args),
         trim: () => value => value.trim(),
         trimStart: () => value => value.trimStart(),
         trimEnd: () => value => value.trimEnd(),
@@ -240,6 +239,12 @@ function onParseExpression (expression, context, options) {
         },
         wordcount: () => value => Observable.of(words(value).length)
       }
+    ),
+    ...check(
+      value => Array.isArray(value) || typeof value === 'string' ? value : [],
+      value => value.includes,
+      'expected string or array',
+      (...args) => value => value.includes(...args)
     ),
     // array
     ...check(
