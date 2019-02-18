@@ -286,6 +286,7 @@ function onParseExpression (expression, context, options) {
       value => Array.isArray(value) || isPlainObject(value),
       {
         pluck: (path) => value => get(value, path),
+        get: (path) => value => get(value, path),
         values: () => value => Object.values(value),
         keys: () => value => Object.keys(value),
         entries: () => value => Object.entries(value),
