@@ -60,27 +60,19 @@ function onResolveTemplate (template, context, options = {}) {
   }
 }
 
-function asObservable (obj) {
-  return mapValues(obj, (factory) => (...args) => {
-    const fn = factory(...args)
-    return value => {
-      try {
-        const res = fn(value)
-        return Observable.isObservable(res) ? res : Observable.of(res)
-      } catch (err) {
-        return null
-      }
-    }
-  })
-}
-
 function asFilter (transform, pred, obj) {
   return mapValues(obj, (factory) => (...args) => {
-    const fn = factory(...args)
+    const filter = factory(...args)
     return value => {
       try {
         value = transform ? transform(value) : value
-        return !pred || pred(value) ? fn(value) : null
+        value = !pred || pred(value) ? filter(value) : null
+
+        if (Observable.isObservable(value)) {
+          return value.pipe(rx.catchError(() => Observable.of(null)))
+        }
+
+        return Observable.of(value)
       } catch (err) {
         return null
       }
@@ -92,7 +84,7 @@ function onParseExpression (expression, context, options) {
   const ds = options ? options.ds : null
 
   // DOCS inspiration; http://jinja.pocoo.org/docs/2.10/templates/#builtin-filters
-  const FILTERS = asObservable({
+  const FILTERS = {
     // any
     ...asFilter(
       null,
@@ -392,7 +384,7 @@ function onParseExpression (expression, context, options) {
         }
       }
     )
-  })
+  }
 
   const [ basePath, ...filters ] = expression.trim().split(/\s*\|\s*/)
   const baseValue = get(context, basePath)
