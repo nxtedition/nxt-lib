@@ -105,11 +105,15 @@ function onParseExpression (expression, context, options) {
         number: () => value => Number(value),
         date: (...args) => value => moment(value, ...args),
         array: () => value => [ value ],
-        int: (fallback, radix) => value => {
+        int: (fallback = null, radix) => value => {
+          // TODO (fix): Validate arguments...
+
           const int = parseInt(value, radix)
           return Number.isFinite(int) ? int : fallback
         },
-        float: (fallback) => value => {
+        float: (fallback = null) => value => {
+          // TODO (fix): Validate arguments...
+
           const float = parseFloat(value)
           return Number.isFinite(float) ? float : fallback
         },
@@ -161,7 +165,11 @@ function onParseExpression (expression, context, options) {
       value => moment(value),
       value => value.isValid(),
       {
-        moment: (...args) => value => value.format(...args)
+        moment: (...args) => {
+          // TODO (fix): Validate arguments...
+
+          return value => value.format(...args)
+        }
       }
     ),
     // string
@@ -173,16 +181,22 @@ function onParseExpression (expression, context, options) {
         fromjson5: () => value => JSON5.parse(value),
         append: (post) => value => value + post,
         prepend: (pre) => value => pre + value,
-        ds: (name, path) => value => ds
-          ? ds.record
-            .observe((value || '') + (name || ''))
-            .pipe(
-              rx.map(val => path ? get(val, path) : val)
-            )
-          : null,
+        ds: (name, path) => {
+          // TODO (fix): Validate arguments...
+
+          return value => ds
+            ? ds.record
+              .observe((value || '') + (name || ''))
+              .pipe(
+                rx.map(val => path ? get(val, path) : val)
+              )
+            : null
+        },
         lower: () => value => value.toLowerCase(),
         upper: () => value => value.toUpperCase(),
         match: (...args) => {
+          // TODO (fix): Validate argument count...
+
           if (args.some(val => typeof val !== 'string')) {
             throw new Error('invalid argument')
           }
@@ -193,6 +207,8 @@ function onParseExpression (expression, context, options) {
         split: (delimiter) => value => value.split(delimiter),
         title: () => value => startCase(value),
         replace: (...args) => {
+          // TODO (fix): Validate argument count...
+
           if (args.some(val => typeof val !== 'string')) {
             throw new Error('invalid argument')
           }
@@ -218,6 +234,8 @@ function onParseExpression (expression, context, options) {
         trimLeft: () => value => value.trimLeft(),
         trimRight: () => value => value.trimRight(),
         truncate: (length = 255, killwords = false, end = '...', leeway = 0) => value => {
+          // TODO (fix): Validate arguments...
+
           const s = String(value)
 
           if (length < end.length) {
@@ -280,6 +298,8 @@ function onParseExpression (expression, context, options) {
         keys: () => value => Object.keys(value),
         entries: () => value => Object.entries(value),
         map: (filterName, ...args) => {
+          // TODO (fix): Validate arguments...
+
           const filter = FILTERS[filterName]
 
           if (!filter) {
@@ -318,6 +338,8 @@ function onParseExpression (expression, context, options) {
           }
         },
         select: (filterName, ...args) => {
+          // TODO (fix): Validate arguments...
+
           const filter = FILTERS[filterName]
 
           if (!filter) {
