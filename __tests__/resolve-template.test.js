@@ -36,10 +36,6 @@ test('ds', async () => {
 })
 
 describe('map', () => {
-  test('treats empty call as noop', async () => {
-    expect(await resolveTemplate(`{{ test | map() }}`, { test: [] })).toMatchObject([])
-    expect(await resolveTemplate(`{{ test | map() }}`, { test: [ 1 ] })).toMatchObject([ 1 ])
-  })
   test('maps arrays', async () => {
     expect(await resolveTemplate(`{{ test | map('mul', 2) }}`, { test: [ 1 ] })).toMatchObject([ 2 ])
   })
@@ -49,9 +45,6 @@ describe('map', () => {
 })
 
 describe('select', () => {
-  test('treats empty call as Boolean filter', async () => {
-    expect(await resolveTemplate(`{{ test | select() }}`, { test: [ 1 ] })).toMatchObject([ 1 ])
-  })
   test('filters arrays', async () => {
     expect(await resolveTemplate(`{{ test | select('ge', 2) }}`, { test: [ 1, 2 ] })).toMatchObject([ 2 ])
   })

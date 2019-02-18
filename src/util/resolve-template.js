@@ -30,34 +30,30 @@ module.exports.resolveTemplate = async function (template, context, options = {}
 // TODO (perf): Optimize.
 // TODO (fix): Error handling.
 function onResolveTemplate (template, context, options = {}) {
-  try {
-    const match = balanced('{{', '}}', template)
-    if (!match) {
-      return Observable.of(template)
-    }
-
-    const { pre, body, post } = match
-
-    return onResolveTemplate(body, context, options)
-      .pipe(
-        rx.switchMap(expr => onParseExpression(expr, context, options)),
-        rx.switchMap(value => {
-          if (!pre && !post) {
-            return Observable.of(value)
-          }
-
-          if (value == null) {
-            value = ''
-          } else if (Array.isArray(value) || isPlainObject(value)) {
-            value = JSON.stringify(value)
-          }
-
-          return onResolveTemplate(`${pre}${value}${post}`, context, options)
-        })
-      )
-  } catch (err) {
-    return Observable.throwError(err)
+  const match = balanced('{{', '}}', template)
+  if (!match) {
+    return Observable.of(template)
   }
+
+  const { pre, body, post } = match
+
+  return onResolveTemplate(body, context, options)
+    .pipe(
+      rx.switchMap(expr => onParseExpression(expr, context, options)),
+      rx.switchMap(value => {
+        if (!pre && !post) {
+          return Observable.of(value)
+        }
+
+        if (value == null) {
+          value = ''
+        } else if (Array.isArray(value) || isPlainObject(value)) {
+          value = JSON.stringify(value)
+        }
+
+        return onResolveTemplate(`${pre}${value}${post}`, context, options)
+      })
+    )
 }
 
 function asObservable (obj) {
@@ -68,18 +64,26 @@ function asObservable (obj) {
         const res = fn(value)
         return Observable.isObservable(res) ? res : Observable.of(res)
       } catch (err) {
-        return Observable.throwError(err)
+        return null
       }
     }
   })
 }
 
-function check (transform, pred, msg, obj) {
+function asFilter (transform, pred, obj) {
   return mapValues(obj, (factory) => (...args) => {
-    const fn = factory(...args)
-    return value => {
-      value = transform ? transform(value) : value
-      return !pred || pred(value) ? fn(value) : Observable.throwError(msg)
+    try {
+      const fn = factory(...args)
+      return value => {
+        try {
+          value = transform ? transform(value) : value
+          return !pred || pred(value) ? fn(value) : null
+        } catch (err) {
+          return null
+        }
+      }
+    } catch (err) {
+      return null
     }
   })
 }
@@ -90,39 +94,44 @@ function onParseExpression (expression, context, options) {
   // DOCS inspiration; http://jinja.pocoo.org/docs/2.10/templates/#builtin-filters
   const FILTERS = asObservable({
     // any
-    boolean: () => value => Boolean(value),
-    tojson: (indent) => value => JSON.stringify(value, null, indent),
-    tojson5: () => value => JSON5.stringify(value),
-    string: () => value => String(value),
-    number: () => value => Number(value),
-    date: (...args) => value => moment(value, ...args),
-    array: () => value => [ value ],
-    int: (fallback, radix) => value => {
-      const int = parseInt(value, radix)
-      return Number.isFinite(int) ? int : fallback
-    },
-    float: (fallback) => value => {
-      const float = parseFloat(value)
-      return Number.isFinite(float) ? float : fallback
-    },
-    default: (defaultValue, notJustNully) => value =>
-      notJustNully
-        ? (!value ? defaultValue : value)
-        : (value == null ? defaultValue : value),
-    eq: (x) => value => value === x,
-    ne: (x) => value => value !== x,
-    isDate: () => value => value instanceof Date,
-    isArray: () => value => Array.isArray(value),
-    isEqual: (x) => value => isEqual(value, x),
-    isNil: () => value => value == null,
-    isNumber: () => value => Number.isFinite(value),
-    isString: () => value => isString(value),
-    ternary: (a, b) => value => value ? a : b,
+    ...asFilter(
+      null,
+      null,
+      {
+        boolean: () => value => Boolean(value),
+        tojson: (indent) => value => JSON.stringify(value, null, indent),
+        tojson5: () => value => JSON5.stringify(value),
+        string: () => value => String(value),
+        number: () => value => Number(value),
+        date: (...args) => value => moment(value, ...args),
+        array: () => value => [ value ],
+        int: (fallback, radix) => value => {
+          const int = parseInt(value, radix)
+          return Number.isFinite(int) ? int : fallback
+        },
+        float: (fallback) => value => {
+          const float = parseFloat(value)
+          return Number.isFinite(float) ? float : fallback
+        },
+        default: (defaultValue, notJustNully) => value =>
+          notJustNully
+            ? (!value ? defaultValue : value)
+            : (value == null ? defaultValue : value),
+        eq: (x) => value => value === x,
+        ne: (x) => value => value !== x,
+        isDate: () => value => value instanceof Date,
+        isArray: () => value => Array.isArray(value),
+        isEqual: (x) => value => isEqual(value, x),
+        isNil: () => value => value == null,
+        isNumber: () => value => Number.isFinite(value),
+        isString: () => value => isString(value),
+        ternary: (a, b) => value => value ? a : b
+      }
+    ),
     // number
-    ...check(
+    ...asFilter(
       value => Number(value),
       value => Number.isFinite(value),
-      'expected number',
       {
         le: (x) => value => value <= x,
         lt: (x) => value => value < x,
@@ -139,29 +148,26 @@ function onParseExpression (expression, context, options) {
         ceil: () => value => Math.ceil(value)
       }
     ),
-    ...check(
+    ...asFilter(
       value => (Array.isArray(value) ? value : [ value ]).map(x => Number(x)).filter(x => Number.isFinite(x)),
       value => value.every(x => Number.isFinite(x)),
-      'expected array or number',
       {
         min: (...args) => value => Math.min(...value, ...args),
         max: (...args) => value => Math.max(...value, ...args)
       }
     ),
     // date
-    ...check(
+    ...asFilter(
       value => moment(value),
       value => value.isValid(),
-      'expected date',
       {
         moment: (...args) => value => value.format(...args)
       }
     ),
     // string
-    ...check(
+    ...asFilter(
       value => value == null || isPlainObject(value) || Array.isArray(value) ? '' : String(value),
       value => typeof value === 'string',
-      'expected string',
       {
         fromjson: () => value => JSON.parse(value),
         fromjson5: () => value => JSON5.parse(value),
@@ -240,17 +246,15 @@ function onParseExpression (expression, context, options) {
         wordcount: () => value => Observable.of(words(value).length)
       }
     ),
-    ...check(
+    ...asFilter(
       value => Array.isArray(value) || typeof value === 'string' ? value : [],
       value => value.includes,
-      'expected string or array',
       (...args) => value => value.includes(...args)
     ),
     // array
-    ...check(
+    ...asFilter(
       value => Array.isArray(value) ? value : [],
       value => Array.isArray(value),
-      'expected array',
       {
         slice: (start, end) => value => value.slice(start, end),
         reverse: () => value => [ ...value ].reverse(),
@@ -267,83 +271,102 @@ function onParseExpression (expression, context, options) {
       }
     ),
     // collection
-    ...check(
+    ...asFilter(
       value => Array.isArray(value) || isPlainObject(value) ? value : [],
       value => Array.isArray(value) || isPlainObject(value),
-      'expected collection',
       {
         pluck: (path) => value => get(value, path),
         values: () => value => Object.values(value),
         keys: () => value => Object.keys(value),
         entries: () => value => Object.entries(value),
-        map: (filterName, ...args) => value => {
+        map: (filterName, ...args) => {
           const filter = FILTERS[filterName]
 
           if (!filter) {
+            throw new Error('invalid argument')
+          }
+
+          return value => {
+            const filter = FILTERS[filterName]
+
+            if (!filter) {
+              return Observable.of(value)
+            }
+
+            if (Array.isArray(value)) {
+              return value.length === 0
+                ? Observable.of([])
+                : Observable.combineLatest(value.map(x => filter(...args)(x)))
+            }
+
+            // like lodash mapValues
+            if (isPlainObject(value)) {
+              const entries = Object.entries(value)
+
+              if (entries.length === 0) {
+                return Observable.of({})
+              }
+
+              const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
+                rx.map(x => [k, x])
+              ))
+
+              return Observable.combineLatest(pair$s).pipe(rx.map(fromPairs))
+            }
+
             return Observable.of(value)
           }
-
-          if (Array.isArray(value)) {
-            return value.length === 0
-              ? Observable.of([])
-              : Observable.combineLatest(value.map(x => filter(...args)(x)))
-          }
-
-          // like lodash mapValues
-          if (isPlainObject(value)) {
-            const entries = Object.entries(value)
-
-            if (entries.length === 0) {
-              return Observable.of({})
-            }
-
-            const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
-              rx.map(x => [k, x])
-            ))
-
-            return Observable.combineLatest(pair$s).pipe(rx.map(fromPairs))
-          }
-
-          return Observable.of(value)
         },
-        select: (filterName, ...args) => value => {
-          const filter = filterName ? FILTERS[filterName] : FILTERS.boolean
+        select: (filterName, ...args) => {
+          const filter = FILTERS[filterName]
 
           if (!filter) {
-            throw new Error(`unexpected filter in select(): ${filterName}`)
+            throw new Error('invalid argument')
           }
 
-          if (Array.isArray(value)) {
-            if (value.length === 0) {
-              return Observable.of([])
+          return value => {
+            if (Array.isArray(value)) {
+              if (value.length === 0) {
+                return []
+              }
+
+              return Observable
+                .combineLatest(value
+                  .map(x => filter(...args)(x)
+                    .pipe(
+                      rx.map(ok => ok ? [ x ] : [])
+                    )
+                  )
+                )
+                .pipe(
+                  rx.map(flatten)
+                )
             }
 
-            return Observable
-              .combineLatest(value.map(x => filter(...args)(x).pipe(
-                rx.map(ok => ok ? [x] : [])
-              ))).pipe(
-                rx.map(flatten)
-              )
-          }
+            // like lodash pickBy
+            if (isPlainObject(value)) {
+              const entries = Object.entries(value)
 
-          // like lodash pickBy
-          if (isPlainObject(value)) {
-            const entries = Object.entries(value)
+              if (entries.length === 0) {
+                return {}
+              }
 
-            if (entries.length === 0) {
-              return Observable.of({})
+              const pair$s = entries
+                .map(([k, v]) => filter(...args)(v)
+                  .pipe(
+                    rx.map(ok => ok ? [k, v] : [])
+                  )
+                )
+
+              return Observable
+                .combineLatest(pair$s)
+                .pipe(
+                  rx.map(fromPairs)
+                )
             }
 
-            const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
-              rx.map(ok => ok ? [k, v] : [])
-            ))
-
-            return Observable.combineLatest(pair$s).pipe(
-              rx.map(fromPairs)
-            )
+            return value
           }
-
-          return Observable.of(value)
         }
       }
     )
@@ -364,8 +387,10 @@ function onParseExpression (expression, context, options) {
           }
 
           const args = argsStr
-            .split(/\s*,\s*/)
-            .map(JSON5.parse)
+            ? argsStr
+              .split(/\s*,\s*/)
+              .map(JSON5.parse)
+            : []
 
           return filter(...args)(value)
         })
