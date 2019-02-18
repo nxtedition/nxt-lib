@@ -60,13 +60,13 @@ function onResolveTemplate (template, context, options = {}) {
   }
 }
 
-function asFilter (transform, pred, obj) {
+function asFilter (transform, predicate, obj) {
   return mapValues(obj, (factory) => (...args) => {
     const filter = factory(...args)
     return value => {
       try {
         value = transform ? transform(value) : value
-        value = !pred || pred(value) ? filter(value) : null
+        value = !predicate || predicate(value) ? filter(value) : null
 
         if (Observable.isObservable(value)) {
           return value.pipe(rx.catchError(() => Observable.of(null)))
