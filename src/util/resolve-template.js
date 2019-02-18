@@ -30,30 +30,34 @@ module.exports.resolveTemplate = async function (template, context, options = {}
 // TODO (perf): Optimize.
 // TODO (fix): Error handling.
 function onResolveTemplate (template, context, options = {}) {
-  const match = balanced('{{', '}}', template)
-  if (!match) {
-    return Observable.of(template)
+  try {
+    const match = balanced('{{', '}}', template)
+    if (!match) {
+      return Observable.of(template)
+    }
+
+    const { pre, body, post } = match
+
+    return onResolveTemplate(body, context, options)
+      .pipe(
+        rx.switchMap(expr => onParseExpression(expr, context, options)),
+        rx.switchMap(value => {
+          if (!pre && !post) {
+            return Observable.of(value)
+          }
+
+          if (value == null) {
+            value = ''
+          } else if (Array.isArray(value) || isPlainObject(value)) {
+            value = JSON.stringify(value)
+          }
+
+          return onResolveTemplate(`${pre}${value}${post}`, context, options)
+        })
+      )
+  } catch (err) {
+    return Observable.throwError(err)
   }
-
-  const { pre, body, post } = match
-
-  return onResolveTemplate(body, context, options)
-    .pipe(
-      rx.switchMap(expr => onParseExpression(expr, context, options)),
-      rx.switchMap(value => {
-        if (!pre && !post) {
-          return Observable.of(value)
-        }
-
-        if (value == null) {
-          value = ''
-        } else if (Array.isArray(value) || isPlainObject(value)) {
-          value = JSON.stringify(value)
-        }
-
-        return onResolveTemplate(`${pre}${value}${post}`, context, options)
-      })
-    )
 }
 
 function asObservable (obj) {
