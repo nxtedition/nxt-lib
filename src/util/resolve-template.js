@@ -304,34 +304,33 @@ const getCompiler = memoize((ds) => {
   }, { max: 1024 })
 
   return memoize(function (expression) {
-    const [ basePath, ...filters ] = expression.trim().split(/\s*\|\s*/)
-    return [
-      basePath,
-      filters.map(getFilter)
-    ]
+    const [ basePath, ...tokens ] = expression.trim().split(/\s*\|\s*/)
+    const filters = tokens.map(getFilter)
+
+    return (context) => {
+      const baseValue = get(context, basePath)
+
+      function reduce (value, index, filters) {
+        while (index < filters.length) {
+          value = filters[index++](value)
+          if (Observable.isObservable(value)) {
+            return value
+              .pipe(
+                rx.switchMap(value => reduce(value, index, filters)),
+                rx.catchError(() => Observable.of(null))
+              )
+          }
+        }
+        return Observable.of(value)
+      }
+
+      return reduce(baseValue, 0, filters)
+    }
   }, { max: 1024 })
 }, { max: 1 })
 
 function onParseExpression (expression, context, options) {
   // DOCS inspiration; http://jinja.pocoo.org/docs/2.10/templates/#builtin-filters
   const compile = getCompiler(options ? options.ds : null)
-
-  const [ basePath, filters ] = compile(expression)
-  const baseValue = get(context, basePath)
-
-  function reduce (value, index, filters) {
-    while (index < filters.length) {
-      value = filters[index++](value)
-      if (Observable.isObservable(value)) {
-        return value
-          .pipe(
-            rx.switchMap(value => reduce(value, index, filters)),
-            rx.catchError(() => Observable.of(null))
-          )
-      }
-    }
-    return Observable.of(value)
-  }
-
-  return reduce(baseValue, 0, filters)
+  return compile(expression)(context)
 }
