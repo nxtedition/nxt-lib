@@ -21,13 +21,15 @@ function onResolveTemplate (template, context, options = {}) {
       return Observable.of(template)
     }
 
+    const compile = getCompiler(options ? options.ds : null)
+
     // TODO (perf): Pre-compile
 
     const { pre, body, post } = match
 
     return onResolveTemplate(body, context, options)
       .pipe(
-        rx.switchMap(expr => onParseExpression(expr, context, options)),
+        rx.switchMap(expr => compile(expr)(context)),
         rx.switchMap(value => {
           if (!pre && !post) {
             return Observable.of(value)
@@ -45,10 +47,4 @@ function onResolveTemplate (template, context, options = {}) {
   } catch (err) {
     return Observable.throwError(err)
   }
-}
-
-function onParseExpression (expression, context, options) {
-  // DOCS inspiration; http://jinja.pocoo.org/docs/2.10/templates/#builtin-filters
-  const compile = getCompiler(options ? options.ds : null)
-  return compile(expression)(context)
 }
