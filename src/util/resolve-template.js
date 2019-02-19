@@ -81,7 +81,7 @@ function asFilter (transform, predicate, obj) {
   })
 }
 
-const getFactories = memoize((ds) => {
+const getCompiler = memoize((ds) => {
   const FILTERS = {
     // any
     ...asFilter(
@@ -384,46 +384,46 @@ const getFactories = memoize((ds) => {
       }
     )
   }
-  return FILTERS
+
+  const getFilter = memoize(function (filterStr) {
+    const [ , filterName, argsStr ] = filterStr.match(/([^(]+)\((.*)\)/) || []
+
+    const tokens = argsStr
+      ? argsStr.split(/\s*,\s*/)
+      : []
+
+    const args = tokens
+      .map(x => x ? JSON5.parse(x) : x)
+
+    const factory = FILTERS[filterName]
+
+    if (!factory) {
+      throw new Error(`unexpected filter: ${filterName}`)
+    }
+
+    return factory(...args)
+  }, { max: 1024 })
+
+  return memoize(function (expression) {
+    const [ basePath, ...filters ] = expression.trim().split(/\s*\|\s*/)
+    return [
+      basePath,
+      filters.map(getFilter)
+    ]
+  }, { max: 1024 })
 }, { max: 1 })
-
-const getFilter = memoize(function (factories, filterName, argsStr) {
-  const tokens = argsStr
-    ? argsStr.split(/\s*,\s*/)
-    : []
-
-  const args = tokens
-    .map(x => x ? JSON5.parse(x) : x)
-
-  const factory = factories[filterName]
-
-  if (!factory) {
-    throw new Error(`unexpected filter: ${filterName}`)
-  }
-
-  return factory(...args)
-}, { max: 1024 })
 
 function onParseExpression (expression, context, options) {
   // DOCS inspiration; http://jinja.pocoo.org/docs/2.10/templates/#builtin-filters
-  const factories = getFactories(options ? options.ds : null)
+  const compile = getCompiler(options ? options.ds : null)
 
-  const [ basePath, ...filters ] = expression.trim().split(/\s*\|\s*/)
+  const [ basePath, filters ] = compile(expression)
   const baseValue = get(context, basePath)
 
   return filters
-    .map(filter => filter.match(/([^(]+)\((.*)\)/) || [])
-    .reduce((value$, [ , filterName, argsStr ]) => value$
+    .reduce((value$, filter) => value$
       .pipe(
-        rx.switchMap(value => {
-          const filter = getFilter(factories, filterName, argsStr)
-
-          if (!filter) {
-            throw new Error(`unexpected filter: ${filterName}`)
-          }
-
-          return filter(value)
-        })
+        rx.switchMap(value => filter(value))
       ), Observable.of(baseValue)
     )
 }
