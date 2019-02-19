@@ -16,6 +16,7 @@ const startCase = require('lodash/startCase')
 const uniq = require('lodash/uniq')
 const mapValues = require('lodash/mapValues')
 const words = require('lodash/words')
+const memoize = require('memoizee')
 
 module.exports.onResolveTemplate = onResolveTemplate
 
@@ -80,10 +81,7 @@ function asFilter (transform, predicate, obj) {
   })
 }
 
-function onParseExpression (expression, context, options) {
-  const ds = options ? options.ds : null
-
-  // DOCS inspiration; http://jinja.pocoo.org/docs/2.10/templates/#builtin-filters
+const getFactories = memoize((ds) => {
   const FILTERS = {
     // any
     ...asFilter(
@@ -386,6 +384,29 @@ function onParseExpression (expression, context, options) {
       }
     )
   }
+  return FILTERS
+}, { max: 1 })
+
+const getFilter = memoize(function (factories, filterName, argsStr) {
+  const tokens = argsStr
+    ? argsStr.split(/\s*,\s*/)
+    : []
+
+  const args = tokens
+    .map(x => x ? JSON5.parse(x) : x)
+
+  const factory = factories[filterName]
+
+  if (!factory) {
+    throw new Error(`unexpected filter: ${filterName}`)
+  }
+
+  return factory(...args)
+}, { max: 1024 })
+
+function onParseExpression (expression, context, options) {
+  // DOCS inspiration; http://jinja.pocoo.org/docs/2.10/templates/#builtin-filters
+  const factories = getFactories(options ? options.ds : null)
 
   const [ basePath, ...filters ] = expression.trim().split(/\s*\|\s*/)
   const baseValue = get(context, basePath)
@@ -395,20 +416,13 @@ function onParseExpression (expression, context, options) {
     .reduce((value$, [ , filterName, argsStr ]) => value$
       .pipe(
         rx.switchMap(value => {
-          const filter = FILTERS[filterName]
+          const filter = getFilter(factories, filterName, argsStr)
 
           if (!filter) {
             throw new Error(`unexpected filter: ${filterName}`)
           }
 
-          const tokens = argsStr
-            ? argsStr.split(/\s*,\s*/)
-            : []
-
-          const args = tokens
-            .map(x => x ? JSON5.parse(x) : x)
-
-          return filter(...args)(value)
+          return filter(value)
         })
       ), Observable.of(baseValue)
     )
