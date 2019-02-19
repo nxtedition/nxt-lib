@@ -34,21 +34,3 @@ test('ds', async () => {
   }
   expect(await resolveTemplate(`{{test | ds() | pluck('foo')}}`, { test: 'foo' }, { ds })).toBe('bar')
 })
-
-describe('map', () => {
-  test('maps arrays', async () => {
-    expect(await resolveTemplate(`{{ test | map('mul', 2) }}`, { test: [ 1 ] })).toMatchObject([ 2 ])
-  })
-  test('maps objects', async () => {
-    expect(await resolveTemplate(`{{ test | map('mul', 2) }}`, { test: { a: 1 } })).toMatchObject({ a: 2 })
-  })
-})
-
-describe('select', () => {
-  test('filters arrays', async () => {
-    expect(await resolveTemplate(`{{ test | select('ge', 2) }}`, { test: [ 1, 2 ] })).toMatchObject([ 2 ])
-  })
-  test('filters objects', async () => {
-    expect(await resolveTemplate(`{{ test | select('ge', 2) }}`, { test: { a: 1, b: 2 } })).toMatchObject({ b: 2 })
-  })
-})

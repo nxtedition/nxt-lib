@@ -7,9 +7,7 @@ const get = require('lodash/get')
 const isEqual = require('lodash/isEqual')
 const isPlainObject = require('lodash/isPlainObject')
 const isString = require('lodash/isString')
-const fromPairs = require('lodash/fromPairs')
 const flattenDepth = require('lodash/fp/flattenDepth')
-const flatten = require('lodash/fp/flatten')
 const flattenDeep = require('lodash/fp/flattenDeep')
 const capitalize = require('lodash/capitalize')
 const startCase = require('lodash/startCase')
@@ -67,15 +65,9 @@ function asFilter (transform, predicate, obj) {
     return value => {
       try {
         value = transform ? transform(value) : value
-        value = !predicate || predicate(value) ? filter(value) : null
-
-        if (Observable.isObservable(value)) {
-          return value.pipe(rx.catchError(() => Observable.of(null)))
-        }
-
-        return Observable.of(value)
+        return !predicate || predicate(value) ? filter(value) : null
       } catch (err) {
-        return Observable.of(null)
+        return null
       }
     }
   })
@@ -287,100 +279,7 @@ const getCompiler = memoize((ds) => {
         get: (path) => value => get(value, path),
         values: () => value => Object.values(value),
         keys: () => value => Object.keys(value),
-        entries: () => value => Object.entries(value),
-        map: (filterName, ...args) => {
-          // TODO (fix): Validate arguments...
-
-          const filter = FILTERS[filterName]
-
-          if (!filter) {
-            throw new Error('invalid argument')
-          }
-
-          return value => {
-            const filter = FILTERS[filterName]
-
-            if (!filter) {
-              return Observable.of(value)
-            }
-
-            if (Array.isArray(value)) {
-              return value.length === 0
-                ? Observable.of([])
-                : Observable.combineLatest(value.map(x => filter(...args)(x)))
-            }
-
-            // like lodash mapValues
-            if (isPlainObject(value)) {
-              const entries = Object.entries(value)
-
-              if (entries.length === 0) {
-                return Observable.of({})
-              }
-
-              const pair$s = entries.map(([k, v]) => filter(...args)(v).pipe(
-                rx.map(x => [k, x])
-              ))
-
-              return Observable.combineLatest(pair$s).pipe(rx.map(fromPairs))
-            }
-
-            return Observable.of(value)
-          }
-        },
-        select: (filterName, ...args) => {
-          // TODO (fix): Validate arguments...
-
-          const filter = FILTERS[filterName]
-
-          if (!filter) {
-            throw new Error('invalid argument')
-          }
-
-          return value => {
-            if (Array.isArray(value)) {
-              if (value.length === 0) {
-                return []
-              }
-
-              return Observable
-                .combineLatest(value
-                  .map(x => filter(...args)(x)
-                    .pipe(
-                      rx.map(ok => ok ? [ x ] : [])
-                    )
-                  )
-                )
-                .pipe(
-                  rx.map(flatten)
-                )
-            }
-
-            // like lodash pickBy
-            if (isPlainObject(value)) {
-              const entries = Object.entries(value)
-
-              if (entries.length === 0) {
-                return {}
-              }
-
-              const pair$s = entries
-                .map(([k, v]) => filter(...args)(v)
-                  .pipe(
-                    rx.map(ok => ok ? [k, v] : [])
-                  )
-                )
-
-              return Observable
-                .combineLatest(pair$s)
-                .pipe(
-                  rx.map(fromPairs)
-                )
-            }
-
-            return value
-          }
-        }
+        entries: () => value => Object.entries(value)
       }
     )
   }
@@ -420,10 +319,19 @@ function onParseExpression (expression, context, options) {
   const [ basePath, filters ] = compile(expression)
   const baseValue = get(context, basePath)
 
-  return filters
-    .reduce((value$, filter) => value$
-      .pipe(
-        rx.switchMap(value => filter(value))
-      ), Observable.of(baseValue)
-    )
+  function reduce (value, index, filters) {
+    while (index < filters.length) {
+      value = filters[index++](value)
+      if (Observable.isObservable(value)) {
+        return value
+          .pipe(
+            rx.switchMap(value => reduce(value, index, filters)),
+            rx.catchError(() => Observable.of(null))
+          )
+      }
+    }
+    return Observable.of(value)
+  }
+
+  return reduce(baseValue, 0, filters)
 }
