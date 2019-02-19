@@ -23,8 +23,6 @@ function onResolveTemplate (template, context, options = {}) {
 
     const compile = getCompiler(options ? options.ds : null)
 
-    // TODO (perf): Pre-compile
-
     const { pre, body, post } = match
 
     return onResolveTemplate(body, context, options)
