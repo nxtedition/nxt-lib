@@ -310,13 +310,13 @@ const getCompiler = memoize((ds) => {
     return (context) => {
       const baseValue = get(context, basePath)
 
-      function reduce (value, index, filters) {
+      function reduce (value, index) {
         while (index < filters.length) {
           value = filters[index++](value)
           if (Observable.isObservable(value)) {
             return value
               .pipe(
-                rx.switchMap(value => reduce(value, index, filters)),
+                rx.switchMap(value => reduce(value, index)),
                 rx.catchError(() => Observable.of(null))
               )
           }
@@ -324,7 +324,7 @@ const getCompiler = memoize((ds) => {
         return Observable.of(value)
       }
 
-      return reduce(baseValue, 0, filters)
+      return reduce(baseValue, 0)
     }
   }, { max: 1024 })
 }, { max: 1 })
