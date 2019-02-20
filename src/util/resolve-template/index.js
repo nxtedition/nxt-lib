@@ -62,7 +62,7 @@ const getTemplateCompiler = memoize(function (ds) {
 
 function onResolveTemplate (str, context, options = {}) {
   if (!str || !isString(str) || str.lastIndexOf('{{') === -1) {
-    return () => Observable.of(str)
+    return Observable.of(str)
   }
 
   try {
