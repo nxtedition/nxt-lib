@@ -19,18 +19,18 @@ module.exports.resolveTemplate = async function (template, context, options = {}
 const getTemplateCompiler = memoize(function (ds) {
   const compileExpression = getExpressionCompiler(ds)
 
-  return memoize(function compileTemplate (template, root = true) {
-    if (!template || !isString(template)) {
-      return () => Observable.of(template)
+  return memoize(function compileTemplate (str, isRoot = true) {
+    if (!str || !isString(str)) {
+      return () => Observable.of(str)
     }
 
-    const match = balanced('{{', '}}', template)
+    const match = balanced('{{', '}}', str)
 
     if (!match) {
-      if (root) {
-        return () => Observable.of(template)
+      if (isRoot) {
+        return () => Observable.of(str)
       } else {
-        return compileExpression(template)
+        return compileExpression(str)
       }
     }
 
@@ -41,11 +41,11 @@ const getTemplateCompiler = memoize(function (ds) {
     if (!pre && !post) {
       return context => onBody(context)
         .pipe(
-          rx.switchMap(template => compileTemplate(template, root)(context))
+          rx.switchMap(body => compileTemplate(body, isRoot)(context))
         )
     }
 
-    const onPost = compileTemplate(post)
+    const onPost = compileTemplate(post, true)
 
     return context => {
       return Observable
@@ -55,7 +55,7 @@ const getTemplateCompiler = memoize(function (ds) {
           (body, post) => pre || post ? `${pre}${stringify(body)}${stringify(post)}` : body
         )
         .pipe(
-          rx.switchMap(template => compileTemplate(template, root)(context))
+          rx.switchMap(template => compileTemplate(template, isRoot)(context))
         )
     }
   }, {
@@ -67,7 +67,7 @@ const getTemplateCompiler = memoize(function (ds) {
 function onResolveTemplate (str, context, options = {}) {
   try {
     const compileTemplate = getTemplateCompiler(options ? options.ds : null)
-    return compileTemplate(str)(context)
+    return compileTemplate(str, true)(context)
   } catch (err) {
     return Observable.throwError(err)
   }
