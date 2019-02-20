@@ -14,7 +14,12 @@ test('replaces strings', async () => {
 
 test('nested', async () => {
   expect(await resolveTemplate('{{{{foo}}}}', { test: '111', foo: 'test' })).toBe('111')
+  expect(await resolveTemplate('f{{oo}}', { test: '111', foo: 'test', oo: 'oo' })).toBe('foo')
+  expect(await resolveTemplate('{{f{{oo}}}}', { test: '111', foo: 'test', oo: 'oo' })).toBe('test')
+  expect(await resolveTemplate('{{{{foo}}}}', { test: '111', foo: 'test' })).toBe('111')
+  expect(await resolveTemplate('{{{{f{{o}}o}}}}', { test: '111', foo: 'test', o: 'o' })).toBe('111')
   expect(await resolveTemplate('{{ asd | default("{{test}}")}}', { test: '111', foo: 'test' })).toBe('111')
+  expect(await resolveTemplate('{{ asd | default("{{t{{es}}t}}")}}', { test: '111', foo: 'test', es: 'es' })).toBe('111')
 })
 
 test('append', async () => {

@@ -1,4 +1,3 @@
-const balanced = require('balanced-match')
 const rx = require('rxjs/operators')
 const Observable = require('rxjs')
 const isPlainObject = require('lodash/isPlainObject')
@@ -16,48 +15,45 @@ module.exports.resolveTemplate = async function (template, context, options = {}
     .toPromise()
 }
 
+function inner (str) {
+  const start = str.lastIndexOf('{{')
+  if (start === -1) {
+    return null
+  }
+  const end = str.indexOf('}}', start)
+  if (end === -1) {
+    return null
+  }
+
+  return {
+    pre: str.slice(0, start),
+    body: str.slice(start + 2, end),
+    post: str.slice(end + 2)
+  }
+}
+
 const getTemplateCompiler = memoize(function (ds) {
   const compileExpression = getExpressionCompiler(ds)
 
-  return memoize(function compileTemplate (str, isRoot = true) {
+  return memoize(function compileTemplate (str) {
     if (!str || !isString(str)) {
       return () => Observable.of(str)
     }
 
-    const match = balanced('{{', '}}', str)
+    const match = inner(str)
 
     if (!match) {
-      if (isRoot) {
-        return () => Observable.of(str)
-      } else {
-        return compileExpression(str)
-      }
+      return () => Observable.of(str)
     }
 
     const { pre, body, post } = match
 
-    const onBody = compileTemplate(body, false)
+    const expr = compileExpression(body)
 
-    if (!pre && !post) {
-      return context => onBody(context)
-        .pipe(
-          rx.switchMap(body => compileTemplate(body, isRoot)(context))
-        )
-    }
-
-    const onPost = compileTemplate(post, true)
-
-    return context => {
-      return Observable
-        .combineLatest(
-          onBody(context),
-          onPost(context),
-          (body, post) => pre || post ? `${pre}${stringify(body)}${stringify(post)}` : body
-        )
-        .pipe(
-          rx.switchMap(template => compileTemplate(template, isRoot)(context))
-        )
-    }
+    return context => expr(context)
+      .pipe(
+        rx.switchMap(body => compileTemplate(pre || post ? `${pre}${stringify(body)}${post}` : body)(context))
+      )
   }, {
     max: 1024,
     primitive: true
@@ -67,7 +63,7 @@ const getTemplateCompiler = memoize(function (ds) {
 function onResolveTemplate (str, context, options = {}) {
   try {
     const compileTemplate = getTemplateCompiler(options ? options.ds : null)
-    return compileTemplate(str, true)(context)
+    return compileTemplate(str)(context)
   } catch (err) {
     return Observable.throwError(err)
   }
