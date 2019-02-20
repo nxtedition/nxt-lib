@@ -265,6 +265,11 @@ module.exports = memoize((ds) => {
 
   return memoize(function (expression) {
     const [ basePath, ...tokens ] = expression.trim().split(/\s*\|\s*/)
+
+    if (tokens.length === 0) {
+      return context => Observable.of(get(context, basePath))
+    }
+
     const filters = tokens.map(getFilter)
 
     return (context) => {
