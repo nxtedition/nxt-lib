@@ -2,7 +2,9 @@ const balanced = require('balanced-match')
 const rx = require('rxjs/operators')
 const Observable = require('rxjs')
 const isPlainObject = require('lodash/isPlainObject')
-const getCompiler = require('./expression')
+const isString = require('lodash/isString')
+const getExpressionCompiler = require('./expression')
+const memoize = require('memoizee')
 
 module.exports.onResolveTemplate = onResolveTemplate
 
@@ -14,35 +16,60 @@ module.exports.resolveTemplate = async function (template, context, options = {}
     .toPromise()
 }
 
-function onResolveTemplate (template, context, options = {}) {
-  try {
-    const match = balanced('{{', '}}', template)
-    if (!match) {
-      return Observable.of(template)
+const getTemplateCompiler = memoize(function (ds) {
+  const compileExpression = getExpressionCompiler(ds)
+
+  return memoize(function compileTemplate (template, root = true) {
+    if (!template || !isString(template)) {
+      return () => Observable.of(template)
     }
 
-    const compile = getCompiler(options ? options.ds : null)
+    const match = balanced('{{', '}}', template)
+
+    if (!match) {
+      if (root) {
+        return () => Observable.of(template)
+      } else {
+        return compileExpression(template)
+      }
+    }
 
     const { pre, body, post } = match
 
-    return onResolveTemplate(body, context, options)
-      .pipe(
-        rx.switchMap(expr => compile(expr)(context)),
-        rx.switchMap(value => {
-          if (!pre && !post) {
-            return Observable.of(value)
-          }
+    const onBody = compileTemplate(body, false)
+    const onPost = compileTemplate(post)
 
-          if (value == null) {
-            value = ''
-          } else if (Array.isArray(value) || isPlainObject(value)) {
-            value = JSON.stringify(value)
-          }
+    return context => {
+      return Observable
+        .combineLatest(
+          onBody(context),
+          onPost(context),
+          (body, post) => pre || post ? `${pre}${stringify(body)}${stringify(post)}` : body
+        )
+        .pipe(
+          rx.switchMap(template => compileTemplate(template, root)(context))
+        )
+    }
+  }, {
+    max: 1024,
+    primitive: true
+  })
+}, { max: 2 })
 
-          return onResolveTemplate(`${pre}${value}${post}`, context, options)
-        })
-      )
+function onResolveTemplate (str, context, options = {}) {
+  try {
+    const compileTemplate = getTemplateCompiler(options ? options.ds : null)
+    return compileTemplate(str)(context)
   } catch (err) {
     return Observable.throwError(err)
   }
+}
+
+function stringify (value) {
+  if (value == null) {
+    return ''
+  } else if (Array.isArray(value) || isPlainObject(value)) {
+    return JSON.stringify(value)
+  }
+  return value
 }

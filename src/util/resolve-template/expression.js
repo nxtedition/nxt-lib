@@ -289,4 +289,4 @@ module.exports = memoize((ds) => {
     max: 1024,
     primitive: true
   })
-}, { max: 1 })
+}, { max: 2 })
