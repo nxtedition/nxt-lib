@@ -37,6 +37,14 @@ const getTemplateCompiler = memoize(function (ds) {
     const { pre, body, post } = match
 
     const onBody = compileTemplate(body, false)
+
+    if (!pre && !post) {
+      return context => onBody(context)
+        .pipe(
+          rx.switchMap(template => compileTemplate(template, root)(context))
+        )
+    }
+
     const onPost = compileTemplate(post)
 
     return context => {
