@@ -6,6 +6,7 @@ const getExpressionCompiler = require('./expression')
 const memoize = require('memoizee')
 
 module.exports.onResolveTemplate = onResolveTemplate
+module.exports.compileTemplate = compileTemplate
 
 module.exports.resolveTemplate = async function (template, context, options = {}) {
   return onResolveTemplate(template, context, options)
@@ -60,14 +61,18 @@ const getTemplateCompiler = memoize(function (ds) {
   })
 }, { max: 2 })
 
+function compileTemplate (str, options) {
+  const compileTemplate = getTemplateCompiler(options ? options.ds : null)
+  return compileTemplate(str)
+}
+
 function onResolveTemplate (str, context, options = {}) {
   if (!str || !isString(str) || str.lastIndexOf('{{') === -1) {
     return Observable.of(str)
   }
 
   try {
-    const compileTemplate = getTemplateCompiler(options ? options.ds : null)
-    return compileTemplate(str)(context)
+    return compileTemplate(str, options)(context)
   } catch (err) {
     return Observable.throwError(err)
   }
