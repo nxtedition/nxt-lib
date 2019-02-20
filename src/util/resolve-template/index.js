@@ -36,10 +36,6 @@ const getTemplateCompiler = memoize(function (ds) {
   const compileExpression = getExpressionCompiler(ds)
 
   return memoize(function compileTemplate (str) {
-    if (!str || !isString(str)) {
-      return () => Observable.of(str)
-    }
-
     const match = inner(str)
 
     if (!match) {
@@ -50,9 +46,13 @@ const getTemplateCompiler = memoize(function (ds) {
 
     const expr = compileExpression(body)
 
+    if (!pre && !post) {
+      return expr
+    }
+
     return context => expr(context)
       .pipe(
-        rx.switchMap(body => compileTemplate(pre || post ? `${pre}${stringify(body)}${post}` : body)(context))
+        rx.switchMap(body => compileTemplate(`${pre}${stringify(body)}${post}`)(context))
       )
   }, {
     max: 1024,
