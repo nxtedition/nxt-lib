@@ -257,7 +257,10 @@ module.exports = memoize((ds) => {
     }
 
     return factory(...args)
-  }, { max: 1024 })
+  }, {
+    max: 1024,
+    primitive: true
+  })
 
   return memoize(function (expression) {
     const [ basePath, ...tokens ] = expression.trim().split(/\s*\|\s*/)
@@ -282,5 +285,8 @@ module.exports = memoize((ds) => {
 
       return reduce(baseValue, 0)
     }
-  }, { max: 1024 })
+  }, {
+    max: 1024,
+    primitive: true
+  })
 }, { max: 1 })
