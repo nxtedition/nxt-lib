@@ -121,14 +121,15 @@ module.exports = memoize((ds) => {
         prepend: (pre) => value => pre + value,
         ds: (name, path) => {
           // TODO (fix): Validate arguments...
+          if (!ds) {
+            throw new Error('invalid argument')
+          }
 
-          return value => ds
-            ? ds.record
-              .observe((value || '') + (name || ''))
-              .pipe(
-                rx.map(val => path ? get(val, path) : val)
-              )
-            : null
+          return value => ds.record
+            .observe((value || '') + (name || ''))
+            .pipe(
+              rx.map(val => path ? get(val, path) : val)
+            )
         },
         lower: () => value => value.toLowerCase(),
         upper: () => value => value.toUpperCase(),
