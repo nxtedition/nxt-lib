@@ -21,7 +21,7 @@ function inner (str) {
   if (start === -1) {
     return null
   }
-  const end = str.indexOf('}}', start)
+  const end = str.indexOf('}}', start + 2)
   if (end === -1) {
     return null
   }
