@@ -29,7 +29,7 @@ function asFilter (transform, predicate, obj) {
   })
 }
 
-module.exports = memoize((ds) => {
+module.exports = ({ ds } = {}) => {
   const FILTERS = {
     // any
     ...asFilter(
@@ -263,7 +263,7 @@ module.exports = memoize((ds) => {
     primitive: true
   })
 
-  return memoize(function (expression) {
+  return memoize(expression => {
     const [ basePath, ...tokens ] = expression.trim().split(/\s*\|\s*/)
 
     if (tokens.length === 0) {
@@ -272,7 +272,7 @@ module.exports = memoize((ds) => {
 
     const filters = tokens.map(getFilter)
 
-    return (context) => {
+    return context => {
       const baseValue = get(context, basePath)
 
       function reduce (value, index) {
@@ -295,4 +295,4 @@ module.exports = memoize((ds) => {
     max: 1024,
     primitive: true
   })
-}, { max: 2 })
+}

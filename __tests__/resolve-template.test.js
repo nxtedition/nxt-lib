@@ -1,4 +1,10 @@
-const { resolveTemplate } = require('../src/util')
+const { resolveTemplate } = require('../src/util/template')({
+  ds: {
+    record: {
+      observe: () => Observable.of({ foo: 'bar' })
+    }
+  }
+})
 const Observable = require('rxjs')
 
 test('path var', async () => {
@@ -32,10 +38,5 @@ test('object', async () => {
 })
 
 test('ds', async () => {
-  const ds = {
-    record: {
-      observe: () => Observable.of({ foo: 'bar' })
-    }
-  }
-  expect(await resolveTemplate(`{{test | ds() | pluck('foo')}}`, { test: 'foo' }, { ds })).toBe('bar')
+  expect(await resolveTemplate(`{{test | ds() | pluck('foo')}}`, { test: 'foo' })).toBe('bar')
 })
