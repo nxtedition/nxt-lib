@@ -16,10 +16,6 @@ module.exports = ({ ds } = {}) => {
   }
 
   function onResolveObjectTemplate (obj, context) {
-    if (!fp.isPlainObject(obj)) {
-      return Observable.of(obj)
-    }
-
     try {
       return compileObjectTemplate(obj)(context)
     } catch (err) {
@@ -29,6 +25,10 @@ module.exports = ({ ds } = {}) => {
 
   // TODO (perf): Optimize...
   function compileObjectTemplate (obj) {
+    if (!fp.isPlainObject(obj)) {
+      throw new Error('invalid argument')
+    }
+
     const resolvers = []
     // TODO (fix): Make iterative
     function compile (path, obj) {
@@ -76,6 +76,10 @@ module.exports = ({ ds } = {}) => {
   }
 
   const compileTemplate = memoize(str => {
+    if (!fp.isString(str)) {
+      throw new Error('invalid argument')
+    }
+
     const match = inner(str)
 
     if (!match) {
@@ -100,7 +104,7 @@ module.exports = ({ ds } = {}) => {
   })
 
   function onResolveTemplate (str, context) {
-    if (!str || !fp.isString(str) || str.lastIndexOf('{{') === -1) {
+    if (fp.isString(str) && str.lastIndexOf('{{') === -1) {
       return Observable.of(str)
     }
 
