@@ -2,7 +2,7 @@ const { Observable } = require('rxjs')
 
 const NONE = {}
 
-function combineLatestAsync (...observables) {
+function combineLatestAsync (observables, project) {
   return Observable.create(o => {
     if (observables.length === 0) {
       o.complete()
@@ -16,12 +16,14 @@ function combineLatestAsync (...observables) {
     const values = []
     const subscriptions = []
 
+    function _next () {
+      immediate = null
+      o.next(project ? project(...values) : [ ...values ])
+    }
+
     function _schedule () {
       if (!immediate && ready > 0) {
-        immediate = setImmediate(() => {
-          immediate = null
-          o.next(values)
-        })
+        immediate = setImmediate(_next)
       }
     }
 
@@ -46,9 +48,7 @@ function combineLatestAsync (...observables) {
 
           if (immediate) {
             clearImmediate(immediate)
-            immediate = null
-
-            o.next([ ...values ])
+            _next()
           }
 
           o.complete()
