@@ -62,7 +62,6 @@
     "validate-commit-msg": "^2.14.0"
   },
   "dependencies": {
-    "balanced-match": "^1.0.0",
     "http-errors": "^1.7.2",
     "json5": "^2.1.0",
     "lodash": "^4.17.11",
