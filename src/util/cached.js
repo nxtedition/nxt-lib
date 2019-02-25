@@ -65,7 +65,9 @@ module.exports = function cached (fn, options, keySelector = key => key) {
 
       return () => {
         entry.refs -= 1
-        entry.timestamp = Date.now()
+        if (entry.refs === 0) {
+          entry.timestamp = Date.now()
+        }
         subscription.unsubscribe()
       }
     })
