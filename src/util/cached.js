@@ -52,7 +52,7 @@ module.exports = function cached (fn, options, keySelector = key => key) {
           observable,
           subscription: fn(...args).subscribe(observable),
           refs: 0,
-          timestamp: Date.now()
+          timestamp: null
         }
 
         cache.set(key, entry)
