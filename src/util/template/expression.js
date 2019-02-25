@@ -2,21 +2,11 @@ const moment = require('moment')
 const rx = require('rxjs/operators')
 const Observable = require('rxjs')
 const JSON5 = require('json5')
-const get = require('lodash/get')
-const isEqual = require('lodash/isEqual')
-const isPlainObject = require('lodash/isPlainObject')
-const isString = require('lodash/isString')
-const flattenDepth = require('lodash/fp/flattenDepth')
-const flattenDeep = require('lodash/fp/flattenDeep')
-const capitalize = require('lodash/capitalize')
-const startCase = require('lodash/startCase')
-const uniq = require('lodash/uniq')
-const mapValues = require('lodash/mapValues')
-const words = require('lodash/words')
+const fp = require('lodash/fp')
 const memoize = require('memoizee')
 
 function asFilter (transform, predicate, obj) {
-  return mapValues(obj, (factory) => (...args) => {
+  return fp.mapValues(factory => (...args) => {
     const filter = factory(...args)
     return value => {
       try {
@@ -26,7 +16,7 @@ function asFilter (transform, predicate, obj) {
         return null
       }
     }
-  })
+  }, obj)
 }
 
 module.exports = ({ ds } = {}) => {
@@ -63,10 +53,10 @@ module.exports = ({ ds } = {}) => {
         ne: (x) => value => value !== x,
         isDate: () => value => value instanceof Date,
         isArray: () => value => Array.isArray(value),
-        isEqual: (x) => value => isEqual(value, x),
+        isEqual: (x) => value => fp.isEqual(value, x),
         isNil: () => value => value == null,
         isNumber: () => value => Number.isFinite(value),
-        isString: () => value => isString(value),
+        isString: () => value => fp.isString(value),
         ternary: (a, b) => value => value ? a : b
       }
     ),
@@ -112,7 +102,7 @@ module.exports = ({ ds } = {}) => {
     ),
     // string
     ...asFilter(
-      value => value == null || isPlainObject(value) || Array.isArray(value) ? '' : String(value),
+      value => value == null || fp.isPlainObject(value) || Array.isArray(value) ? '' : String(value),
       value => typeof value === 'string',
       {
         fromjson: () => value => JSON.parse(value),
@@ -128,7 +118,7 @@ module.exports = ({ ds } = {}) => {
           return value => ds.record
             .observe((value || '') + (name || ''))
             .pipe(
-              rx.map(val => path ? get(val, path) : val)
+              rx.map(val => path ? fp.get(path, val) : val)
             )
         },
         lower: () => value => value.toLowerCase(),
@@ -142,9 +132,9 @@ module.exports = ({ ds } = {}) => {
 
           return value => value.match(new RegExp(...args))
         },
-        capitalize: () => value => capitalize(value),
+        capitalize: () => value => fp.capitalize(value),
         split: (delimiter) => value => value.split(delimiter),
-        title: () => value => startCase(value),
+        title: () => value => fp.startCase(value),
         replace: (...args) => {
           // TODO (fix): Validate argument count...
 
@@ -200,7 +190,7 @@ module.exports = ({ ds } = {}) => {
             .slice(0, -1)
             .join(' ') + end
         },
-        wordcount: () => value => Observable.of(words(value).length)
+        wordcount: () => value => Observable.of(fp.words(value).length)
       }
     ),
     ...asFilter(
@@ -221,19 +211,19 @@ module.exports = ({ ds } = {}) => {
         length: () => value => value.length,
         sort: () => value => [ ...value ].sort(),
         sum: () => value => value.reduce((a, b) => a + b, 0),
-        unique: () => value => uniq(value),
-        uniq: () => value => uniq(value),
-        flatten: (depth = 1) => value => flattenDepth(value, depth),
-        flattenDeep: () => value => flattenDeep(value)
+        unique: () => value => fp.uniq(value),
+        uniq: () => value => fp.uniq(value),
+        flatten: (depth = 1) => value => fp.flattenDepth(depth, value),
+        flattenDeep: () => value => fp.flattenDeep(value)
       }
     ),
     // collection
     ...asFilter(
-      value => Array.isArray(value) || isPlainObject(value) ? value : [],
-      value => Array.isArray(value) || isPlainObject(value),
+      value => Array.isArray(value) || fp.isPlainObject(value) ? value : [],
+      value => Array.isArray(value) || fp.isPlainObject(value),
       {
-        pluck: (path) => value => get(value, path),
-        get: (path) => value => get(value, path),
+        pluck: (path) => value => fp.get(path, value),
+        get: (path) => value => fp.get(path, value),
         values: () => value => Object.values(value),
         keys: () => value => Object.keys(value),
         entries: () => value => Object.entries(value)
@@ -267,13 +257,13 @@ module.exports = ({ ds } = {}) => {
     const [ basePath, ...tokens ] = expression.trim().split(/\s*\|\s*/)
 
     if (tokens.length === 0) {
-      return context => Observable.of(get(context, basePath))
+      return context => Observable.of(fp.get(basePath, context))
     }
 
     const filters = tokens.map(getFilter)
 
     return context => {
-      const baseValue = get(context, basePath)
+      const baseValue = fp.get(basePath, context)
 
       function reduce (value, index) {
         while (index < filters.length) {
