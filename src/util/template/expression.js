@@ -190,7 +190,8 @@ module.exports = ({ ds } = {}) => {
             .slice(0, -1)
             .join(' ') + end
         },
-        wordcount: () => value => Observable.of(fp.words(value).length)
+        wordcount: () => value => fp.words(value).length,
+        words: () => value => fp.words(value)
       }
     ),
     ...asFilter(
