@@ -274,17 +274,21 @@ module.exports = ({ ds } = {}) => {
       const baseValue = fp.get(basePath, context)
 
       function reduce (value, index) {
-        while (index < filters.length) {
-          value = filters[index++](value)
-          if (Observable.isObservable(value)) {
-            return value
-              .pipe(
-                rx.switchMap(value => reduce(value, index)),
-                rx.catchError(() => Observable.of(null))
-              )
+        try {
+          while (index < filters.length) {
+            value = filters[index++](value)
+            if (Observable.isObservable(value)) {
+              return value
+                .pipe(
+                  rx.switchMap(value => reduce(value, index)),
+                  rx.catchError(() => Observable.of(null))
+                )
+            }
           }
+          return Observable.of(value)
+        } catch (err) {
+          return Observable.of(null)
         }
-        return Observable.of(value)
       }
 
       return reduce(baseValue, 0)
