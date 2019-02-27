@@ -204,7 +204,9 @@ module.exports = ({ ds } = {}) => {
     ...asFilter(
       value => Array.isArray(value) || typeof value === 'string' ? value : [],
       value => value.includes,
-      (...args) => value => value.includes(...args)
+      {
+        includes: (...args) => value => value.includes(...args)
+      }
     ),
     // array
     ...asFilter(
