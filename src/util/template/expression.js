@@ -115,11 +115,18 @@ module.exports = ({ ds } = {}) => {
             throw new Error('invalid argument')
           }
 
-          return value => ds.record
-            .observe((value || '') + (name || ''))
-            .pipe(
-              rx.map(val => path ? fp.get(path, val) : val)
-            )
+          return value => {
+            const recordName = (value || '') + (name || '')
+            if (!recordName) {
+              return null
+            }
+
+            return ds.record
+              .observe(recordName)
+              .pipe(
+                rx.map(val => path ? fp.get(path, val) : val)
+              )
+          }
         },
         lower: () => value => value.toLowerCase(),
         upper: () => value => value.toUpperCase(),
