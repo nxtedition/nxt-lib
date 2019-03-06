@@ -216,6 +216,7 @@ module.exports = ({ ds } = {}) => {
         slice: (start, end) => value => value.slice(start, end),
         reverse: () => value => [ ...value ].reverse(),
         join: (delimiter) => value => value.join(delimiter),
+        at: (index) => value => value[index],
         first: () => value => value[0],
         last: () => value => value[value.length - 1],
         length: () => value => value.length,
