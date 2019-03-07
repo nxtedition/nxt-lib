@@ -247,7 +247,7 @@ module.exports = ({ ds } = {}) => {
     const [ , filterName, argsStr ] = filterStr.match(/([^(]+)\((.*)\)/) || []
 
     const tokens = argsStr
-      ? argsStr.split(/\s*,\s*/)
+      ? argsStr.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
       : []
 
     const args = tokens
