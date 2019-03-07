@@ -247,13 +247,13 @@ module.exports = ({ ds } = {}) => {
     const [ , filterName, argsStr ] = filterStr.match(/([^(]+)\((.*)\)/) || []
 
     const tokens = argsStr
-      ? argsStr.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
+      ? argsStr.match(/(["`'].*?["`']|[^["`'],\s]+)(?=\s*,|\s*$)/g)
       : []
 
     const args = tokens
       .map(x => {
         try {
-          return x ? JSON5.parse(x) : x
+          return x ? JSON5.parse(x.replace(/^`(.*)`$/, '\'$1\'')) : x
         } catch (err) {
           throw new NestedError(`failed to parse token ${x}`, err)
         }
