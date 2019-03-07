@@ -40,3 +40,9 @@ test('object', async () => {
 test('ds', async () => {
   expect(await resolveTemplate(`{{test | ds() | pluck('foo')}}`, { test: 'foo' })).toBe('bar')
 })
+
+test('replace array', async () => {
+  expect(await resolveTemplate(`{{test | join("#") | replace("foo", "bar") | split("#")}}`, { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
+  // TODO (fix): This fails...
+  // expect(await resolveTemplate(`{{test | join(",") | replace("foo", "bar") | split(",")}}`, { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
+})
