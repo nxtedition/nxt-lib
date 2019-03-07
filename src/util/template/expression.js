@@ -282,8 +282,6 @@ module.exports = ({ ds } = {}) => {
       const filters = tokens.map(getFilter)
 
       return context => {
-        const baseValue = fp.get(basePath, context)
-
         function reduce (value, index) {
           try {
             while (index < filters.length) {
@@ -292,17 +290,19 @@ module.exports = ({ ds } = {}) => {
                 return value
                   .pipe(
                     rx.switchMap(value => reduce(value, index)),
+                    // TODO (fix): better error handling...
                     rx.catchError(() => Observable.of(null))
                   )
               }
             }
             return Observable.of(value)
           } catch (err) {
+            // TODO (fix): better error handling...
             return Observable.of(null)
           }
         }
 
-        return reduce(baseValue, 0)
+        return reduce(fp.get(basePath, context), 0)
       }
     } catch (err) {
       throw new NestedError(`failed to parse expression ${expression}`, err)
