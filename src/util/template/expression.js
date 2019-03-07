@@ -4,6 +4,7 @@ const Observable = require('rxjs')
 const JSON5 = require('json5')
 const fp = require('lodash/fp')
 const memoize = require('memoizee')
+const NestedError = require('nested-error-stacks')
 
 function asFilter (transform, predicate, obj) {
   return fp.mapValues(factory => (...args) => {
@@ -250,12 +251,18 @@ module.exports = ({ ds } = {}) => {
       : []
 
     const args = tokens
-      .map(x => x ? JSON5.parse(x) : x)
+      .map(x => {
+        try {
+          return x ? JSON5.parse(x) : x
+        } catch (err) {
+          throw new NestedError(`failed to parse token ${x}`, err)
+        }
+      })
 
     const factory = FILTERS[filterName]
 
     if (!factory) {
-      throw new Error(`unexpected filter: ${filterName}`)
+      throw new Error(`unknown filter: ${filterName}`)
     }
 
     return factory(...args)
@@ -265,36 +272,40 @@ module.exports = ({ ds } = {}) => {
   })
 
   return memoize(expression => {
-    const [ basePath, ...tokens ] = expression.trim().split(/\s*\|\s*/)
+    try {
+      const [ basePath, ...tokens ] = expression.trim().split(/\s*\|\s*/)
 
-    if (tokens.length === 0) {
-      return context => Observable.of(fp.get(basePath, context))
-    }
-
-    const filters = tokens.map(getFilter)
-
-    return context => {
-      const baseValue = fp.get(basePath, context)
-
-      function reduce (value, index) {
-        try {
-          while (index < filters.length) {
-            value = filters[index++](value)
-            if (Observable.isObservable(value)) {
-              return value
-                .pipe(
-                  rx.switchMap(value => reduce(value, index)),
-                  rx.catchError(() => Observable.of(null))
-                )
-            }
-          }
-          return Observable.of(value)
-        } catch (err) {
-          return Observable.of(null)
-        }
+      if (tokens.length === 0) {
+        return context => Observable.of(fp.get(basePath, context))
       }
 
-      return reduce(baseValue, 0)
+      const filters = tokens.map(getFilter)
+
+      return context => {
+        const baseValue = fp.get(basePath, context)
+
+        function reduce (value, index) {
+          try {
+            while (index < filters.length) {
+              value = filters[index++](value)
+              if (Observable.isObservable(value)) {
+                return value
+                  .pipe(
+                    rx.switchMap(value => reduce(value, index)),
+                    rx.catchError(() => Observable.of(null))
+                  )
+              }
+            }
+            return Observable.of(value)
+          } catch (err) {
+            return Observable.of(null)
+          }
+        }
+
+        return reduce(baseValue, 0)
+      }
+    } catch (err) {
+      throw new NestedError(`failed to parse expression ${expression}`, err)
     }
   }, {
     max: 1024,
