@@ -28,8 +28,8 @@ module.exports = ({ ds } = {}) => {
       null,
       {
         boolean: () => value => Boolean(value),
-        tojson: (indent) => value => JSON.stringify(value, null, indent),
-        tojson5: () => value => JSON5.stringify(value),
+        toJSON: (indent) => value => JSON.stringify(value, null, indent),
+        toJSON5: () => value => JSON5.stringify(value),
         string: () => value => String(value),
         number: () => value => Number(value),
         date: (...args) => value => moment(value, ...args),
@@ -58,7 +58,8 @@ module.exports = ({ ds } = {}) => {
         isNil: () => value => value == null,
         isNumber: () => value => Number.isFinite(value),
         isString: () => value => fp.isString(value),
-        ternary: (a, b) => value => value ? a : b
+        ternary: (a, b) => value => value ? a : b,
+        cond: (a, b) => value => value ? a : b
       }
     ),
     // number
@@ -106,11 +107,11 @@ module.exports = ({ ds } = {}) => {
       value => value == null || fp.isPlainObject(value) || Array.isArray(value) ? '' : String(value),
       value => typeof value === 'string',
       {
-        fromjson: () => value => JSON.parse(value),
-        fromjson5: () => value => JSON5.parse(value),
+        fromJSON: () => value => value ? JSON.parse(value) : null,
+        fromJSON5: () => value => value ? JSON5.parse(value) : null,
         append: (post) => value => value + post,
         prepend: (pre) => value => pre + value,
-        assetIsType: (type) => {
+        isAssetType: (type) => {
           // TODO (fix): Validate arguments...
           if (!ds) {
             throw new Error('invalid argument')
