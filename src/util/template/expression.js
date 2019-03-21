@@ -110,24 +110,36 @@ module.exports = ({ ds } = {}) => {
         fromjson5: () => value => JSON5.parse(value),
         append: (post) => value => value + post,
         prepend: (pre) => value => pre + value,
-        ds: (name, path) => {
+        assetIsType: (type) => {
           // TODO (fix): Validate arguments...
           if (!ds) {
             throw new Error('invalid argument')
           }
 
-          return value => {
-            const recordName = (value || '') + (name || '')
-            if (!recordName) {
-              return null
-            }
+          return value => value
+            ? ds.record
+              .observe(`${value}:asset.rawTypes`, ds.record.SERVER)
+              .pipe(
+                rx.pluck('value'),
+                rx.map(fp.includes(type)),
+                rx.distinctUntilChanged(),
+                rx.map(isType => isType ? value : null)
+              )
+            : null
+        },
+        ds: (postfix, path, state = ds.record.SERVER) => {
+          // TODO (fix): Validate arguments...
+          if (!ds) {
+            throw new Error('invalid argument')
+          }
 
-            return ds.record
-              .observe(recordName)
+          return value => value
+            ? ds.record
+              .observe((value || '') + (postfix || ''), state)
               .pipe(
                 rx.map(val => path ? fp.get(path, val) : val)
               )
-          }
+            : null
         },
         lower: () => value => value.toLowerCase(),
         upper: () => value => value.toUpperCase(),
