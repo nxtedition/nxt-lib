@@ -178,6 +178,7 @@ module.exports = ({ ds } = {}) => {
         charAt: (...args) => value => value.charAt(...args),
         startsWith: () => value => value.startsWith(),
         endsWith: () => value => value.endsWith(),
+        slice: (...args) => value => value.slice(...args),
         trim: () => value => value.trim(),
         trimStart: () => value => value.trimStart(),
         trimEnd: () => value => value.trimEnd(),
