@@ -240,7 +240,8 @@ module.exports = ({ ds } = {}) => {
         unique: () => value => fp.uniq(value),
         uniq: () => value => fp.uniq(value),
         flatten: (depth = 1) => value => fp.flattenDepth(depth, value),
-        flattenDeep: () => value => fp.flattenDeep(value)
+        flattenDeep: () => value => fp.flattenDeep(value),
+        union: (...args) => value => fp.union(value, ...args)
       }
     ),
     // collection
