@@ -111,7 +111,7 @@ module.exports = ({ ds } = {}) => {
         fromJSON5: () => value => value ? JSON5.parse(value) : null,
         append: (post) => value => value + post,
         prepend: (pre) => value => pre + value,
-        isAssetType: (type) => {
+        assetType: (type) => {
           // TODO (fix): Validate arguments...
           if (!ds) {
             throw new Error('invalid argument')
