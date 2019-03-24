@@ -229,19 +229,23 @@ module.exports = ({ ds } = {}) => {
       value => Array.isArray(value),
       {
         slice: (start, end) => value => value.slice(start, end),
-        reverse: () => value => [ ...value ].reverse(),
-        join: (delimiter) => value => value.join(delimiter),
+        reverse: () => value => fp.reverse(value),
+        join: (delimiter) => value => fp.join(delimiter, value),
         at: (index) => value => value[index],
         first: () => value => value[0],
+        head: () => value => value[0],
         last: () => value => value[value.length - 1],
+        tail: () => value => value[value.length - 1],
         length: () => value => value.length,
         sort: () => value => [ ...value ].sort(),
-        sum: () => value => value.reduce((a, b) => a + b, 0),
+        sum: () => value => fp.sum(value),
         unique: () => value => fp.uniq(value),
         uniq: () => value => fp.uniq(value),
         flatten: (depth = 1) => value => fp.flattenDepth(depth, value),
         flattenDeep: () => value => fp.flattenDeep(value),
         union: (...args) => value => fp.union(...args, value),
+        intersection: (...args) => value => fp.intersection(...args, value),
+        initial: (...args) => value => fp.initial(...args, value),
         concat: (...args) => value => fp.concat(...args, value),
         compact: (...args) => value => fp.compact(...args, value),
         pull: (...args) => value => fp.pull(...args, value)
@@ -254,9 +258,10 @@ module.exports = ({ ds } = {}) => {
       {
         pluck: (path) => value => fp.get(path, value),
         get: (path) => value => fp.get(path, value),
-        values: () => value => Object.values(value),
-        keys: () => value => Object.keys(value),
-        entries: () => value => Object.entries(value)
+        values: () => value => fp.values(value),
+        keys: () => value => fp.keys(value),
+        size: () => value => fp.size(value),
+        entries: () => value => fp.entries(value)
       }
     )
   }
