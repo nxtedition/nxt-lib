@@ -241,7 +241,10 @@ module.exports = ({ ds } = {}) => {
         uniq: () => value => fp.uniq(value),
         flatten: (depth = 1) => value => fp.flattenDepth(depth, value),
         flattenDeep: () => value => fp.flattenDeep(value),
-        union: (...args) => value => fp.union(value, ...args)
+        union: (...args) => value => fp.union(...args, value),
+        concat: (...args) => value => fp.concat(...args, value),
+        compact: (...args) => value => fp.compact(...args, value),
+        pull: (...args) => value => fp.pull(...args, value)
       }
     ),
     // collection
