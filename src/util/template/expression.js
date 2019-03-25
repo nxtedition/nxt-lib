@@ -59,7 +59,22 @@ module.exports = ({ ds } = {}) => {
         isNumber: () => value => Number.isFinite(value),
         isString: () => value => fp.isString(value),
         ternary: (a, b) => value => value ? a : b,
-        cond: (a, b) => value => value ? a : b
+        cond: (a, b) => value => value ? a : b,
+        hashToInt: (min, max) => value => {
+          value = JSON.stringify(value)
+
+          let hash = 0
+
+          for (let i = 0; i < value.length; i++) {
+            const chr = value.charCodeAt(i)
+            hash = ((hash << 5) - hash) + chr
+            hash |= 0
+          }
+
+          hash = hash < 0 ? -hash : hash
+
+          return (hash + min) % max
+        }
       }
     ),
     // number
