@@ -4525,6 +4525,11 @@ split-string@^3.0.1, split-string@^3.0.2:
   dependencies:
     extend-shallow "^3.0.0"
 
+split-string@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/split-string/-/split-string-6.0.0.tgz#6f36e120087ce5d1173eca156c3dd21e97ae534f"
+  integrity sha512-a+7NZ4oXyH02emLyo1/15L1IkGfM0rJegxl6TsJS9MCDaYBVy+ySnfUW+wKxP8xo1WPmgLo5S45+025IP6FkOw==
+
 sprintf-js@~1.0.2:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"

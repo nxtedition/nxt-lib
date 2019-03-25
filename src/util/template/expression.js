@@ -6,6 +6,7 @@ const fp = require('lodash/fp')
 const memoize = require('memoizee')
 const NestedError = require('nested-error-stacks')
 const hasha = require('hasha')
+const split = require('split-string')
 
 function asFilter (transform, predicate, obj) {
   return fp.mapValues(factory => (...args) => {
@@ -273,9 +274,11 @@ module.exports = ({ ds } = {}) => {
   const getFilter = memoize(function (filterStr) {
     const [ , filterName, argsStr ] = filterStr.match(/([^(]+)\((.*)\)/) || []
 
-    const tokens = argsStr
-      ? argsStr.split(/\s*,\s*/)
-      : []
+    const tokens = split(argsStr, {
+      separator: ',',
+      brackets: true,
+      quotes: [`"`]
+    })
 
     const args = tokens
       .map(x => {
