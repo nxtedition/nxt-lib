@@ -45,5 +45,4 @@ test('replace array', async () => {
   expect(await resolveTemplate(`{{test | join("#") | replace("foo", "bar") | split("#")}}`, { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
   expect(await resolveTemplate(`{{test | join(",") | replace("foo", "bar") | split(",")}}`, { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
   expect(await resolveTemplate(`{{test | join(',') | replace("foo", "bar") | split(",")}}`, { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
-  expect(await resolveTemplate('{{test | join(`,`) | replace("foo", "bar") | split(",")}}', { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
 })
