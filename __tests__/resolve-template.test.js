@@ -12,6 +12,17 @@ test('hash to int', async () => {
   expect(Number.isFinite(val)).toBe(true)
 })
 
+test('integer ops', async () => {
+  expect(await resolveTemplate('{{test | div(2)}}', { test: '8' })).toBe(4)
+  expect(await resolveTemplate('{{test | div(2)}}', { test: 8 })).toBe(4)
+  expect(await resolveTemplate('{{test | mul(2)}}', { test: '8' })).toBe(16)
+  expect(await resolveTemplate('{{test | mul(2)}}', { test: 8 })).toBe(16)
+  expect(await resolveTemplate('{{test | add(2)}}', { test: '10' })).toBe(12)
+  expect(await resolveTemplate('{{test | add(2)}}', { test: 10 })).toBe(12)
+  expect(await resolveTemplate('{{test | sub(2)}}', { test: '10' })).toBe(8)
+  expect(await resolveTemplate('{{test | sub(2)}}', { test: 10 })).toBe(8)
+})
+
 test('path var', async () => {
   expect(await resolveTemplate('{{test.foo}}', { test: { foo: '111' } })).toBe('111')
 })
