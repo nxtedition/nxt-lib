@@ -5,6 +5,7 @@ const JSON5 = require('json5')
 const fp = require('lodash/fp')
 const memoize = require('memoizee')
 const NestedError = require('nested-error-stacks')
+const hasha = require('hasha')
 
 function asFilter (transform, predicate, obj) {
   return fp.mapValues(factory => (...args) => {
@@ -60,21 +61,8 @@ module.exports = ({ ds } = {}) => {
         isString: () => value => fp.isString(value),
         ternary: (a, b) => value => value ? a : b,
         cond: (a, b) => value => value ? a : b,
-        hashToInt: (min, max) => value => {
-          value = JSON.stringify(value)
-
-          let hash = 0
-
-          for (let i = 0; i < value.length; i++) {
-            const chr = value.charCodeAt(i)
-            hash = ((hash << 5) - hash) + chr
-            hash |= 0
-          }
-
-          hash = hash < 0 ? -hash : hash
-
-          return (hash + min) % max
-        }
+        hasha: (options) => value => hasha(JSON.stringify(value), options || {}),
+        hashaint: (options) => value => parseInt(hasha(JSON.stringify(value), options || {}).slice(-13), 16)
       }
     ),
     // number
@@ -86,15 +74,16 @@ module.exports = ({ ds } = {}) => {
         lt: (x) => value => value < x,
         ge: (x) => value => value >= x,
         gt: (x) => value => value > x,
-        mul: (x) => value => x * value,
-        div: (x) => value => x / value,
-        mod: (x) => value => x % value,
-        add: (x) => value => x + value,
-        sub: (x) => value => x - value,
+        mul: (x) => value => value * x,
+        div: (x) => value => value / x,
+        mod: (x) => value => value % x,
+        add: (x) => value => value + 1,
+        sub: (x) => value => value - 1,
         abs: () => value => Math.abs(value),
         round: () => value => Math.round(value),
         floor: () => value => Math.floor(value),
-        ceil: () => value => Math.ceil(value)
+        ceil: () => value => Math.ceil(value),
+        clamp: (min, max) => value => Math.max(min, Math.min(max, value))
       }
     ),
     ...asFilter(
