@@ -8,6 +8,8 @@ const NestedError = require('nested-error-stacks')
 const hasha = require('hasha')
 const split = require('split-string')
 
+const RETURN = {}
+
 function asFilter (transform, predicate, obj) {
   return fp.mapValues(factory => (...args) => {
     const filter = factory(...args)
@@ -63,7 +65,8 @@ module.exports = ({ ds } = {}) => {
         ternary: (a, b) => value => value ? a : b,
         cond: (a, b) => value => value ? a : b,
         hasha: (options) => value => hasha(JSON.stringify(value), options || {}),
-        hashaint: (options) => value => parseInt(hasha(JSON.stringify(value), options || {}).slice(-13), 16)
+        hashaint: (options) => value => parseInt(hasha(JSON.stringify(value), options || {}).slice(-13), 16),
+        return: () => value => value || RETURN
       }
     ),
     // number
@@ -116,7 +119,7 @@ module.exports = ({ ds } = {}) => {
         fromJSON5: () => value => value ? JSON5.parse(value) : null,
         append: (post) => value => value + post,
         prepend: (pre) => value => pre + value,
-        isAsset: (type) => {
+        asset: (type, _return = true) => {
           // TODO (fix): Validate arguments...
           if (!ds) {
             throw new Error('invalid argument')
@@ -129,7 +132,12 @@ module.exports = ({ ds } = {}) => {
                 rx.pluck('value'),
                 rx.map(fp.includes(type)),
                 rx.distinctUntilChanged(),
-                rx.map(isType => isType ? value : null)
+                rx.map(isType => isType
+                  ? value
+                  : _return
+                    ? RETURN
+                    : null
+                )
               )
             : null
         },
@@ -313,23 +321,28 @@ module.exports = ({ ds } = {}) => {
 
       return context => {
         function reduce (value, index) {
-          try {
-            while (index < filters.length) {
-              value = filters[index++](value)
-              if (Observable.isObservable(value)) {
-                return value
-                  .pipe(
-                    rx.switchMap(value => reduce(value, index)),
-                    // TODO (fix): better error handling...
-                    rx.catchError(() => Observable.of(null))
-                  )
-              }
-            }
-            return Observable.of(value)
-          } catch (err) {
-            // TODO (fix): better error handling...
+          if (value === RETURN) {
             return Observable.of(null)
           }
+
+          while (index < filters.length) {
+            value = filters[index++](value)
+
+            if (value === RETURN) {
+              return Observable.of(null)
+            }
+
+            if (Observable.isObservable(value)) {
+              return value
+                .pipe(
+                  rx.switchMap(value => reduce(value, index)),
+                  // TODO (fix): better error handling...
+                  rx.catchError(() => Observable.of(null))
+                )
+            }
+          }
+
+          return Observable.of(value)
         }
 
         return reduce(fp.get(basePath, context), 0)
