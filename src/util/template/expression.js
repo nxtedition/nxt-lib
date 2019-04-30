@@ -7,6 +7,7 @@ const memoize = require('memoizee')
 const NestedError = require('nested-error-stacks')
 const hasha = require('hasha')
 const split = require('split-string')
+const pkg = require('../../../package.json')
 
 const RETURN = {}
 
@@ -31,6 +32,7 @@ module.exports = ({ ds } = {}) => {
       null,
       null,
       {
+        version: () => () => pkg.version,
         boolean: () => value => Boolean(value),
         toJSON: (indent) => value => JSON.stringify(value, null, indent),
         toJSON5: () => value => JSON5.stringify(value),

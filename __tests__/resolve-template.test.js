@@ -7,6 +7,11 @@ const { resolveTemplate } = require('../src/util/template')({
 })
 const Observable = require('rxjs')
 
+test('version', async () => {
+  const val = await resolveTemplate('{{_ | version()}}', {})
+  expect(typeof val).toBe('string')
+})
+
 test('hash to int', async () => {
   const val = await resolveTemplate('{{test | hashaint() | mod(128)}}', { test: { foo: '11d1' } })
   expect(Number.isFinite(val)).toBe(true)
