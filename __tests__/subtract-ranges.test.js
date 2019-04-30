@@ -38,6 +38,23 @@ describe('subtractRanges', function () {
     assert.deepStrictEqual(difference, expected)
   })
 
+  test('should be empty if fully covered', function () {
+    const positive = mergeRanges([
+      [ 831513792, 1024000000 ]
+    ])
+
+    const negative = mergeRanges([
+      [ 0, 1024000000 ]
+    ])
+
+    const expected = mergeRanges([
+
+    ])
+
+    const difference = subtractRanges(positive, negative)
+    assert.deepStrictEqual(difference, expected)
+  })
+
   test('should treat range-ends as non-inclusive', function () {
     const positive = mergeRanges([
       [10, 20],

@@ -38,6 +38,7 @@ module.exports = ({ ds } = {}) => {
         number: () => value => Number(value),
         date: (...args) => value => moment(value, ...args),
         array: () => value => [ value ],
+        value: value => () => value,
         int: (fallback = null, radix) => value => {
           // TODO (fix): Validate arguments...
 
