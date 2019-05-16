@@ -16,5 +16,5 @@ module.exports = function subtractRanges (a, b) {
     }
   }
 
-  return c
+  return c.filter(([ start, end ]) => end > start)
 }
