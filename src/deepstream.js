@@ -13,21 +13,21 @@ function provide (ds, domain, callback, options) {
     callback = cached(callback, options, (id, options, key) => key)
   }
 
-  let idExpr = '({.+}:)?'
+  let idExpr = '({.*}:)?'
   if (options.id === undefined || options.id === true) {
-    idExpr = '^([^{}]+:)'
+    idExpr = '([^{}]+:)'
   } else if (options.id === null) {
     idExpr = '^(.*:)?'
   }
 
-  return ds.record.provide(`${idExpr}${domain.replace('.', '\\.')}(\\?.*)?$`, key => {
+  return ds.record.provide(`^${idExpr}${domain.replace('.', '\\.')}(\\?.*)?$`, key => {
     const [ id, options ] = parseKey(key)
     return callback(id, options, key)
   }, options.recursive)
 }
 
 function parseKey (key) {
-  const { json, id, query } = key.match(/^(?:(?<json>\{.+\}):|(?<id>.*):)?[^?]*(?:\?(?<query>.*))?$/).groups
+  const { json, id, query } = key.match(/^(?:(?<json>\{.*\}):|(?<id>.*):)?[^?]*(?:\?(?<query>.*))?$/).groups
   if (query) {
     return [ id || '', querystring.parse(query) ]
   } else if (json) {
