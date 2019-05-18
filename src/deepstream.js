@@ -23,7 +23,7 @@ function parseKey (key) {
   if (query) {
     return [ id || '', querystring.parse(query) ]
   } else if (json) {
-    return [ id || '', JSON.parse(json) ]
+    return [ '', JSON.parse(json) ]
   } else {
     return [ id || '', {} ]
   }
