@@ -31,9 +31,16 @@ function parseKey (key) {
 }
 
 function query (ds, { view, filter, startkey, endkey, limit }) {
+  view = stringifyFn(view)
+  filter = stringifyFn(filter)
+
   const id = objectHash({ view, filter })
   ds.record.set(`${id}:_query`, { view, filter })
   return ds.record.observe(`${id}:query?${querystring.stringify({ startkey, endkey, limit })}`, ds.record.PROVIDER)
+}
+
+function stringifyFn (fn) {
+  return typeof fn === 'function' ? fn.toString().match(/\{([\s\S]+)\}/m)[1] : fn
 }
 
 module.exports = { provide, query }
