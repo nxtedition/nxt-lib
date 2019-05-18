@@ -20,7 +20,7 @@ function provide (ds, domain, callback, options) {
 }
 
 function parseKey (key) {
-  const { json, id, query } = key.match(/^(?:(?<json>\{.+\})|(?<id>.*):)?[^?]*(?:\?(?<query>.*))?$/).groups
+  const { json, id, query } = key.match(/^(?:(?<json>\{.+\}):|(?<id>.*):)?[^?]*(?:\?(?<query>.*))?$/).groups
   if (query) {
     return [ id || '', querystring.parse(query) ]
   } else if (json) {
