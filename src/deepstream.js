@@ -13,9 +13,9 @@ function provide (ds, domain, callback, options) {
     callback = cached(callback, options, (id, options, key) => key)
   }
 
-  let idExpr = ''
+  let idExpr = '({.+}:)?'
   if (options.id === undefined || options.id === true) {
-    idExpr = '^(.+:)'
+    idExpr = '^([^{}]+:)'
   } else if (options.id === null) {
     idExpr = '^(.*:)?'
   }
