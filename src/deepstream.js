@@ -1,4 +1,5 @@
 const querystring = require('querystring')
+const objectHash = require('object-hash')
 const cached = require('./util/cached')
 
 function provide (ds, domain, callback, options) {
@@ -29,4 +30,10 @@ function parseKey (key) {
   }
 }
 
-module.exports = { provide }
+function query (ds, { view, filter, startkey, endkey, limit }) {
+  const id = objectHash({ view, filter })
+  ds.record.set(`${id}:_query`, { view, filter })
+  return ds.record.observe(`${id}:query?${querystring.stringify({ startkey, endkey, limit })}`, ds.record.PROVIDER)
+}
+
+module.exports = { provide, query }
