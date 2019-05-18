@@ -13,7 +13,14 @@ function provide (ds, domain, callback, options) {
     callback = cached(callback, options, (id, options, key) => key)
   }
 
-  return ds.record.provide(`^(.*:)?${domain.replace('.', '\\.')}(\\?.*)?$`, key => {
+  let idExpr = ''
+  if (options.id === undefined || options.id === true) {
+    idExpr = '^(.+:)'
+  } else if (options.id === null) {
+    idExpr = '^(.*:)?'
+  }
+
+  return ds.record.provide(`${idExpr}${domain.replace('.', '\\.')}(\\?.*)?$`, key => {
     const [ id, options ] = parseKey(key)
     return callback(id, options, key)
   }, options.recursive)
