@@ -9,14 +9,24 @@ function provide (ds, domain, callback, options) {
   }
 
   if (options.minAge) {
-    callback = cached(callback, { minAge: options.minAge })
+    callback = cached(callback, options, (id, options, key) => key)
   }
 
-  const expr = new RegExp(`([a-zA-Z0-9-_~+/]+):${domain}(?:\\?(.+))?`)
-  return ds.record.provide(expr.source, key => {
-    const [ , id, queryString ] = key.match(expr)
-    return callback(id, queryString ? querystring.parse(queryString) : {}, key)
+  return ds.record.provide(`^(.+:)?${domain.replace('.', '\\.')}(\\?.*)$`, key => {
+    const [ id, options ] = parseKey(key)
+    return callback(id, options, key)
   }, options.recursive)
+}
+
+function parseKey (key) {
+  const { json, id, query } = key.match(/^(?:(?<json>\{.+\})|(?<id>.+):)?[^?]*(?:\?(?<query>.+))?$/).groups
+  if (query) {
+    return [ id || '', querystring.parse(query) ]
+  } else if (json) {
+    return [ id || '', JSON.parse(json) ]
+  } else {
+    return [ id || '', {} ]
+  }
 }
 
 module.exports = { provide }
