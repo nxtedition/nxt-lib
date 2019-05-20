@@ -113,7 +113,7 @@ module.exports = ({ ds } = {}) => {
     ),
     // ds
     ...asFilter(
-      value => value == null || fp.isPlainObject(value) ? '' : value,
+      null,
       value => value && (typeof value === 'string' || Array.isArray(value)),
       {
         ds: (postfix, path, state = ds.record.SERVER) => {
