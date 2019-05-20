@@ -131,6 +131,7 @@ module.exports = ({ ds } = {}) => {
                   rx.map(val => path ? fp.get(path, val) : val)
                 )
             } else if (Array.isArray(value)) {
+              value = value.filter(x => x && fp.isString(x))
               return value.length === 0 ? Observable.of([]) : Observable.combineLatest(
                 value.map(id => ds.record
                   .observe((id || '') + (postfix || ''), state)
