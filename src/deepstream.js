@@ -57,7 +57,7 @@ function stringifyFn (fn) {
 function observe (ds, domain, optionsOrState, state) {
   let options = optionsOrState
 
-  if (optionsOrState == null && typeof optionsOrState !== 'object') {
+  if (optionsOrState != null && typeof optionsOrState !== 'object') {
     state = optionsOrState
     options = null
   }
