@@ -54,4 +54,15 @@ function stringifyFn (fn) {
   return typeof fn === 'function' ? fn.toString().match(/\{([\s\S]+)\}/m)[1] : fn
 }
 
-module.exports = { provide, query }
+function observe (ds, domain, optionsOrState, state) {
+  let options = optionsOrState
+
+  if (optionsOrState == null && typeof optionsOrState !== 'object') {
+    state = optionsOrState
+    options = null
+  }
+
+  return ds.record.observe(`${domain}${options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''}`, state)
+}
+
+module.exports = { provide, query, observe }
