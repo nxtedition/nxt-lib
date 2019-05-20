@@ -111,6 +111,41 @@ module.exports = ({ ds } = {}) => {
         }
       }
     ),
+    // ds
+    ...asFilter(
+      value => value == null || fp.isPlainObject(value) ? '' : value,
+      value => value && (typeof value === 'string' || Array.isArray(value)),
+      {
+        ds: (postfix, path, state = ds.record.SERVER) => {
+          // TODO (fix): Validate arguments...
+          if (!ds) {
+            throw new Error('invalid argument')
+          }
+
+          return value => {
+            if (typeof value === 'string') {
+              const id = value
+              return ds.record
+                .observe((id || '') + (postfix || ''), state)
+                .pipe(
+                  rx.map(val => path ? fp.get(path, val) : val)
+                )
+            } else if (Array.isArray(value)) {
+              return value.length === 0 ? Observable.of([]) : Observable.combineLatest(
+                value.map(id => ds.record
+                  .observe((id || '') + (postfix || ''), state)
+                  .pipe(
+                    rx.map(val => path ? fp.get(path, val) : val)
+                  )
+                )
+              )
+            } else {
+              return null
+            }
+          }
+        }
+      }
+    ),
     // string
     ...asFilter(
       value => value == null || fp.isPlainObject(value) || Array.isArray(value) ? '' : String(value),
@@ -139,20 +174,6 @@ module.exports = ({ ds } = {}) => {
                     ? RETURN
                     : null
                 )
-              )
-            : null
-        },
-        ds: (postfix, path, state = ds.record.SERVER) => {
-          // TODO (fix): Validate arguments...
-          if (!ds) {
-            throw new Error('invalid argument')
-          }
-
-          return value => value
-            ? ds.record
-              .observe((value || '') + (postfix || ''), state)
-              .pipe(
-                rx.map(val => path ? fp.get(path, val) : val)
               )
             : null
         },
