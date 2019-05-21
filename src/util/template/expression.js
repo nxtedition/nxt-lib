@@ -279,12 +279,15 @@ module.exports = ({ ds } = {}) => {
         uniq: () => value => fp.uniq(value),
         flatten: (depth = 1) => value => fp.flattenDepth(depth, value),
         flattenDeep: () => value => fp.flattenDeep(value),
-        union: (...args) => value => fp.union(...args, value),
-        intersection: (...args) => value => fp.intersection(...args, value),
-        initial: (...args) => value => fp.initial(...args, value),
-        concat: (...args) => value => fp.concat(...args, value),
-        compact: (...args) => value => fp.compact(...args, value),
-        pull: (...args) => value => fp.pull(...args, value)
+        union: (...args) => value => fp.union(args[0], value),
+        intersection: (...args) => value => fp.intersection(args[0], value),
+        concat: (...args) => value => fp.concat(value, args[0]),
+        difference: (...args) => value => fp.difference(value, args[0]),
+        initial: () => value => fp.initial(value),
+        compact: () => value => fp.compact(value),
+        pull: (...args) => value => fp.pull(args[0], value),
+        zip: (...args) => value => fp.zip(value, args),
+        unzip: () => value => fp.unzip(value)
       }
     ),
     // collection
