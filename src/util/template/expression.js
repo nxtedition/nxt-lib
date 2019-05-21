@@ -285,9 +285,7 @@ module.exports = ({ ds } = {}) => {
         difference: (...args) => value => fp.difference(value, args[0]),
         initial: () => value => fp.initial(value),
         compact: () => value => fp.compact(value),
-        pull: (...args) => value => fp.pull(args[0], value),
-        zip: (...args) => value => fp.zip(value, args),
-        unzip: () => value => fp.unzip(value)
+        pull: (...args) => value => fp.pull(args[0], value)
       }
     ),
     // collection
