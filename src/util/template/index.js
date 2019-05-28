@@ -3,6 +3,7 @@ const Observable = require('rxjs')
 const fp = require('lodash/fp')
 const getExpressionCompiler = require('./expression')
 const memoize = require('memoizee')
+const moment = require('moment')
 
 module.exports = ({ ds } = {}) => {
   const compileExpression = getExpressionCompiler({ ds })
@@ -89,6 +90,12 @@ module.exports = ({ ds } = {}) => {
     const { pre, body, post } = match
 
     const expr = compileExpression(body)
+
+    if (/now/.test(body)) {
+      return context => Observable
+        .timer(0, 60e3)
+        .switchMap(() => expr({ now: moment(), ...context }))
+    }
 
     if (!pre && !post) {
       return expr

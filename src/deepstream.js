@@ -37,16 +37,16 @@ function parseKey (key) {
   }
 }
 
-function query (ds, { view, filter, startkey, endkey, limit }) {
+function query (ds, { view, filter, ...options }) {
   if (view || filter) {
     view = stringifyFn(view)
     filter = stringifyFn(filter)
 
     const id = objectHash({ view, filter })
     ds.record.set(`${id}:_query`, { view, filter })
-    return ds.record.observe(`${id}:query?${querystring.stringify({ startkey, endkey, limit })}`, ds.record.PROVIDER)
+    return ds.record.observe(`${id}:query?${querystring.stringify({ options })}`, ds.record.PROVIDER)
   } else {
-    return ds.record.observe(`query?${querystring.stringify({ startkey, endkey, limit })}`, ds.record.PROVIDER)
+    return ds.record.observe(`query?${querystring.stringify({ options })}`, ds.record.PROVIDER)
   }
 }
 
