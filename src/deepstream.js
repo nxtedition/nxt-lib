@@ -17,7 +17,7 @@ function provide (ds, domain, callback, options) {
   if (options.id === true) {
     idExpr = '([^{}]+:)'
   } else if (options.id === false) {
-    idExpr = '({.*}:)?'
+    idExpr = '({.*}:|)?'
   }
 
   return ds.record.provide(`^${idExpr}${domain.replace('.', '\\.')}(\\?.*)?$`, key => {
