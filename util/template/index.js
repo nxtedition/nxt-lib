@@ -104,7 +104,7 @@ module.exports = ({ ds } = {}) => {
 
     return context => expr(context)
       .pipe(
-        rx.switchMap(body => compileTemplate(`${pre}${stringify(body)}${post}`)(context))
+        rx.switchMap(body => compileTemplate(`${pre}${JSON5.stringify(body)}${post}`)(context))
       )
   }, {
     max: 1024,
@@ -121,15 +121,6 @@ module.exports = ({ ds } = {}) => {
     } catch (err) {
       return Observable.throwError(err)
     }
-  }
-
-  function stringify (value) {
-    if (value == null) {
-      return ''
-    } else if (fp.isArray(value) || fp.isPlainObject(value)) {
-      return JSON5.stringify(value)
-    }
-    return value
   }
 
   function isTemplate (val) {
