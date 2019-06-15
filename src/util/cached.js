@@ -51,15 +51,25 @@ module.exports = function cached (fn, options, keySelector = key => key) {
           key,
           observable,
           subscription: fn(...args).subscribe(observable),
-          refs: 0,
+          refs: 1,
           timestamp: null
         }
 
         cache.set(key, entry)
         array.push(entry)
-      }
 
-      entry.refs += 1
+        if (options.maxCount && array.length > options.maxCount) {
+          const idx = array.findIndex(entry => entry.refs === 0)
+          if (idx !== -1) {
+            const { key, subscription } = array[idx]
+            array[idx] = array.pop()
+            subscription.unsubscribe()
+            cache.delete(key)
+          }
+        }
+      } else {
+        entry.refs += 1
+      }
 
       const subscription = entry.observable.subscribe(o)
 
