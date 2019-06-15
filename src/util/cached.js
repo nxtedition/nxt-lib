@@ -5,17 +5,17 @@ module.exports = function cached (fn, options, keySelector = key => key) {
   const array = []
 
   if (Number.isFinite(options)) {
-    options = { minAge: options }
+    options = { maxAge: options }
   } else if (options == null) {
-    options = { minAge: 1000 }
+    options = { maxAge: 1000 }
   }
 
-  if (options.minAge === undefined) {
+  if (options.maxAge === undefined) {
     // NOTE: backwards compat
-    options.minAge = options.maxAge !== undefined ? options.maxAge : 1000
+    options.maxAge = options.minAge !== undefined ? options.minAge : 1000
   }
 
-  const { minAge } = options
+  const { maxAge } = options
 
   function prune () {
     let pos = 0
@@ -25,7 +25,7 @@ module.exports = function cached (fn, options, keySelector = key => key) {
     while (pos < end) {
       const { refs, key, subscription, timestamp } = array[pos]
 
-      if (refs === 0 && timestamp + minAge < now) {
+      if (refs === 0 && now - timestamp > maxAge) {
         end -= 1
         subscription.unsubscribe()
         array[pos] = array[end]
@@ -37,7 +37,7 @@ module.exports = function cached (fn, options, keySelector = key => key) {
     array.length = end
   }
 
-  setInterval(prune, minAge)
+  setInterval(prune, maxAge)
 
   return function (...args) {
     const key = keySelector(...args)
