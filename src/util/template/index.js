@@ -129,7 +129,7 @@ module.exports = ({ ds } = {}) => {
     } else if (fp.isArray(value) || fp.isPlainObject(value)) {
       return JSON5.stringify(value)
     }
-    return value
+    return value.replace(/"/g, '\\"')
   }
 
   function isTemplate (val) {

@@ -35,6 +35,7 @@ test('replaces strings', async () => {
 })
 
 test('nested', async () => {
+  expect(await resolveTemplate('{{ asd | default("{{foo}}") }}', { foo: '"test"' })).toBe('"test"')
   expect(await resolveTemplate('{{{{foo}}}}', { test: '111', foo: 'test' })).toBe('111')
   expect(await resolveTemplate('f{{oo}}', { test: '111', foo: 'test', oo: 'oo' })).toBe('foo')
   expect(await resolveTemplate('{{f{{oo}}}}', { test: '111', foo: 'test', oo: 'oo' })).toBe('test')
