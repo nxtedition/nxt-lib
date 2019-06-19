@@ -125,10 +125,12 @@ module.exports = ({ ds } = {}) => {
   function stringify (value) {
     if (value == null) {
       return ''
-    } else if (fp.isArray(value) || fp.isPlainObject(value)) {
-      return JSON.stringify(value)
     }
-    return value
+    let output = value
+    if (fp.isArray(value) || fp.isPlainObject(value)) {
+      output = JSON.stringify(value)
+    }
+    return output.replace(/(?<!\\)"/g, '\\"')
   }
 
   function isTemplate (val) {

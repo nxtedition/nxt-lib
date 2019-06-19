@@ -47,6 +47,9 @@ test('nested', async () => {
   expect(await resolveTemplate('{{{{f{{o}}o}}}}', { test: '111', foo: 'test', o: 'o' })).toBe('111')
   expect(await resolveTemplate('{{ asd | default("{{test}}")}}', { test: '111', foo: 'test' })).toBe('111')
   expect(await resolveTemplate('{{ asd | default("{{t{{es}}t}}")}}', { test: '111', foo: 'test', es: 'es' })).toBe('111')
+  expect(await resolveTemplate('{{ asd | default("{{foo}}") }}', { foo: '"test"' })).toBe('"test"')
+  expect(await resolveTemplate('{{ asd | default("{{foo}}") }}', { foo: { bar: 'test' } })).toBe('{"bar":"test"}')
+  expect(await resolveTemplate('{{ asd | default("{{foo}}") }}', { foo: { bar: '"test"' } })).toBe('{"bar":""test""}')
 })
 
 test('append', async () => {
