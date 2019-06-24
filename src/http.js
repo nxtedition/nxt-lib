@@ -13,7 +13,7 @@ module.exports.request = async function request (ctx, next) {
 
     res.setHeader('request-id', req.id)
 
-    await Promise.race([
+    await Promise.all([
       next(),
       new Promise((resolve, reject) => {
         req
