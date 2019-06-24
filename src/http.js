@@ -2,23 +2,6 @@ const xuid = require('xuid')
 const statuses = require('statuses')
 const createError = require('http-errors')
 
-async function onRequestFinished (req, res, next) {
-  await next()
-
-  if (!req.aborted && !res.finished) {
-    await new Promise((resolve, reject) => {
-      req
-        .on('close', resolve)
-        .on('aborted', resolve)
-        .on('error', reject)
-      res
-        .on('close', resolve)
-        .on('finish', resolve)
-        .on('error', reject)
-    })
-  }
-}
-
 module.exports.request = async function request (ctx, next) {
   const { req, res, logger } = ctx
   const startTime = Date.now()
@@ -30,13 +13,22 @@ module.exports.request = async function request (ctx, next) {
 
     res.setHeader('request-id', req.id)
 
-    const timeoutPromise = new Promise((resolve, reject) => {
-      req.on('timeout', () => {
-        reject(new createError.RequestTimeout())
+    await Promise.race([
+      next(),
+      new Promise((resolve, reject) => {
+        req
+          .on('close', resolve)
+          .on('aborted', resolve)
+          .on('error', reject)
+          .on('timeout', () => {
+            reject(new createError.RequestTimeout())
+          })
+        res
+          .on('close', resolve)
+          .on('finish', resolve)
+          .on('error', reject)
       })
-    })
-
-    await Promise.race([ timeoutPromise, onRequestFinished(req, res, next) ])
+    ])
 
     const responseTime = Date.now() - startTime
     req.log.debug({ res, responseTime }, `request ${req.aborted ? 'aborted' : 'completed'}`)
