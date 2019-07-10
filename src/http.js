@@ -13,7 +13,8 @@ function patchReqRes (obj) {
   if (obj.complete === undefined) {
     Object.defineProperty(obj, 'complete', {
       get: function complete () {
-        return this.aborted || this.closed || this.finished
+        const ended = this.stream ? this.stream.ended : this.finished
+        return ended || this.finished || this.aborted || this.closed
       }
     })
   }
