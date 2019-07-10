@@ -2,6 +2,23 @@ const xuid = require('xuid')
 const statuses = require('statuses')
 const createError = require('http-errors')
 
+function patchReqRes (obj) {
+  if (obj.closed === undefined) {
+    obj.closed = false
+    obj.on('close', function () {
+      this.closed = true
+    })
+  }
+
+  if (obj.complete === undefined) {
+    Object.defineProperty(obj, 'complete', {
+      get: function complete () {
+        return this.aborted || this.closed || this.finished
+      }
+    })
+  }
+}
+
 module.exports.request = async function request (ctx, next) {
   const { req, res, logger } = ctx
   const startTime = Date.now()
@@ -12,6 +29,9 @@ module.exports.request = async function request (ctx, next) {
     req.log.debug('request started')
 
     res.setHeader('request-id', req.id)
+
+    patchReqRes(req)
+    patchReqRes(res)
 
     await Promise.all([
       next(),
