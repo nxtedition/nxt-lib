@@ -17,6 +17,7 @@ function patchReqRes (obj) {
           this.finished ||
           this.aborted ||
           this.closed ||
+          this.destroyed ||
           (this._writableState && (this._writableState.ended || this._writableState.destroyed)) ||
           (this._readableState && (this._readableState.ended || this._readableState.destroyed)) ||
           (this.stream && (this.stream.ended || this.stream.destroyed || this.stream.aborted))
