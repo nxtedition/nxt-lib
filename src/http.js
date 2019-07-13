@@ -34,7 +34,13 @@ module.exports.request = async function request (ctx, next) {
     ])
 
     const responseTime = Date.now() - startTime
-    req.log.debug({ res, responseTime }, `request ${req.aborted ? 'aborted' : 'completed'}`)
+    if (req.aborted) {
+      req.log.debug({ res, responseTime }, 'request aborted')
+    } else if (res.statusCode >= 500) {
+      res.log.error({ res, responseTime }, 'request failed')
+    } else {
+      req.log.debug({ res, responseTime }, 'request completed')
+    }
   } catch (err) {
     const statusCode = err.statusCode || 500
     const responseTime = Date.now() - startTime
