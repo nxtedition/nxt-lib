@@ -45,9 +45,12 @@ module.exports.request = async function request (ctx, next) {
     })
 
     if (!res.headersSent && !res.finished && res.writable) {
-      if (statusCode >= 500) {
-        for (const name of res.getHeaderNames()) {
-          res.removeHeader(name)
+      for (const name of res.getHeaderNames()) {
+        res.removeHeader(name)
+      }
+      if (err.headers) {
+        for (const [ key, val ] of Object.entries(err.headers)) {
+          res.setHeader(key, val)
         }
       }
       res.statusCode = statusCode
