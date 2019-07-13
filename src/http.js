@@ -48,6 +48,9 @@ module.exports.request = async function request (ctx, next) {
       for (const name of res.getHeaderNames()) {
         res.removeHeader(name)
       }
+
+      res.setHeader('request-id', req.id)
+
       if (err.headers) {
         for (const [ key, val ] of Object.entries(err.headers)) {
           res.setHeader(key, val)
