@@ -10,12 +10,18 @@ function provide (ds, domain, callback, options) {
   }
 
   if (options.cached) {
+    let cachedOptions = options.cached
+    if (typeof cachedOptions === 'number') {
+      cachedOptions = { maxAge: cachedOptions }
+    }
+
     callback = cached(
       callback,
-      options.cached,
-      options.cached.keySelector ? options.cached.keySelector : (id, options, key) => key
+      cachedOptions,
+      cachedOptions.keySelector ? cachedOptions.keySelector : (id, options, key) => key
     )
   } else if (options.minAge) {
+    // Backwards compat
     callback = cached(
       callback,
       options,
