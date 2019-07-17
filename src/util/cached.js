@@ -14,6 +14,7 @@ module.exports = function cached (fn, options, keySelector) {
     options = { maxAge: 1000 }
   }
 
+  const maxCount = options.maxCount
   let maxAge = options.maxAge
 
   if (maxAge === undefined) {
@@ -22,9 +23,10 @@ module.exports = function cached (fn, options, keySelector) {
   }
 
   function prune () {
+    const end = array.length
+    const now = Date.now()
+
     let idx = 0
-    let end = array.length
-    let now = Date.now()
 
     while (idx < end) {
       const age = now - array[idx].timestamp
@@ -79,7 +81,7 @@ module.exports = function cached (fn, options, keySelector) {
           entry.timestamp = Date.now()
           array.push(entry)
 
-          if (options.maxCount && array.length > options.maxCount) {
+          if (maxCount && array.length > maxCount) {
             const { key, subscription } = array.shift()
             subscription.unsubscribe()
             cache.delete(key)
