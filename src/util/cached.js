@@ -22,23 +22,24 @@ module.exports = function cached (fn, options, keySelector) {
   const { maxAge } = options
 
   function prune () {
-    let pos = 0
+    let idx = 0
     let end = array.length
     let now = Date.now()
 
-    while (pos < end) {
-      const { refs, key, subscription, timestamp } = array[pos]
-
-      if (refs === 0 && now - timestamp > maxAge) {
-        end -= 1
-        subscription.unsubscribe()
-        array[pos] = array[end]
-        cache.delete(key)
-      } else {
-        pos += 1
+    while (idx < end) {
+      const age = now - array[idx].timestamp
+      if (age < maxAge) {
+        break
       }
+
+      const { key, subscription } = array[idx]
+      subscription.unsubscribe()
+      cache.delete(key)
+
+      idx += 1
     }
-    array.length = end
+
+    array.splice(0, idx)
   }
 
   setInterval(prune, maxAge)
@@ -60,18 +61,13 @@ module.exports = function cached (fn, options, keySelector) {
         }
 
         cache.set(key, entry)
-        array.push(entry)
-
-        if (options.maxCount && array.length > options.maxCount) {
-          const idx = array.findIndex(entry => entry.refs === 0)
+      } else {
+        if (entry.refs === 0) {
+          const idx = array.indexOf(entry)
           if (idx !== -1) {
-            const { key, subscription } = array[idx]
-            array[idx] = array.pop()
-            subscription.unsubscribe()
-            cache.delete(key)
+            array.splice(idx, 1)
           }
         }
-      } else {
         entry.refs += 1
       }
 
@@ -81,6 +77,13 @@ module.exports = function cached (fn, options, keySelector) {
         entry.refs -= 1
         if (entry.refs === 0) {
           entry.timestamp = Date.now()
+          array.push(entry)
+
+          if (options.maxCount && array.length > options.maxCount) {
+            const { key, subscription } = array.shift()
+            subscription.unsubscribe()
+            cache.delete(key)
+          }
         }
         subscription.unsubscribe()
       }
