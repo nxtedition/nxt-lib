@@ -14,12 +14,12 @@ module.exports = function cached (fn, options, keySelector) {
     options = { maxAge: 1000 }
   }
 
-  if (options.maxAge === undefined) {
-    // NOTE: backwards compat
-    options.maxAge = options.minAge !== undefined ? options.minAge : 1000
-  }
+  let maxAge = options.maxAge
 
-  const { maxAge } = options
+  if (maxAge === undefined) {
+    // NOTE: backwards compat
+    maxAge = options.minAge !== undefined ? options.minAge : 1000
+  }
 
   function prune () {
     let idx = 0
