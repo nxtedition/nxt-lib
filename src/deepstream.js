@@ -9,8 +9,18 @@ function provide (ds, domain, callback, options) {
     }
   }
 
-  if (options.minAge) {
-    callback = cached(callback, options, (id, options, key) => key)
+  if (options.cached) {
+    callback = cached(
+      callback,
+      options.cached,
+      options.cached.keySelector ? options.cached.keySelector : (id, options, key) => key
+    )
+  } else if (options.minAge) {
+    callback = cached(
+      callback,
+      options,
+      (id, options, key) => key
+    )
   }
 
   let idExpr = '(.*:)?'
