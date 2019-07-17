@@ -1,8 +1,12 @@
 const { Observable, ReplaySubject } = require('rxjs')
 
-module.exports = function cached (fn, options, keySelector = key => key) {
+module.exports = function cached (fn, options, keySelector) {
   const cache = new Map()
   const array = []
+
+  if (!keySelector) {
+    keySelector = options.keySelector || (key => key)
+  }
 
   if (Number.isFinite(options)) {
     options = { maxAge: options }
