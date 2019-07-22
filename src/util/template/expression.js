@@ -335,7 +335,10 @@ module.exports = ({ ds } = {}) => {
 
   return memoize(expression => {
     try {
-      const [ basePath, ...tokens ] = expression.trim().split(/\s*\|\s*/)
+      const [ basePath, ...tokens ] = split(expression, {
+        separator: '|',
+        quotes: ['"']
+      }).map(str => str.trim())
 
       if (tokens.length === 0) {
         return context => Observable.of(fp.get(basePath, context))
