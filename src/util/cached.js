@@ -5,7 +5,7 @@ module.exports = function cached (fn, options, keySelector) {
   const array = []
 
   if (!keySelector) {
-    keySelector = options.keySelector || (key => key)
+    keySelector = (options && options.keySelector) || (key => key)
   }
 
   if (Number.isFinite(options)) {
