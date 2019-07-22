@@ -4,14 +4,14 @@ module.exports = function cached (fn, options, keySelector) {
   const cache = new Map()
   const array = []
 
-  if (!keySelector) {
-    keySelector = (options && options.keySelector) || (key => key)
-  }
-
   if (Number.isFinite(options)) {
     options = { maxAge: options }
   } else if (options == null) {
     options = { maxAge: 1000 }
+  }
+
+  if (!keySelector) {
+    keySelector = options.keySelector || (key => key)
   }
 
   const maxCount = options.maxCount
