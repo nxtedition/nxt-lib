@@ -42,6 +42,7 @@ module.exports = {
     method: ureq.method,
     path: ureq.path,
     hostname: ureq.hostname,
+    timeout: ureq.timeout,
     port: ureq.port,
     bytesWritten: ureq.bytesWritten,
     headers: ureq.headers
