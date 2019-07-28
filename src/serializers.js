@@ -17,17 +17,33 @@ module.exports = {
     return obj
   },
   res: res => ({
+    id: res.id || (res.req && res.req.id),
     statusCode: res.statusCode,
     bytesWritten: res.bytesWritten,
     headers: typeof res.getHeaders === 'function' ? res.getHeaders() : res.headers
   }),
   req: req => ({
-    id: req.id,
+    id: req.id || (req.headers && req.headers['request-id']),
     method: req.method,
     url: req.url,
     headers: req.headers,
     bytesRead: req.bytesRead,
     remoteAddress: req.socket && req.socket.remoteAddress,
     remotePort: req.socket && req.socket.remotePort
+  }),
+  ures: ures => ({
+    id: ures.id || (ures.req && ures.req.id),
+    statusCode: ures.statusCode,
+    bytesRead: ures.bytesRead,
+    headers: typeof ures.getHeaders === 'function' ? ures.getHeaders() : ures.headers
+  }),
+  ureq: ureq => ({
+    id: ureq.id || (ureq.headers && ureq.headers['request-id']),
+    method: ureq.method,
+    path: ureq.path,
+    hostname: ureq.hostname,
+    port: ureq.port,
+    bytesWritten: ureq.bytesWritten,
+    headers: ureq.headers
   })
 }
