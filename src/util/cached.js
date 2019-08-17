@@ -81,10 +81,15 @@ module.exports = function cached (fn, options, keySelector) {
           entry.timestamp = Date.now()
           array.push(entry)
 
-          if (maxCount && array.length > maxCount) {
-            const { key, subscription } = array.shift()
-            subscription.unsubscribe()
-            cache.delete(key)
+          if (maxCount) {
+            if (array.length > maxCount) {
+              prune()
+            }
+            if (array.length > maxCount) {
+              const { key, subscription } = array.shift()
+              subscription.unsubscribe()
+              cache.delete(key)
+            }
           }
         }
         subscription.unsubscribe()
