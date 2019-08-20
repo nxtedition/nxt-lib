@@ -8,6 +8,7 @@
     "serializers.js",
     "merge-ranges.js",
     "http.js",
+    "destroy.js",
     "deepstream.js",
     "logger.js"
   ],
