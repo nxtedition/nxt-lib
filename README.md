@@ -7,7 +7,7 @@ const { createLogger } = require('@nxtedition/lib/logger')
 const config = require('./config')
 const createError = require('http-errors')
 
-const middlware = compose([
+const middleware = compose([
   request,
   require('./myApp'),
   () => {
