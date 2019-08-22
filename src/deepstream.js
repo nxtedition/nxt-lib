@@ -37,7 +37,7 @@ function provide (ds, domain, callback, options) {
   }
 
   return ds.record.provide(`^${idExpr}${domain.replace('.', '\\.')}(\\?.*)?$`, key => {
-    const [ id, options ] = parseKey(key)
+    const [id, options] = parseKey(key)
     return callback(id, options, key)
   }, options.recursive)
 }
@@ -45,11 +45,11 @@ function provide (ds, domain, callback, options) {
 function parseKey (key) {
   const { json, id, query } = key.match(/^(?:(?<json>\{.*\}):|(?<id>.*):)?[^?]*(?:\?(?<query>.*))?$/).groups
   if (query) {
-    return [ id || '', querystring.parse(query) ]
+    return [id || '', querystring.parse(query)]
   } else if (json) {
-    return [ '', JSON.parse(json) ]
+    return ['', JSON.parse(json)]
   } else {
-    return [ id || '', {} ]
+    return [id || '', {}]
   }
 }
 

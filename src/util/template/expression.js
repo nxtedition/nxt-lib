@@ -37,7 +37,7 @@ module.exports = ({ ds } = {}) => {
         string: () => value => String(value),
         number: () => value => Number(value),
         date: (...args) => value => moment(value, ...args),
-        array: () => value => [ value ],
+        array: () => value => [value],
         value: value => () => value,
         int: (fallback = null, radix) => value => {
           // TODO (fix): Validate arguments...
@@ -92,7 +92,7 @@ module.exports = ({ ds } = {}) => {
       }
     ),
     ...asFilter(
-      value => (Array.isArray(value) ? value : [ value ]).map(x => Number(x)).filter(x => Number.isFinite(x)),
+      value => (Array.isArray(value) ? value : [value]).map(x => Number(x)).filter(x => Number.isFinite(x)),
       value => value.every(x => Number.isFinite(x)),
       {
         min: (...args) => value => Math.min(...value, ...args),
@@ -200,10 +200,10 @@ module.exports = ({ ds } = {}) => {
           }
 
           if (args.length === 3) {
-            const [ pattern, flags, str ] = args
+            const [pattern, flags, str] = args
             return value => value.replace(new RegExp(pattern, flags), str)
           } else if (args.length === 2) {
-            const [ a, b ] = args
+            const [a, b] = args
             return value => value.replace(a, b)
           } else {
             throw new Error('invalid argument')
@@ -273,7 +273,7 @@ module.exports = ({ ds } = {}) => {
         last: () => value => fp.last(value),
         tail: () => value => fp.last(value),
         length: () => value => value.length,
-        sort: () => value => [ ...value ].sort(),
+        sort: () => value => [...value].sort(),
         sum: () => value => fp.sum(value),
         unique: () => value => fp.uniq(value),
         uniq: () => value => fp.uniq(value),
@@ -303,13 +303,13 @@ module.exports = ({ ds } = {}) => {
     )
   }
 
-  const getFilter = memoize(function (filterStr) {
-    const [ , filterName, argsStr ] = filterStr.match(/([^(]+)\((.*)\)/) || []
+  const getFilter = memoize((filterStr) => {
+    const [, filterName, argsStr] = filterStr.match(/([^(]+)\((.*)\)/) || []
 
     const tokens = split(argsStr, {
       separator: ',',
       brackets: true,
-      quotes: [`"`]
+      quotes: ['"']
     })
 
     const args = tokens
@@ -335,7 +335,7 @@ module.exports = ({ ds } = {}) => {
 
   return memoize(expression => {
     try {
-      const [ basePath, ...tokens ] = split(expression, {
+      const [basePath, ...tokens] = split(expression, {
         separator: '|',
         quotes: ['"']
       }).map(str => str.trim())

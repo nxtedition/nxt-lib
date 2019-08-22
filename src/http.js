@@ -60,7 +60,7 @@ module.exports.request = async function request (ctx, next) {
       res.setHeader('request-id', req.id)
 
       if (err.headers) {
-        for (const [ key, val ] of Object.entries(err.headers)) {
+        for (const [key, val] of Object.entries(err.headers)) {
           res.setHeader(key, val)
         }
       }
@@ -98,7 +98,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
       })
     }
 
-    req.log.debug(`stream completed`)
+    req.log.debug('stream completed')
   } catch (err) {
     const statusCode = err.statusCode || 500
 

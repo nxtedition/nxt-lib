@@ -34,11 +34,11 @@ module.exports = ({ ds } = {}) => {
     const resolvers = []
     // TODO (fix): Make iterative
     function compile (path, obj) {
-      for (const [ key, val ] of Object.entries(obj)) {
+      for (const [key, val] of Object.entries(obj)) {
         if (fp.isObjectLike(val)) {
           compile(path.concat(key), val)
         } else if (isTemplate(val)) {
-          resolvers.push([ path.concat(key), compileTemplate(val) ])
+          resolvers.push([path.concat(key), compileTemplate(val)])
         }
       }
     }
@@ -48,8 +48,8 @@ module.exports = ({ ds } = {}) => {
       ? Observable
         .of(obj)
       : Observable
-        .combineLatest(resolvers.map(([ path, resolver ]) => resolver(context).map(val => [ path, val ])))
-        .map(fp.reduce((acc, [ path, val ]) => fp.set(path, val, acc), obj))
+        .combineLatest(resolvers.map(([path, resolver]) => resolver(context).map(val => [path, val])))
+        .map(fp.reduce((acc, [path, val]) => fp.set(path, val, acc), obj))
   }
 
   async function resolveTemplate (template, context) {

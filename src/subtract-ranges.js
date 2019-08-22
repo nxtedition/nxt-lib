@@ -10,11 +10,11 @@ module.exports = function subtractRanges (a, b) {
       if (!br) {
         c.push(ar)
       } else {
-        a.unshift([ br[1], ar[1] ])
-        a.unshift([ ar[0], br[0] ])
+        a.unshift([br[1], ar[1]])
+        a.unshift([ar[0], br[0]])
       }
     }
   }
 
-  return c.filter(([ start, end ]) => end > start)
+  return c.filter(([start, end]) => end > start)
 }

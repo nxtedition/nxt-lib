@@ -51,7 +51,7 @@ test('append', async () => {
 })
 
 test('object', async () => {
-  let obj = { foo: 1 }
+  const obj = { foo: 1 }
   expect(await resolveTemplate(`{{test}}`, { test: obj })).toBe(obj)
 })
 

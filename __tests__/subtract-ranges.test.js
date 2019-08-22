@@ -40,11 +40,11 @@ describe('subtractRanges', function () {
 
   test('should be empty if fully covered', function () {
     const positive = mergeRanges([
-      [ 831513792, 1024000000 ]
+      [831513792, 1024000000]
     ])
 
     const negative = mergeRanges([
-      [ 0, 1024000000 ]
+      [0, 1024000000]
     ])
 
     const expected = mergeRanges([
