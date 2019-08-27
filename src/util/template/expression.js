@@ -264,6 +264,7 @@ module.exports = ({ ds } = {}) => {
       value => Array.isArray(value) ? value : [],
       value => Array.isArray(value),
       {
+        map: (path) => value => fp.isArray(path) ? fp.map(fp.pick(path), value) : fp.map(fp.get(path), value),
         slice: (start, end) => value => value.slice(start, end),
         reverse: () => value => fp.reverse(value),
         join: (delimiter) => value => fp.join(delimiter, value),
