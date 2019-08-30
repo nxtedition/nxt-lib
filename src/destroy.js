@@ -9,6 +9,13 @@ module.exports = function destroy (self, err, callback) {
     self
       // node doesn't always implement destroy with callback
       .on('close', callback)
+      // node doesn't always emit 'close' after 'aborted'
+      // aborted should be ECONNRESET.
+      .on('aborted', () => {
+        const err = new Error('aborted')
+        err.code = 'ECONNRESET'
+        callback(err)
+      })
       // node doesn't always emit 'close'
       .on('end', callback)
   }
