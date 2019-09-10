@@ -53,18 +53,24 @@ function parseKey (key) {
   }
 }
 
-function query (ds, { view, filter, state, ...options }) {
-  state = state != null ? state : ds.record.PROVIDER
+function query (ds, { view, filter, state = ds.record.PROVIDER, ...options }) {
+  let x$
   if (view || filter) {
     view = stringifyFn(view)
     filter = stringifyFn(filter)
 
     const id = objectHash({ view, filter })
     ds.record.set(`${id}:_query`, { view, filter })
-    return ds.record.observe(`${id}:query?${querystring.stringify(options)}`, state)
+    x$ = ds.record.observe2(`${id}:query?${querystring.stringify(options)}`)
   } else {
-    return ds.record.observe(`query?${querystring.stringify(options)}`, state)
+    x$ = ds.record.observe2(`query?${querystring.stringify(options)}`)
   }
+  return x$
+    .filter(x => !state || x.state >= state)
+    .map(({ data, ...x }) => ({
+      ...x,
+      rows: Array.isArray(data && data.rows) ? data.rows : []
+    }))
 }
 
 function stringifyFn (fn) {
