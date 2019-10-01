@@ -14,7 +14,6 @@ module.exports = function cached (fn, options, keySelector) {
     keySelector = options.keySelector || (key => key)
   }
 
-  const maxCount = options.maxCount
   let maxAge = options.maxAge
 
   if (maxAge === undefined) {
@@ -78,18 +77,13 @@ module.exports = function cached (fn, options, keySelector) {
       return () => {
         entry.refs -= 1
         if (entry.refs === 0) {
-          entry.timestamp = Date.now()
-          array.push(entry)
-
-          if (maxCount) {
-            if (array.length > maxCount) {
-              prune()
-            }
-            if (array.length > maxCount) {
-              const { key, subscription } = array.shift()
-              subscription.unsubscribe()
-              cache.delete(key)
-            }
+          if (entry.observable.hasError) {
+            const { key, subscription } = entry
+            subscription.unsubscribe()
+            cache.delete(key)
+          } else {
+            entry.timestamp = Date.now()
+            array.push(entry)
           }
         }
         subscription.unsubscribe()
