@@ -39,7 +39,7 @@ module.exports.request = async function request (ctx, next) {
     } else if (res.statusCode >= 500) {
       const err = new Error(res.statusMessage)
       err.statusCode = res.statusCode
-      res.log.error({ err, res, responseTime }, 'request failed')
+      req.log.error({ err, res, responseTime }, 'request failed')
     } else {
       req.log.debug({ res, responseTime }, 'request completed')
     }
