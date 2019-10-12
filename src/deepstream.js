@@ -77,15 +77,14 @@ function stringifyFn (fn) {
   return typeof fn === 'function' ? fn.toString().match(/\{([\s\S]+)\}/m)[1] : fn
 }
 
-function observe (ds, domain, optionsOrState, state) {
-  let options = optionsOrState
+function observe (ds, domain, ...args) {
+  let options = null
 
-  if (optionsOrState != null && typeof optionsOrState !== 'object') {
-    state = optionsOrState
-    options = null
+  if (args[0] && typeof args[0] === 'object') {
+    options = args.shift()
   }
 
-  return ds.record.observe(`${domain}${options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''}`, state)
+  return ds.record.observe(`${domain}${options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''}`, ...args)
 }
 
 module.exports = { provide, query, observe }
