@@ -81,7 +81,7 @@ function observe (ds, domain, ...args) {
   let options = null
 
   if (args[0] && typeof args[0] === 'object') {
-    options = args.shift()
+    options = JSON.parse(JSON.stringify(args.shift()))
   }
 
   return ds.record.observe(`${domain}${options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''}`, ...args)
