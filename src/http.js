@@ -107,17 +107,23 @@ module.exports.upgrade = async function upgrade (ctx, next) {
       this.log.warn({ err }, 'stream error')
     })
 
-    if (statusCode >= 400 && statusCode < 500) {
-      socket.log.warn({ err }, 'stream failed')
-    } else {
-      socket.log.error({ err }, 'stream error')
-    }
+    let res = null
 
     if (socket.writable && !socket.writableEnded) {
+      res = {
+        statusCode: statusCode,
+        headers: err.headers
+      }
       // TODO (fix): httpVersion?
       socket.end(createHttpHeader(`HTTP/1.1 ${statusCode} ${statuses[statusCode]}\r\n\r\n`, err.headers))
     } else {
       socket.destroy()
+    }
+
+    if (statusCode >= 400 && statusCode < 500) {
+      socket.log.warn({ err, res }, 'stream failed')
+    } else {
+      socket.log.error({ err, res }, 'stream error')
     }
   }
 }
