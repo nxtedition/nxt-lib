@@ -70,7 +70,7 @@ module.exports.request = async function request (ctx, next) {
       res.destroy()
     }
 
-    if (statusCode >= 400 && statusCode < 500) {
+    if (statusCode < 500) {
       res.log.warn({ err, res, responseTime }, 'request failed')
     } else {
       res.log.error({ err, res, responseTime }, 'request error')
@@ -120,7 +120,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
       socket.destroy()
     }
 
-    if (statusCode >= 400 && statusCode < 500) {
+    if (statusCode < 500) {
       socket.log.warn({ err, res }, 'stream failed')
     } else {
       socket.log.error({ err, res }, 'stream error')
