@@ -114,9 +114,28 @@ module.exports.upgrade = async function upgrade (ctx, next) {
     }
 
     if (socket.writable && !socket.writableEnded) {
-      socket.end(Buffer.from(`HTTP/1.1 ${statusCode} ${statuses[statusCode]}\r\n\r\n`, 'ascii'))
+      socket.end(createHttpHeader(`HTTP/1.1 ${statusCode} ${statuses[statusCode]}\r\n\r\n`, err.headers))
     } else {
       socket.destroy()
     }
   }
+}
+
+module.exports.createHttpHeader = createHttpHeader
+
+function createHttpHeader (line, headers) {
+  let head = line
+  if (headers) {
+    for (const [key, value] of Object.entries(headers)) {
+      if (!Array.isArray(value)) {
+        head += `\r\n${key}: ${value}`
+      } else {
+        for (let i = 0; i < value.length; i++) {
+          head += `\r\n${key}: ${value[i]}`
+        }
+      }
+    }
+  }
+  head += '\r\n\r\n'
+  return Buffer.from(head, 'ascii')
 }
