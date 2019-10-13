@@ -114,7 +114,6 @@ module.exports.upgrade = async function upgrade (ctx, next) {
     }
 
     if (socket.writable && !socket.writableEnded) {
-      // TODO (fix): httpVersion?
       socket.end(createHttpHeader(`HTTP/1.1 ${statusCode} ${statuses[statusCode]}\r\n\r\n`, err.headers))
     } else {
       socket.destroy()
