@@ -38,6 +38,8 @@ module.exports.request = async function request (ctx, next) {
       req.log.debug({ res, responseTime }, 'request aborted')
     } else if (res.statusCode >= 500) {
       throw createError(res.statusCode, res.message)
+    } else if (res.statusCode >= 400) {
+      req.log.warn({ res, responseTime }, 'request failed')
     } else {
       req.log.debug({ res, responseTime }, 'request completed')
     }
