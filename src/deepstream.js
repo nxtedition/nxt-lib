@@ -44,13 +44,13 @@ function provide (ds, domain, callback, options) {
 
 function parseKey (key) {
   const { json, id, query } = key.match(/^(?:(?<json>\{.*\}):|(?<id>.*):)?[^?]*(?:\?(?<query>.*))?$/).groups
-  if (query) {
-    return [id || '', querystring.parse(query)]
-  } else if (json) {
-    return ['', JSON.parse(json)]
-  } else {
-    return [id || '', {}]
-  }
+  return [
+    id || '',
+    {
+      ...(query ? querystring.parse(query) : null),
+      ...(json ? JSON.parse(json) : null)
+    }
+  ]
 }
 
 function query (ds, { view, filter, state = ds.record.PROVIDER, ...options }) {
