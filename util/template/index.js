@@ -10,7 +10,7 @@ module.exports = ({ ds } = {}) => {
   const compileExpression = getExpressionCompiler({ ds })
 
   async function resolveObjectTemplate (obj, context) {
-    return resolveObjectTemplate(obj, context)
+    return onResolveObjectTemplate(obj, context)
       .pipe(
         rx.first()
       )
