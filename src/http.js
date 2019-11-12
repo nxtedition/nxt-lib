@@ -52,9 +52,11 @@ module.exports.request = async function request (ctx, next) {
       this.log.warn({ err }, 'request error')
     })
 
-    if (!res.headersSent && !res.finished && res.writable) {
-      for (const name of res.getHeaderNames()) {
-        res.removeHeader(name)
+    if (!res.headersSent && !res.finished) {
+      if (statusCode >= 500) {
+        for (const name of res.getHeaderNames()) {
+          res.removeHeader(name)
+        }
       }
 
       res.setHeader('request-id', req.id)
