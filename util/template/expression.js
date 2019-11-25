@@ -55,6 +55,8 @@ module.exports = ({ ds } = {}) => {
           notJustNully
             ? (!value ? defaultValue : value)
             : (value == null ? defaultValue : value),
+        and: (x) => value => x && value,
+        or: (x) => value => x || value,
         eq: (x) => value => value === x,
         ne: (x) => value => value !== x,
         isDate: () => value => value instanceof Date,
