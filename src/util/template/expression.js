@@ -176,13 +176,14 @@ module.exports = ({ ds } = {}) => {
                     text: line,
                     marks: []
                   }],
+                  // TODO: make these deterministic
                   key: xuid()
                 }],
                 key: xuid()
               })),
-              key: xuid()
-            }
-          }),
+            key: xuid()
+          }
+        }),
         append: (post) => value => value + post,
         prepend: (pre) => value => pre + value,
         asset: (type, _return = true) => {
