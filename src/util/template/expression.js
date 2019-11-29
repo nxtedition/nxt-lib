@@ -7,6 +7,7 @@ const memoize = require('memoizee')
 const NestedError = require('nested-error-stacks')
 const hasha = require('hasha')
 const split = require('split-string')
+const xuid = require('xuid')
 
 const RETURN = {}
 
@@ -157,6 +158,31 @@ module.exports = ({ ds } = {}) => {
       {
         fromJSON: () => value => value ? JSON.parse(value) : null,
         fromJSON5: () => value => value ? JSON5.parse(value) : null,
+        toSlate: () => value => ({
+          object: 'value',
+          document: {
+            object: 'document',
+            data: {},
+            nodes: value
+              .split('\n')
+              .map(line => ({
+                object: 'block',
+                type: 'paragraph',
+                data: {},
+                nodes: [{
+                  object: 'text',
+                  leaves: [{
+                    object: 'leaf',
+                    text: line,
+                    marks: []
+                  }],
+                  key: xuid()
+                }],
+                key: xuid()
+              })),
+              key: xuid()
+            }
+          }),
         append: (post) => value => value + post,
         prepend: (pre) => value => pre + value,
         asset: (type, _return = true) => {
