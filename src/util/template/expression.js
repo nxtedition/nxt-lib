@@ -335,7 +335,9 @@ module.exports = ({ ds } = {}) => {
   }
 
   const getFilter = memoize((filterStr) => {
-    const [, filterName, argsStr] = filterStr.match(/([^(]+)\((.*)\)/) || []
+    const [, filterName, argsStr] = filterStr
+      .replace(/\n/g, '\\n')
+      .match(/([^(]+)\((.*)\)/) || []
 
     const tokens = split(argsStr, {
       separator: ',',

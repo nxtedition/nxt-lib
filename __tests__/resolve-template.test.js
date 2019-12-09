@@ -33,6 +33,8 @@ test('replaces strings', async () => {
   expect(await resolveTemplate('123{{test}}456{{test}}{{test}}', { test: 'body' })).toBe('123body456bodybody')
   expect(await resolveTemplate('test{{test.foo}}test{{test.bar.baz}}test', { test: { foo: '111', bar: { baz: '222' } } })).toBe('test111test222test')
   expect(await resolveTemplate('{{ asd | default("te | st")}}', {})).toBe('te | st')
+  expect(await resolveTemplate('{{ asd | default("test\n") }}', {})).toBe('test\n')
+  expect(await resolveTemplate('{{ asd | default("test\n\n") }}', {})).toBe('test\n\n')
 })
 
 test('nested', async () => {
