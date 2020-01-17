@@ -1,10 +1,11 @@
 const xuid = require('xuid')
 const statuses = require('statuses')
 const createError = require('http-errors')
+const { performance } = require('perf_hooks')
 
 module.exports.request = async function request (ctx, next) {
   const { req, res, logger } = ctx
-  const startTime = Date.now()
+  const startTime = performance.now()
 
   try {
     req.id = req.id || req.headers['request-id'] || xuid()
@@ -33,7 +34,7 @@ module.exports.request = async function request (ctx, next) {
       })
     ])
 
-    const responseTime = Date.now() - startTime
+    const responseTime = performance.now() - startTime
     if (req.aborted) {
       req.log.debug({ res, responseTime }, 'request aborted')
     } else if (res.statusCode >= 500) {
@@ -45,7 +46,7 @@ module.exports.request = async function request (ctx, next) {
     }
   } catch (err) {
     const statusCode = err.statusCode || 500
-    const responseTime = Date.now() - startTime
+    const responseTime = performance.now() - startTime
 
     res.log = req.log || logger
     res.on('error', function (err) {
