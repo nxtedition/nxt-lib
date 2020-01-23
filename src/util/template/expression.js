@@ -233,7 +233,8 @@ module.exports = ({ ds } = {}) => {
 
           if (args.length === 3) {
             const [pattern, flags, str] = args
-            return value => value.replace(new RegExp(pattern, flags), str)
+            const expr = new RegExp(pattern, flags)
+            return value => value.replace(expr, str)
           } else if (args.length === 2) {
             const [a, b] = args
             return value => value.replace(a, b)
