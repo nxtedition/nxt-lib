@@ -376,16 +376,16 @@ module.exports = ({ ds } = {}) => {
         quotes: ['"']
       }).map(str => str.trim())
 
-      const onValue = context => {
-        // TODO (fix): recursivly resolve basePath.
-        const value = fp.get(basePath, context)
-        return Observable.isObservable(value)
-          ? value.pipe(rx.catchError(() => Observable.of(null)))
-          : Observable.of(value)
-      }
-
-      if (tokens.length === 0) {
-        return onValue
+      const get = (value, [path, ...rest]) => {
+        if (!path || !value || typeof value !== 'object') {
+          return Observable.isObservable(value)
+            ? value
+            : Observable.of(value)
+        } else {
+          return Observable.isObservable(value)
+            ? value.pipe(rx.switchMap(value => get(value[path], rest)))
+            : get(value[path], rest)
+        }
       }
 
       const filters = tokens.map(getFilter)
@@ -416,9 +416,11 @@ module.exports = ({ ds } = {}) => {
           return Observable.of(value)
         }
 
-        return onValue(context)
+        return get(context, fp.toPath(basePath))
           .pipe(
-            rx.switchMap(value => reduce(value, 0))
+            rx.switchMap(value => reduce(value, 0)),
+            // TODO (fix): better error handling...
+            rx.catchError(() => Observable.of(null))
           )
       }
     } catch (err) {
