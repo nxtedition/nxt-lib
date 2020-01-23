@@ -12,6 +12,11 @@ test('hash to int', async () => {
   expect(Number.isFinite(val)).toBe(true)
 })
 
+test('baseValue', async () => {
+  expect(await resolveTemplate('{{test}}', { test: '11d1' })).toBe('11d1')
+  expect(await resolveTemplate('{{test}}', { test: Observable.of('11d1') })).toBe('11d1')
+})
+
 test('integer ops', async () => {
   expect(await resolveTemplate('{{test | div(2)}}', { test: '8' })).toBe(4)
   expect(await resolveTemplate('{{test | div(2)}}', { test: 8 })).toBe(4)

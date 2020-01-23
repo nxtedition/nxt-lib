@@ -376,8 +376,16 @@ module.exports = ({ ds } = {}) => {
         quotes: ['"']
       }).map(str => str.trim())
 
+      const onValue = context => {
+        // TODO (fix): recursivly resolve basePath.
+        const value = fp.get(basePath, context)
+        return Observable.isObservable(value)
+          ? value.pipe(rx.catchError(() => Observable.of(null)))
+          : Observable.of(value)
+      }
+
       if (tokens.length === 0) {
-        return context => Observable.of(fp.get(basePath, context))
+        return onValue
       }
 
       const filters = tokens.map(getFilter)
@@ -408,7 +416,10 @@ module.exports = ({ ds } = {}) => {
           return Observable.of(value)
         }
 
-        return reduce(fp.get(basePath, context), 0)
+        return onValue(context)
+          .pipe(
+            rx.switchMap(value => reduce(value, 0))
+          )
       }
     } catch (err) {
       throw new NestedError(`failed to parse expression ${expression}`, err)
