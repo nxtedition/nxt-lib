@@ -47,5 +47,5 @@ module.exports = function (config, onTerminate) {
       })
   }
 
-  return { ds, logger }
+  return { ds, logger, toobusy }
 }
