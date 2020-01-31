@@ -17,7 +17,7 @@ module.exports = function (config, onTerminate) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const cacheDb = config.deepstream.cache ? require('leveldown')(config.deepstream.cache) : null
     if (cacheDb) {
-      logger.debug({ cacheDb }, 'Deepstream Caching')
+      logger.debug({ cache: config.deepstream.cache }, 'Deepstream Caching')
     }
     ds = deepstream(config.deepstream.url, {
       ...config.deepstream,
