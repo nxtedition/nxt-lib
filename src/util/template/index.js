@@ -92,12 +92,6 @@ module.exports = ({ ds } = {}) => {
 
     const expr = compileExpression(body)
 
-    if (/now/.test(body)) {
-      return context => Observable
-        .timer(0, 60e3)
-        .pipe(rx.switchMap(() => expr({ now: moment(), ...context })))
-    }
-
     if (!pre && !post) {
       return expr
     }

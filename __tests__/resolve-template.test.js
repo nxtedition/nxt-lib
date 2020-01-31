@@ -72,3 +72,7 @@ test('replace array', async () => {
   expect(await resolveTemplate(`{{test | join("#") | replace("foo", "bar") | split("#")}}`, { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
   expect(await resolveTemplate(`{{test | join(",") | replace("foo", "bar") | split(",")}}`, { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
 })
+
+test('You Do Not Know Me', async () => {
+  expect(await resolveTemplate('{{id | default("You Do Not Know", true)}} -', {})).toBe('You Do Not Know -')
+})
