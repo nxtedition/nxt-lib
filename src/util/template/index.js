@@ -3,7 +3,6 @@ const Observable = require('rxjs')
 const fp = require('lodash/fp')
 const getExpressionCompiler = require('./expression')
 const memoize = require('memoizee')
-const moment = require('moment')
 const JSON5 = require('json5')
 
 module.exports = ({ ds } = {}) => {
