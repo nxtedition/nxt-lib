@@ -10,7 +10,8 @@
     "http.js",
     "destroy.js",
     "deepstream.js",
-    "logger.js"
+    "logger.js",
+    "app.js"
   ],
   "scripts": {
     "prepare": "cp -r src/* .",
