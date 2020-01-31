@@ -56,21 +56,21 @@ test('nested', async () => {
 })
 
 test('append', async () => {
-  expect(await resolveTemplate(`{{test | append('1')}}`, { test: '111' })).toBe('1111')
+  expect(await resolveTemplate('{{test | append(\'1\')}}', { test: '111' })).toBe('1111')
 })
 
 test('object', async () => {
   const obj = { foo: 1 }
-  expect(await resolveTemplate(`{{test}}`, { test: obj })).toBe(obj)
+  expect(await resolveTemplate('{{test}}', { test: obj })).toBe(obj)
 })
 
 test('ds', async () => {
-  expect(await resolveTemplate(`{{test | ds() | pluck('foo')}}`, { test: 'foo' })).toBe('bar')
+  expect(await resolveTemplate('{{test | ds() | pluck(\'foo\')}}', { test: 'foo' })).toBe('bar')
 })
 
 test('replace array', async () => {
-  expect(await resolveTemplate(`{{test | join("#") | replace("foo", "bar") | split("#")}}`, { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
-  expect(await resolveTemplate(`{{test | join(",") | replace("foo", "bar") | split(",")}}`, { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
+  expect(await resolveTemplate('{{test | join("#") | replace("foo", "bar") | split("#")}}', { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
+  expect(await resolveTemplate('{{test | join(",") | replace("foo", "bar") | split(",")}}', { test: ['foo', 'bar'] })).toEqual(['bar', 'bar'])
 })
 
 test('You Do Not Know Me', async () => {
