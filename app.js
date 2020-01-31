@@ -1,7 +1,6 @@
 module.exports = function (config, onTerminate) {
   let logger
   let ds
-  let toobusy
 
   if (config.logger) {
     const { createLogger } = require('./logger')
@@ -9,7 +8,7 @@ module.exports = function (config, onTerminate) {
   }
 
   if (config.toobusy) {
-    toobusy = require('toobusy-js')
+    const toobusy = require('toobusy-js')
     toobusy.onLag(currentLag => logger.warn({ currentLag }, 'lag'))
   }
 
