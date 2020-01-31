@@ -1,14 +1,26 @@
-const { createLogger } = require('./logger')
-
 module.exports = function (config, onTerminate) {
-  const logger = createLogger(config.logger, onTerminate)
-
+  let logger
   let ds
+
+  if (config.logger) {
+    const { createLogger } = require('./logger')
+    logger = createLogger(config.logger, onTerminate)
+  }
+
+  if (config.toobusy) {
+    const toobusy = require('toobusy-js')
+    toobusy.onLag(currentLag => logger.warn({ currentLag }, 'lag'))
+  }
+
   if (config.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
+    const cacheDb = config.deepstream.cache ? require('leveldown')(config.deepstream.cache) : null
+    if (cacheDb) {
+      logger.debug({ cacheDb }, 'Deepstream Caching')
+    }
     ds = deepstream(config.deepstream.url, {
       ...config.deepstream,
-      cacheDb: config.deepstream.cache ? require('leveldown')(config.deepstream.cache) : null
+      cacheDb
     })
       .login(config.deepstream.credentials, (success, authData) => {
         if (!success) {
