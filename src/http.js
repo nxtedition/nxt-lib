@@ -84,10 +84,11 @@ module.exports.request = async function request (ctx, next) {
 module.exports.upgrade = async function upgrade (ctx, next) {
   const { req, res, socket = res, logger } = ctx
 
+  const reqLogger = logger.child({ req })
   try {
     req.id = req.id || req.headers['request-id'] || xuid()
-    req.log = logger.child({ req })
-    req.log.debug('stream started')
+    req.log = logger.child({ req: { id: req.id } })
+    reqLogger.debug('stream started')
 
     await next()
 
@@ -101,13 +102,12 @@ module.exports.upgrade = async function upgrade (ctx, next) {
       })
     }
 
-    req.log.debug('stream completed')
+    reqLogger.debug('stream completed')
   } catch (err) {
     const statusCode = err.statusCode || 500
 
-    socket.log = req.log || logger
-    socket.on('error', function (err) {
-      this.log.warn({ err }, 'stream error')
+    socket.on('error', err => {
+      reqLogger.warn({ err }, 'stream error')
     })
 
     let res = null
@@ -124,9 +124,9 @@ module.exports.upgrade = async function upgrade (ctx, next) {
     }
 
     if (statusCode < 500) {
-      socket.log.warn({ err, res }, 'stream failed')
+      reqLogger.warn({ err, res }, 'stream failed')
     } else {
-      socket.log.error({ err, res }, 'stream error')
+      reqLogger.error({ err, res }, 'stream error')
     }
   }
 }
