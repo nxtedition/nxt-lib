@@ -4,17 +4,28 @@ module.exports = {
       return
     }
 
-    const obj = {
-      type: err.constructor.name,
-      message: err.message,
-      stack: err.stack,
-      data: err.data
-    }
+    let obj
+    if (typeof err === 'string') {
+      obj = {
+        message: err
+      }
+    } else if (typeof err === 'object') {
+      obj = {
+        type: err.constructor.name,
+        message: err.message,
+        stack: err.stack,
+        data: err.data
+      }
 
-    for (var key in err) {
-      const val = err[key]
-      if (obj[key] === undefined && typeof val !== 'object') {
-        obj[key] = val
+      for (var key in err) {
+        const val = err[key]
+        if (obj[key] === undefined && typeof val !== 'object') {
+          obj[key] = val
+        }
+      }
+    } else {
+      obj = {
+        message: 'invalid error'
       }
     }
 
