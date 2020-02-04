@@ -7,10 +7,11 @@ module.exports.request = async function request (ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
 
+  const reqLogger = logger.child({ req })
   try {
     req.id = req.id || req.headers['request-id'] || xuid()
     req.log = logger.child({ req: { id: req.id } })
-    req.log.debug({ req }, 'request started')
+    reqLogger.debug({ req }, 'request started')
 
     res.setHeader('request-id', req.id)
 
@@ -36,21 +37,20 @@ module.exports.request = async function request (ctx, next) {
 
     const responseTime = performance.now() - startTime
     if (req.aborted) {
-      req.log.debug({ res, responseTime }, 'request aborted')
+      reqLogger.debug({ res, responseTime }, 'request aborted')
     } else if (res.statusCode >= 500) {
       throw createError(res.statusCode, res.message)
     } else if (res.statusCode >= 400) {
-      req.log.warn({ res, responseTime }, 'request failed')
+      reqLogger.warn({ res, responseTime }, 'request failed')
     } else {
-      req.log.debug({ res, responseTime }, 'request completed')
+      reqLogger.debug({ res, responseTime }, 'request completed')
     }
   } catch (err) {
     const statusCode = err.statusCode || 500
     const responseTime = performance.now() - startTime
 
-    res.log = req.log || logger
-    res.on('error', function (err) {
-      this.log.warn({ err }, 'request error')
+    res.on('error', err => {
+      reqLogger.warn({ err }, 'request error')
     })
 
     if (!res.headersSent && !res.finished) {
@@ -74,9 +74,9 @@ module.exports.request = async function request (ctx, next) {
     }
 
     if (statusCode < 500) {
-      res.log.warn({ err, res, responseTime }, 'request failed')
+      reqLogger.warn({ err, res, responseTime }, 'request failed')
     } else {
-      res.log.error({ err, res, responseTime }, 'request error')
+      reqLogger.error({ err, res, responseTime }, 'request error')
     }
   }
 }
