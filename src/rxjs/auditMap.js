@@ -35,6 +35,9 @@ module.exports = Observable.prototype.auditMap = function auditMap (project) {
         const result = project(value)
         const observable = typeof result.then === 'function' ? Observable.fromPromise(result) : result
         innerSubscription = observable.subscribe(_innerNext, _error, _innerComplete)
+        if (innerSubscription && innerSubscription.closed) {
+          innerSubscription = null
+        }
       } catch (err) {
         o.error(err)
       }
