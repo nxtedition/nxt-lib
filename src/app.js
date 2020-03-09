@@ -95,6 +95,8 @@ module.exports = function (config, onTerminate) {
 
     if (config.stats.subscribe) {
       config.stats.subscribe(_log)
+    } else if (typeof config.stats === 'function') {
+      setInterval(() => _log(config.stats()), config.statsInterval || 10e3)
     } else {
       setInterval(() => _log(config.stats), config.statsInterval || 10e3)
     }
