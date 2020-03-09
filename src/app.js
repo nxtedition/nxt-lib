@@ -54,7 +54,8 @@ module.exports = function (config, onTerminate) {
       })
 
     ds.rpc.provide(`${config.isProduction ? os.hostname() : module}.dump`, async () => {
-      const path = `./${xuid()}.subscriptions`
+      const path = `./${Date.now()}.subscriptions`
+      const tmpPath = path + '.' + xuid()
       await pipeline(
         stream.Readable.from(ds.record._records.entries()),
         stream.Transform({
@@ -63,9 +64,9 @@ module.exports = function (config, onTerminate) {
             callback(null, `${key} ${val.version} ${val.state}`)
           }
         }),
-        fs.createWriteStream(path + '.tmp')
+        fs.createWriteStream(tmpPath)
       )
-      await fsp.rename(path + '.tmp', path)
+      await fsp.rename(tmpPath, path)
     })
   }
 
