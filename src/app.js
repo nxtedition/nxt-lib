@@ -72,16 +72,7 @@ module.exports = function (config, onTerminate) {
   if (config.stats) {
     const v8 = require('v8')
 
-    let stats = {}
-    if (config.stats.subscribe) {
-      config.stats.subscribe(x => {
-        stats = x
-      })
-    } else if (config.stats === 'object') {
-      stats = config.stats
-    }
-
-    setInterval(() => {
+    const _log = (stats) => {
       logger.debug({
         ds: ds.stats,
         memory: process.memoryUsage(),
@@ -91,7 +82,13 @@ module.exports = function (config, onTerminate) {
         },
         ...stats
       }, 'STATS')
-    }, 10e3)
+    }
+
+    if (config.stats.subscribe) {
+      config.stats.subscribe(_log)
+    } else {
+      setInterval(() => _log(config.stats), config.statsInterval || 10e3)
+    }
   }
 
   return { ds, logger, toobusy }
