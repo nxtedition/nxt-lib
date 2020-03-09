@@ -25,6 +25,7 @@ module.exports = function (config, onTerminate) {
     const stream = require('stream')
     const pipeline = require('util').promisify(stream.pipeline)
     const os = require('os')
+    const path = require('path')
 
     if (cacheDb) {
       logger.debug({ cache: config.deepstream.cache }, 'Deepstream Caching')
@@ -56,9 +57,12 @@ module.exports = function (config, onTerminate) {
         logger.error({ err }, 'Deepstream Error.')
       })
 
-    ds.rpc.provide(`${config.isProduction ? os.hostname() : module}.dump`, async () => {
-      const path = `./${Date.now()}.subscriptions`
-      const tmpPath = path + '.' + xuid()
+    const name = `${config.isProduction ? os.hostname() : config.id}`
+    ds.rpc.provide(`${name}.dump`, async () => {
+      const dirName = path.join('./.nxt-dump', name, new Date().toISOString())
+      await fsp.mkdir(dirName, { recursive: true })
+      const pathName = path.join(dirName, 'subscriptions')
+      const tmpPathName = pathName + `.${xuid()}`
       await pipeline(
         stream.Readable.from(ds.record._records.entries()),
         stream.Transform({
@@ -67,9 +71,10 @@ module.exports = function (config, onTerminate) {
             callback(null, `${key} ${val.version} ${val.state}`)
           }
         }),
-        fs.createWriteStream(tmpPath)
+        fs.createWriteStream(tmpPathName)
       )
-      await fsp.rename(tmpPath, path)
+      await fsp.rename(tmpPathName, pathName)
+      return dirName
     })
   }
 
