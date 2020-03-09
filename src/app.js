@@ -6,6 +6,9 @@ module.exports = function (config, onTerminate) {
   if (config.logger) {
     const { createLogger } = require('./logger')
     logger = createLogger(config.logger, onTerminate)
+    if (config.id) {
+      logger = logger.child({ name: config.id })
+    }
   }
 
   if (config.toobusy) {
