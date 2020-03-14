@@ -94,7 +94,9 @@ module.exports = function (config, onTerminate) {
     }
 
     if (config.stats.subscribe) {
-      config.stats.subscribe(_log)
+      config.stats
+        .retryWhen(err$ => err$.do(err => logger.error({ err }).delay(10e3)))
+        .subscribe(_log)
     } else if (typeof config.stats === 'function') {
       setInterval(() => _log(config.stats()), config.statsInterval || 10e3)
     } else {
