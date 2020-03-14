@@ -84,6 +84,7 @@ module.exports = function (config, onTerminate) {
     const _log = (stats) => {
       logger.debug({
         ds: ds.stats,
+        lag: toobusy && toobusy.lag(),
         memory: process.memoryUsage(),
         v8: {
           heapSpace: v8.getHeapSpaceStatistics(),
