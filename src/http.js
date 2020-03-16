@@ -48,7 +48,7 @@ module.exports.request = async function request (ctx, next) {
     }
   } catch (err) {
     const statusCode = err.statusCode || 500
-    const responseTime = performance.now() - startTime
+    const responseTime = Math.round(performance.now() - startTime)
 
     res.on('error', err => {
       reqLogger.warn({ err }, 'request error')
