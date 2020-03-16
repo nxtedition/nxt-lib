@@ -7,10 +7,11 @@ module.exports.request = async function request (ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
 
+  req.id = req.id || req.headers['request-id'] || xuid()
+  req.log = logger.child({ req: { id: req.id } })
+
   const reqLogger = logger.child({ req })
   try {
-    req.id = req.id || req.headers['request-id'] || xuid()
-    req.log = logger.child({ req: { id: req.id } })
     reqLogger.debug({ req }, 'request started')
 
     res.setHeader('request-id', req.id)
