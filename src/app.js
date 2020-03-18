@@ -5,7 +5,13 @@ module.exports = function (config, onTerminate) {
 
   if (config.logger) {
     const { createLogger } = require('./logger')
-    logger = createLogger(config.logger, onTerminate)
+
+    logger = createLogger({
+      ...config.logger,
+      base: {
+        ...config.logger.base
+      }
+    }, onTerminate)
     if (config.id) {
       logger = logger.child({ name: config.id })
     }
