@@ -17,6 +17,13 @@ module.exports = function (config, onTerminate) {
   }
 
   if (config.deepstream) {
+    config.deepstream = {
+      url: 'ws://localhost:6020/deepstream',
+      maxReconnectAttempts: Infinity,
+      maxReconnectInterval: 10000,
+      cacheSize: 2048,
+      ...config.deepstream
+    }
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const cacheDb = config.deepstream.cache ? require('leveldown')(config.deepstream.cache) : null
     const xuid = require('xuid')
