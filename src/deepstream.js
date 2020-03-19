@@ -150,7 +150,7 @@ function init (ds) {
     }
   }
   ds.nxt = nxt
-  return ds
+  return nxt
 }
 
 module.exports = Object.assign(init, {
