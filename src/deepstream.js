@@ -136,7 +136,7 @@ function rpcMake (ds, rpcName, data, options) {
 }
 
 function init (ds) {
-  return {
+  const nxt = {
     ds,
     query: (...args) => query(ds, ...args),
     record: {
@@ -149,6 +149,8 @@ function init (ds) {
       observe: (...args) => rpcObserve(ds, ...args)
     }
   }
+  ds.nxt = nxt
+  return ds
 }
 
 module.exports = Object.assign(init, {
