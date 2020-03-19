@@ -1,6 +1,9 @@
 const querystring = require('querystring')
 const objectHash = require('object-hash')
 const cached = require('./util/cached')
+const xuid = require('xuid')
+const { Observable, ReplaySubject } = require('rxjs')
+const rx = require('rxjs/operators')
 
 function provide (ds, domain, callback, options) {
   if (!options || typeof options !== 'object') {
@@ -77,14 +80,80 @@ function stringifyFn (fn) {
   return typeof fn === 'function' ? fn.toString().match(/\{([\s\S]+)\}/m)[1] : fn
 }
 
-function observe (ds, domain, ...args) {
+function observe (ds, name, ...args) {
   let options = null
 
   if (args[0] && typeof args[0] === 'object') {
     options = JSON.parse(JSON.stringify(args.shift()))
   }
 
-  return ds.record.observe(`${domain}${options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''}`, ...args)
+  return ds.record.observe(`${name}${options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''}`, ...args)
 }
 
-module.exports = { provide, query, observe }
+function rpcProvide (ds, rpcName, callback) {
+  return provide(ds, rpcName, (id, options) => {
+    let ret
+    try {
+      const val = callback(options, id)
+      if (typeof val.subscribe === 'function') {
+        ret = val
+      } else if (typeof val.then === 'function') {
+        ret = Observable.defer(() => val)
+      } else {
+        ret = Observable.of(val)
+      }
+    } catch (err) {
+      ret = Observable.throw(err)
+    }
+    return ret
+      .map(data => ({ data }))
+      .concatMap(Observable.of({ error: null }))
+      .catch(err => Observable.of({ error: err.message }))
+      .scan((xs, x) => ({ ...xs, ...x }))
+  }, { id: true })
+}
+
+function rpcMake (ds, rpcName, data, options) {
+  const subject = new ReplaySubject(1)
+  const rpcId = xuid()
+  observe(ds, `${rpcId}:${rpcName}`, data)
+    .pipe(rx.takeWhile(({ error }) => error === undefined, true))
+    .timeout(options && options.timeout ? options.timeout : 10e3)
+    .map(({ data, error }) => {
+      if (error) {
+        throw error
+      }
+      return data
+    })
+    .subscribe(subject)
+  return subject
+}
+
+function init (ds) {
+  return {
+    ds,
+    query: (...args) => query(ds, ...args),
+    record: {
+      provide: (...args) => observe(ds, ...args),
+      observe: (...args) => provide(ds, ...args)
+    },
+    rpc: {
+      provide: (...args) => rpcProvide(ds, ...args),
+      make: (...args) => rpcMake(ds, ...args)
+    }
+  }
+}
+
+module.exports = Object.assign(init, {
+  provide,
+  query,
+  observe,
+  record: {
+    provide,
+    observe
+  },
+  rpc: {
+    rpcProvide,
+    rpcMake
+  }
+})
