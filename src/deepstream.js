@@ -113,18 +113,24 @@ function rpcProvide (ds, rpcName, callback) {
   }, { id: true })
 }
 
+function rpcObserve (ds, rpcName, data) {
+  return Observable.defer(() => {
+    const rpcId = xuid()
+    return observe(ds, `${rpcId}:${rpcName}`, data)
+      .pipe(rx.takeWhile(({ error }) => error === undefined, true))
+      .map(({ data, error }) => {
+        if (error) {
+          throw error
+        }
+        return data
+      })
+  })
+}
+
 function rpcMake (ds, rpcName, data, options) {
   const subject = new ReplaySubject(1)
-  const rpcId = xuid()
-  observe(ds, `${rpcId}:${rpcName}`, data)
-    .pipe(rx.takeWhile(({ error }) => error === undefined, true))
+  rpcObserve(ds, rpcName, data)
     .timeout(options && options.timeout ? options.timeout : 10e3)
-    .map(({ data, error }) => {
-      if (error) {
-        throw error
-      }
-      return data
-    })
     .subscribe(subject)
   return subject
 }
@@ -139,7 +145,8 @@ function init (ds) {
     },
     rpc: {
       provide: (...args) => rpcProvide(ds, ...args),
-      make: (...args) => rpcMake(ds, ...args)
+      make: (...args) => rpcMake(ds, ...args),
+      observe: (...args) => rpcObserve(ds, ...args)
     }
   }
 }
@@ -154,6 +161,7 @@ module.exports = Object.assign(init, {
   },
   rpc: {
     rpcProvide,
-    rpcMake
+    rpcMake,
+    rpcObserve
   }
 })
