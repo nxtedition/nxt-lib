@@ -116,7 +116,7 @@ function rpcProvide (ds, rpcName, callback) {
 function rpcObserve (ds, rpcName, data) {
   return Observable.defer(() => {
     const rpcId = xuid()
-    return observe(ds, `${rpcId}:${rpcName}`, data)
+    return observe(ds, `${rpcId}:${rpcName}`, data, ds.record.PROVIDER)
       .pipe(rx.takeWhile(({ error }) => error === undefined, true))
       .map(({ data, error }) => {
         if (error) {
@@ -124,6 +124,7 @@ function rpcObserve (ds, rpcName, data) {
         }
         return data
       })
+      .filter(Boolean)
   })
 }
 
