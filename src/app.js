@@ -1,6 +1,7 @@
 module.exports = function (config, onTerminate) {
   let logger
   let ds
+  let nxt
   let toobusy
 
   if (config.logger) {
@@ -70,6 +71,8 @@ module.exports = function (config, onTerminate) {
         logger.error({ err }, 'Deepstream Error.')
       })
 
+    nxt = require('./deepstream')(ds)
+
     const name = `${config.isProduction ? os.hostname() : config.id}`
     ds.rpc.provide(`${name}.dump`, async () => {
       const dirName = path.join('./.nxt-dump', name, new Date().toISOString())
@@ -118,5 +121,5 @@ module.exports = function (config, onTerminate) {
     }
   }
 
-  return { ds, logger, toobusy }
+  return { ds, nxt, logger, toobusy }
 }
