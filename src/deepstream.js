@@ -107,7 +107,7 @@ function rpcProvide (ds, rpcName, callback) {
     }
     return ret
       .map(data => ({ data }))
-      .concatMap(Observable.of({ error: null }))
+      .concat(Observable.of({ error: null }))
       .catch(err => Observable.of({ error: err.message }))
       .scan((xs, x) => ({ ...xs, ...x }))
   }, { id: true })
