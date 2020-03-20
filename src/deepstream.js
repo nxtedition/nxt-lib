@@ -142,12 +142,14 @@ function init (ds) {
     query: (...args) => query(ds, ...args),
     record: {
       provide: (...args) => observe(ds, ...args),
-      observe: (...args) => provide(ds, ...args)
+      observe: (...args) => provide(ds, ...args),
+      set: (...args) => ds.set(...args),
+      get: (...args) => ds.get(...args),
+      update: (...args) => ds.update(...args)
     },
     rpc: {
       provide: (...args) => rpcProvide(ds, ...args),
-      make: (...args) => rpcMake(ds, ...args),
-      observe: (...args) => rpcObserve(ds, ...args)
+      make: (...args) => rpcMake(ds, ...args)
     }
   }
   ds.nxt = nxt
@@ -164,7 +166,6 @@ module.exports = Object.assign(init, {
   },
   rpc: {
     rpcProvide,
-    rpcMake,
-    rpcObserve
+    rpcMake
   }
 })
