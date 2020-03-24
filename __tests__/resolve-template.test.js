@@ -42,6 +42,7 @@ test('replaces strings', async () => {
   expect(await resolveTemplate('{{ asd | default("te | st")}}', {})).toBe('te | st')
   expect(await resolveTemplate('{{ asd | default("test\n") }}', {})).toBe('test\n')
   expect(await resolveTemplate('{{ asd | default("test\n\n") }}', {})).toBe('test\n\n')
+  expect(await resolveTemplate('{{ asd | default("test\r\n") }}', {})).toBe('test\r\n')
 })
 
 test('nested', async () => {
@@ -53,6 +54,9 @@ test('nested', async () => {
   expect(await resolveTemplate('{{{{f{{o}}o}}}}', { test: '111', foo: 'test', o: 'o' })).toBe('111')
   expect(await resolveTemplate('{{ asd | default("{{test}}")}}', { test: '111', foo: 'test' })).toBe('111')
   expect(await resolveTemplate('{{ asd | default("{{t{{es}}t}}")}}', { test: '111', foo: 'test', es: 'es' })).toBe('111')
+  expect(await resolveTemplate('{{ asd | default("{{test | default("test\n")}}")}}', {})).toBe('test\n')
+  expect(await resolveTemplate('{{ asd | default("{{test | default("test\n\n")}}")}}', {})).toBe('test\n\n')
+  expect(await resolveTemplate('{{ asd | default("{{test | default("test\r\n")}}")}}', {})).toBe('test\r\n')
 })
 
 test('append', async () => {
