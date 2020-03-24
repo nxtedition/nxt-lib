@@ -341,6 +341,7 @@ module.exports = ({ ds } = {}) => {
   const getFilter = memoize((filterStr) => {
     const [, filterName, argsStr] = filterStr
       .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
       .match(/([^(]+)\((.*)\)/) || []
 
     const tokens = split(argsStr, {
