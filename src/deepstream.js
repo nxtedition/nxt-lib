@@ -92,20 +92,8 @@ function observe (ds, name, ...args) {
 
 function rpcProvide (ds, rpcName, callback) {
   return provide(ds, rpcName, (id, options) => {
-    let ret
-    try {
-      const val = callback(options, id)
-      if (typeof val.subscribe === 'function') {
-        ret = val
-      } else if (typeof val.then === 'function') {
-        ret = Observable.defer(() => val)
-      } else {
-        ret = Observable.of(val)
-      }
-    } catch (err) {
-      ret = Observable.throw(err)
-    }
-    return ret
+    const ret = callback(options, id)
+    return !ret ? null : ret
       .map(data => ({ data }))
       .concat(Observable.of({ error: null }))
       .catch(err => Observable.of({ error: err.message }))
