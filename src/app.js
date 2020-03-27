@@ -94,7 +94,7 @@ module.exports = function (config, onTerminate) {
     })
   }
 
-  if (config.stats) {
+  if (config.stats && process.env.NODE_ENV === 'production') {
     const v8 = require('v8')
 
     const _log = (stats) => {
