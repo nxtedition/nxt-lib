@@ -64,8 +64,8 @@ module.exports = function (config, onTerminate) {
           ERROR: 'error',
           RECONNECTING: 'warn'
         }[connectionState] || 'info'
-
-        logger[level]({ connectionState }, 'Deepstream Connection State Changed.')
+        const username = config.deepstream.credentials.username
+        logger[level]({ connectionState, username }, 'Deepstream Connection State Changed.')
       })
       .on('error', err => {
         logger.error({ err }, 'Deepstream Error.')
