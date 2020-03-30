@@ -73,7 +73,25 @@ module.exports = ({ ds } = {}) => {
         cond: (a, b) => value => value ? a : b,
         hasha: (options) => value => hasha(JSON.stringify(value), options || {}),
         hashaint: (options) => value => parseInt(hasha(JSON.stringify(value), options || {}).slice(-13), 16),
-        return: () => value => value || RETURN
+        return: () => value => value || RETURN,
+        add: (...args) => value => {
+          if (args.length === 2) {
+            value = moment(value)
+            return value.isValid() ? value.add(...args) : null
+          } else {
+            value = Number(value)
+            return Number.isFinite(value) ? value + args[0] : null
+          }
+        },
+        sub: (...args) => value => {
+          if (args.length === 2) {
+            value = moment(value)
+            return value.isValid() ? value.subtract(...args) : null
+          } else {
+            value = Number(value)
+            return Number.isFinite(value) ? value - args[0] : null
+          }
+        }
       }
     ),
     // number
@@ -88,8 +106,6 @@ module.exports = ({ ds } = {}) => {
         mul: (x) => value => value * x,
         div: (x) => value => value / x,
         mod: (x) => value => value % x,
-        add: (x) => value => value + x,
-        sub: (x) => value => value - x,
         abs: () => value => Math.abs(value),
         round: () => value => Math.round(value),
         floor: () => value => Math.floor(value),
@@ -112,13 +128,20 @@ module.exports = ({ ds } = {}) => {
       {
         moment: (format, tz) => {
           // TODO (fix): Validate arguments...
-
           return value => {
             if (tz) {
-              value = value.clone().tz(tz)
+              value = value.tz(tz)
             }
             return value.format(format)
           }
+        },
+        startOf: (startOf) => {
+          // TODO (fix): Validate arguments...
+          return value => value.startOf(startOf)
+        },
+        endOf: (endOf) => {
+          // TODO (fix): Validate arguments...
+          return value => value.endOf(endOf)
         }
       }
     ),
