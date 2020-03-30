@@ -1,4 +1,4 @@
-const moment = require('moment')
+const moment = require('moment-timezone')
 const rx = require('rxjs/operators')
 const Observable = require('rxjs')
 const JSON5 = require('json5')
@@ -39,7 +39,7 @@ module.exports = ({ ds } = {}) => {
         json5: () => value => JSON5.stringify(value),
         string: () => value => String(value),
         number: () => value => Number(value),
-        date: (...args) => value => moment(value, ...args),
+        date: (tz) => value => tz ? moment.tz(value, tz) : moment(value),
         array: () => value => [value],
         value: value => () => value,
         int: (fallback = null, radix) => value => {
@@ -110,10 +110,15 @@ module.exports = ({ ds } = {}) => {
       value => moment(value),
       value => value.isValid(),
       {
-        moment: (...args) => {
+        moment: (format, tz) => {
           // TODO (fix): Validate arguments...
 
-          return value => value.format(...args)
+          return value => {
+            if (tz) {
+              value = value.clone().tz(tz)
+            }
+            return value.format(format)
+          }
         }
       }
     ),
