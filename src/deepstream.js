@@ -92,12 +92,16 @@ function observe (ds, name, ...args) {
 
 function rpcProvide (ds, rpcName, callback) {
   return provide(ds, rpcName, (id, options) => {
-    const ret = callback(options, id)
-    return !ret ? null : ret
-      .map(data => ({ data }))
-      .concat(Observable.of({ error: null }))
-      .catch(err => Observable.of({ error: err.message }))
-      .scan((xs, x) => ({ ...xs, ...x }))
+    try {
+      const ret = callback(options, id)
+      return !ret ? null : ret
+        .map(data => ({ data }))
+        .concat(Observable.of({ error: null }))
+        .catch(err => Observable.of({ error: err.message }))
+        .scan((xs, x) => ({ ...xs, ...x }))
+    } catch (err) {
+      return Observable.of({ error: err.message })
+    }
   }, { id: true })
 }
 
