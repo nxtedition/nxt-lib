@@ -46,7 +46,9 @@ module.exports = function cached (fn, options, keySelector) {
     array.splice(0, idx)
   }
 
-  setInterval(prune, maxAge)
+  if (maxAge) {
+    setInterval(prune, maxAge)
+  }
 
   return function (...args) {
     const key = keySelector(...args)
@@ -60,20 +62,20 @@ module.exports = function cached (fn, options, keySelector) {
           key,
           observable,
           subscription: fn(...args).subscribe(observable),
-          refs: 1,
+          refs: 0,
           timestamp: null
         }
 
         cache.set(key, entry)
-      } else {
+      } else if (maxAge) {
         if (entry.refs === 0) {
           const idx = array.indexOf(entry)
           if (idx !== -1) {
             array.splice(idx, 1)
           }
         }
-        entry.refs += 1
       }
+      entry.refs += 1
 
       if (name) {
         STATS[name] = (STATS[name] || 0) + 1
@@ -91,7 +93,7 @@ module.exports = function cached (fn, options, keySelector) {
 
         entry.refs -= 1
         if (entry.refs === 0) {
-          if (entry.observable.hasError) {
+          if (!maxAge || entry.observable.hasError) {
             const { key, subscription } = entry
             subscription.unsubscribe()
             cache.delete(key)
