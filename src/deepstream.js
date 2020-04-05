@@ -153,6 +153,7 @@ module.exports = Object.assign(init, {
   query,
   observe,
   record: {
+    query,
     provide,
     observe
   },
