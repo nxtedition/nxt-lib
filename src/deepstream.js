@@ -133,6 +133,7 @@ function init (ds) {
     ds,
     query: (...args) => query(ds, ...args),
     record: {
+      query: (...args) => query(ds, ...args),
       provide: (...args) => observe(ds, ...args),
       observe: (...args) => provide(ds, ...args),
       set: (...args) => ds.set(...args),
