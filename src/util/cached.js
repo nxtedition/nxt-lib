@@ -24,6 +24,8 @@ module.exports = function cached (fn, options, keySelector) {
     maxAge = options.minAge !== undefined ? options.minAge : 1000
   }
 
+  const buffer = options.buffer ? options.buffer : 1
+
   function prune () {
     const end = array.length
     const now = Date.now()
@@ -57,7 +59,7 @@ module.exports = function cached (fn, options, keySelector) {
       let entry = cache.get(key)
 
       if (!entry) {
-        const observable = new ReplaySubject(1)
+        const observable = new ReplaySubject(buffer)
         entry = {
           key,
           observable,
