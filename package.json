@@ -79,10 +79,5 @@
     "split-string": "^6.0.0",
     "statuses": "^1.5.0",
     "xuid": "^3.0.2"
-  },
-  "peerDependencies": {
-    "pino": ">=5.6.2",
-    "pino-pretty": ">=2.2.1",
-    "rxjs": ">=5.x"
   }
 }
