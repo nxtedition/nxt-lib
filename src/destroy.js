@@ -18,6 +18,7 @@ module.exports = function destroy (self, err, callback) {
       })
       // node doesn't always emit 'close'
       .on('end', callback)
+      .on('finish', callback)
   }
   if (typeof self.abort === 'function') {
     self.abort() // Fix for ClientRequest.
