@@ -10,6 +10,6 @@ module.exports = function destroy (self, err, callback) {
   if (typeof self.abort === 'function') {
     self.abort() // Fix for ClientRequest.
   } else {
-    self.destroy(err, callback)
+    self.destroy(err)
   }
 }
