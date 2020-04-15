@@ -56,8 +56,11 @@ function parseKey (key) {
   ]
 }
 
-function query (ds, { view, filter, state = ds.record.PROVIDER, ...options }) {
+function query (ds, { view, filter, state = ds.record.PROVIDER, ...options }, state2) {
   let x$
+  if (!state && state2) {
+    state = state2
+  }
   if (view || filter) {
     view = stringifyFn(view)
     filter = stringifyFn(filter)
