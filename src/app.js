@@ -113,7 +113,7 @@ module.exports = function (config, onTerminate) {
     if (config.stats.subscribe) {
       // TOOD (fix): unref?
       config.stats
-        .auditMap(10e3)
+        .auditTime(10e3)
         .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
         .subscribe(_log)
     } else if (typeof config.stats === 'function') {
