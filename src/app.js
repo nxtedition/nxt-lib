@@ -114,7 +114,7 @@ module.exports = function (config, onTerminate) {
       // TOOD (fix): unref?
       config.stats
         .auditMap(10e3)
-        .retryWhen(err$ => err$.do(err => logger.error({ err }).delay(10e3)))
+        .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
         .subscribe(_log)
     } else if (typeof config.stats === 'function') {
       setInterval(() => _log(config.stats()), config.statsInterval || 10e3).unref()
