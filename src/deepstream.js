@@ -56,15 +56,17 @@ function parseKey (key) {
   ]
 }
 
-function query (ds, { view, state = ds.record.PROVIDER, ...options }, state2) {
+function query (ds, { view, filter, state = ds.record.PROVIDER, ...options }, state2) {
   let x$
   if (!state && state2) {
     state = state2
   }
-  if (typeof view === 'function') {
+  if (view || filter) {
     view = stringifyFn(view)
-    const id = objectHash({ view })
-    ds.record.set(`${id}:_query`, { view })
+    filter = stringifyFn(filter)
+
+    const id = objectHash({ view, filter })
+    ds.record.set(`${id}:_query`, { view, filter })
     x$ = ds.record.observe2(`${id}:query?${querystring.stringify(options)}`)
   } else {
     x$ = ds.record.observe2(`query?${querystring.stringify(options)}`)
