@@ -43,7 +43,7 @@ module.exports.createLogger = function ({
     logger = pino({ serializers, prettyPrint, level, ...options }, stream)
     handler = (err, evt) => finalHandler(err, logger, evt)
   } else {
-    stream = stream || pino.extreme()
+    stream = stream || pino.destination({ sync: false })
     logger = pino({ serializers, prettyPrint, level, ...options }, stream)
     handler = pino.final(logger, finalHandler)
     setInterval(() => {
