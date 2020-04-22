@@ -48,6 +48,6 @@ module.exports = {
     if (/audio\/(x-)?pcm-s16le/.test(type)) {
       return 'pcm-s16le'
     }
-    return mime.getExtension(type) || (type || '').split('/').pop() || 'raw'
+    return mime.getExtension(type) || (type || '').split('/').pop()
   }
 }
