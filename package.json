@@ -11,6 +11,7 @@
     "destroy.js",
     "deepstream.js",
     "logger.js",
+    "mime.js",
     "app.js"
   ],
   "scripts": {
@@ -71,6 +72,7 @@
     "lodash": "^4.17.15",
     "memoizee": "^0.4.14",
     "merge-ranges": "^1.0.2",
+    "mime": "^2.4.4",
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.28",
     "nested-error-stacks": "^2.1.0",
