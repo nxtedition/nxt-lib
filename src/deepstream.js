@@ -145,6 +145,7 @@ function init (ds) {
     },
     rpc: {
       provide: (...args) => rpcProvide(ds, ...args),
+      observe: (...args) => rpcObserve(ds, ...args),
       make: (...args) => rpcMake(ds, ...args)
     }
   }
@@ -162,7 +163,8 @@ module.exports = Object.assign(init, {
     observe
   },
   rpc: {
-    rpcProvide,
-    rpcMake
+    provide: rpcProvide,
+    observe: rpcObserve,
+    make: rpcMake
   }
 })
