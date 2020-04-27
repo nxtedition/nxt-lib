@@ -8,9 +8,9 @@ module.exports = function (config, onTerminate) {
 
   logger = createLogger({
     ...config.logger,
-    base: {
+    base: config.logger ? {
       ...config.logger.base
-    }
+    } : {}
   }, onTerminate)
   if (config.id) {
     logger = logger.child({ name: config.id })
