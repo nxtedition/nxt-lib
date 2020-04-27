@@ -4,18 +4,16 @@ module.exports = function (config, onTerminate) {
   let nxt
   let toobusy
 
-  if (config.logger) {
-    const { createLogger } = require('./logger')
+  const { createLogger } = require('./logger')
 
-    logger = createLogger({
-      ...config.logger,
-      base: {
-        ...config.logger.base
-      }
-    }, onTerminate)
-    if (config.id) {
-      logger = logger.child({ name: config.id })
+  logger = createLogger({
+    ...config.logger,
+    base: {
+      ...config.logger.base
     }
+  }, onTerminate)
+  if (config.id) {
+    logger = logger.child({ name: config.id })
   }
 
   if (config.toobusy) {
