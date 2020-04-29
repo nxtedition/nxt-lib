@@ -331,7 +331,7 @@ module.exports = ({ ds } = {}) => {
         head: () => value => fp.head(value),
         last: () => value => fp.last(value),
         tail: () => value => fp.last(value),
-        length: () => value => value.length,
+        length: () => value => fp.size(value),
         sort: () => value => [...value].sort(),
         sum: () => value => fp.sum(value),
         unique: () => value => fp.uniq(value),
