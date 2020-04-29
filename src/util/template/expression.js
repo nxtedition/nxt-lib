@@ -156,27 +156,23 @@ module.exports = ({ ds } = {}) => {
             throw new Error('invalid argument')
           }
 
+          function observe (id) {
+            return ds.record.observe((id || '') + (postfix || ''), path, state)
+          }
+
           return value => {
-            if (typeof value === 'string') {
-              const id = value
-              return ds.record
-                .observe((id || '') + (postfix || ''), state)
-                .pipe(
-                  rx.map(val => path ? fp.get(path, val) : val)
-                )
-            } else if (Array.isArray(value)) {
-              value = value.filter(x => x && fp.isString(x))
-              return value.length === 0 ? Observable.of([]) : Observable.combineLatest(
-                value.map(id => ds.record
-                  .observe((id || '') + (postfix || ''), state)
-                  .pipe(
-                    rx.map(val => path ? fp.get(path, val) : val)
-                  )
-                )
-              )
-            } else {
-              return null
+            if (value && fp.isString(value)) {
+              return observe(value)
             }
+
+            if (Array.isArray(value)) {
+              value = value.filter(x => x && fp.isString(x))
+              if (value.length) {
+                return Observable.combineLatest(value.map(id => observe(id)))
+              }
+            }
+
+            return null
           }
         }
       }
