@@ -167,9 +167,9 @@ module.exports = ({ ds } = {}) => {
 
             if (Array.isArray(value)) {
               value = value.filter(x => x && fp.isString(x))
-              if (value.length) {
-                return Observable.combineLatest(value.map(id => observe(id)))
-              }
+              return value.length
+                ? Observable.combineLatest(value.map(id => observe(id)))
+                : Observable.of([])
             }
 
             return null
