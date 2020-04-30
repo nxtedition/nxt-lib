@@ -220,10 +220,14 @@ module.exports = ({ ds } = {}) => {
 
           return value => value
             ? ds.record
-              .observe(`${value}:asset.rawTypes`, ds.record.SERVER)
+              .observe2(`${value}:asset.rawTypes`)
               .pipe(
-                rx.pluck('value'),
-                rx.map(fp.includes(type)),
+                rx.map(({ state, data }) => ({
+                  state: Math.min(state, fp.isFinite(data.state) ? data.state : ds.record.PROVIDER),
+                  data: fp.includes(type, data.value)
+                })),
+                rx.filter(({ state, data }) => data || state >= ds.record.PROVIDER),
+                rx.pluck('data'),
                 rx.distinctUntilChanged(),
                 rx.map(isType => isType
                   ? value
