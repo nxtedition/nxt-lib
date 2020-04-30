@@ -106,7 +106,6 @@ module.exports = function (config, onTerminate) {
         lag: toobusy && toobusy.lag(),
         memory: process.memoryUsage(),
         v8: {
-          heapSpace: v8.getHeapSpaceStatistics(),
           heap: v8.getHeapStatistics()
         },
         ...stats
