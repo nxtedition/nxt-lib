@@ -93,19 +93,26 @@ function observe (ds, name, ...args) {
   return ds.record.observe(`${name}${options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''}`, ...args)
 }
 
-function rpcProvide (ds, rpcName, callback) {
+function rpcProvide (ds, rpcName, callback, options) {
   return provide(ds, rpcName, (id, options) => {
     try {
-      const ret = callback(options, id)
-      return !ret ? null : ret
-        .map(data => ({ data }))
-        .concat(Observable.of({ error: null }))
-        .catch(err => Observable.of({ error: err.message }))
-        .scan((xs, x) => ({ ...xs, ...x }))
+      let ret$ = callback(options, id)
+
+      if (!options || !options.recursive) {
+        ret$ = Observable.of(ret$)
+      }
+
+      return ret$
+        .map(ret => !ret ? null : ret
+          .map(data => ({ data }))
+          .concat(Observable.of({ error: null }))
+          .catch(err => Observable.of({ error: err.message }))
+          .scan((xs, x) => ({ ...xs, ...x }))
+        )
     } catch (err) {
       return Observable.of({ error: err.message })
     }
-  }, { id: true })
+  }, { id: true, recursive: true })
 }
 
 function rpcObserve (ds, rpcName, data) {
