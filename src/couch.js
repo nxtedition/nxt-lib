@@ -277,7 +277,7 @@ module.exports = function ({ config, agent }) {
     })
   }
 
-  module.exports = {
+  return {
     onAllDocs,
     onPut,
     onGet,
