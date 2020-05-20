@@ -5,6 +5,8 @@ const querystring = require('querystring')
 const urljoin = require('url-join')
 
 module.exports = function ({ config, agent }) {
+  config = config.couchdb || config
+
   const defaultAgent = agent || new http.Agent({
     keepAlive: config.couchdb.keepAlive,
     timeout: config.couchdb.timeout || 2 * 60e3,
