@@ -12,6 +12,7 @@
     "deepstream.js",
     "logger.js",
     "mime.js",
+    "couch.js",
     "app.js"
   ],
   "scripts": {
@@ -80,6 +81,7 @@
     "once": "^1.4.0",
     "split-string": "^6.0.0",
     "statuses": "^1.5.0",
+    "url-join": "^4.0.1",
     "xuid": "^3.0.2"
   }
 }
