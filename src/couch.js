@@ -100,6 +100,7 @@ module.exports = function ({ config, agent }) {
         subscription.unsubscribe()
       }
     })
+      .publish(x$ => params.limit ? x$.take(params.limit) : x$)
   }
 
   function onPut (url, body) {
