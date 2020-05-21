@@ -8,10 +8,10 @@ module.exports = function ({ config, agent }) {
   config = config.couchdb || config
 
   const defaultAgent = agent || new http.Agent({
-    keepAlive: config.couchdb.keepAlive,
-    timeout: config.couchdb.timeout || 2 * 60e3,
-    maxSockets: config.couchdb.maxSockets || 256,
-    maxFreeSockets: config.couchdb.maxFreeSockets || 256
+    keepAlive: config.keepAlive,
+    timeout: config.timeout || 2 * 60e3,
+    maxSockets: config.maxSockets || 256,
+    maxFreeSockets: config.maxFreeSockets || 256
   })
 
   function onChanges (options) {
@@ -246,7 +246,7 @@ module.exports = function ({ config, agent }) {
       const callback = once(err => err ? o.error(err) : o.complete())
 
       const req = http
-        .request(urljoin(config.couchdb.url, url, `?${querystring.stringify(params)}`), {
+        .request(urljoin(config.url, url, `?${querystring.stringify(params)}`), {
           method,
           agent,
           timeout,
