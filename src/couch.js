@@ -121,6 +121,24 @@ module.exports = function ({ config, agent }) {
       .map(body => JSON.parse(body))
   }
 
+  function onPost (url, body) {
+    const params = {}
+    const headers = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json'
+    }
+
+    return onRequest(url, {
+      params,
+      agent: defaultAgent,
+      method: 'POST',
+      headers,
+      body
+    })
+      .reduce((body, data) => body + data, '')
+      .map(body => JSON.parse(body))
+  }
+
   function onGet (url, params) {
     const headers = {
       Accept: 'application/json'
@@ -283,6 +301,7 @@ module.exports = function ({ config, agent }) {
   return {
     onAllDocs,
     onPut,
+    onPost,
     onGet,
     onInfo,
     onChanges
