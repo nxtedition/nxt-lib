@@ -103,8 +103,7 @@ module.exports = function ({ config, agent }) {
       .publish(x$ => params.limit ? x$.take(params.limit) : x$)
   }
 
-  function onPut (url, body) {
-    const params = {}
+  function onPut (url, params, body) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json'
@@ -121,8 +120,7 @@ module.exports = function ({ config, agent }) {
       .map(body => JSON.parse(body))
   }
 
-  function onPost (url, body) {
-    const params = {}
+  function onPost (url, params, body) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json'
@@ -264,7 +262,7 @@ module.exports = function ({ config, agent }) {
       const callback = once(err => err ? o.error(err) : o.complete())
 
       const req = http
-        .request(urljoin(config.url, url, `?${querystring.stringify(params)}`), {
+        .request(urljoin(config.url, url, `?${querystring.stringify(params || {})}`), {
           method,
           agent,
           timeout,
