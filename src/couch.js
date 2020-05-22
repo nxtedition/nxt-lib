@@ -49,7 +49,7 @@ module.exports = function ({ config, agent }) {
     }
 
     if (typeof options.since !== 'undefined') {
-      params.since = options.since
+      params.since = options.since || 0
     }
 
     if (typeof options.style !== 'undefined') {
