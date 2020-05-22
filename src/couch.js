@@ -82,7 +82,12 @@ module.exports = function ({ config, agent }) {
         try {
           for (const line of lines) {
             if (line) {
-              o.next(JSON.parse(line))
+              const change = JSON.parse(line)
+              if (change.last_seq != null) {
+                o.complete()
+              } else {
+                o.next(change)
+              }
             } else {
               o.next(null)
             }
@@ -100,7 +105,6 @@ module.exports = function ({ config, agent }) {
         subscription.unsubscribe()
       }
     })
-      .publish(x$ => params.limit ? x$.take(params.limit) : x$)
   }
 
   function onPut (url, params, body) {
