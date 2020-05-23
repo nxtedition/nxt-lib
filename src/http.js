@@ -88,7 +88,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
   const reqLogger = logger.child({ req })
   try {
     req.id = req.id || req.headers['request-id'] || xuid()
-    req.log = logger.child({ req: { id: req.id } })
+    req.log = logger.child({ req: { id: req.id, url: req.url } })
     reqLogger.debug('stream started')
 
     await next()
