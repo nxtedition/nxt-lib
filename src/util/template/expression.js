@@ -363,6 +363,19 @@ module.exports = ({ ds } = {}) => {
         size: () => value => fp.size(value),
         entries: () => value => fp.entries(value)
       }
+    ),
+    // misc
+    ...asFilter(
+      null,
+      null,
+      {
+        timer: (initialDelay, period) => value => Observable
+          .timer(initialDelay, period)
+          .mapTo(value),
+        now: (period) => () => period
+          ? Observable.timer(0, period).map(() => new Date())
+          : new Date()
+      }
     )
   }
 
