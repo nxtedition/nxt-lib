@@ -5,12 +5,12 @@ const { Pool, Client } = require('undici')
 const { Writable } = require('stream')
 const EE = require('events')
 
-module.exports = function ({ config, client }) {
+module.exports = function ({ config }) {
   config = config.couchdb || config
 
   const { protocol, hostname, port, pathname } = new URL(config.url)
 
-  const defaultClient = client || new Pool({ protocol, hostname, port }, {
+  const defaultClient = new Pool({ protocol, hostname, port }, {
     connections: config.connections || 16,
     socketTimeout: config.socketTimeout || 30e3,
     requestTimeout: config.requestTimeout || 30e3,
