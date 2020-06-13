@@ -25,6 +25,7 @@ module.exports = function (config, onTerminate) {
       cacheSize: 2048,
       ...config.deepstream
     }
+    require('rxjs-compat')
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const cacheDb = config.deepstream.cache ? require('leveldown')(config.deepstream.cache) : null
     const xuid = require('xuid')

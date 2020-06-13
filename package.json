@@ -16,7 +16,6 @@
     "app.js"
   ],
   "scripts": {
-    "prepare": "cp -r src/* .",
     "test": "jest --bail --watchAll"
   },
   "husky": {
@@ -66,6 +65,14 @@
     "standard": "^14.3.3",
     "validate-commit-msg": "^2.14.0"
   },
+  "peerDependencies": {
+    "@nxtedition/deepstream.io-client-js": ">=12.0.0",
+    "pino": "^6.0.0",
+    "pino-pretty": "^4.0.0",
+    "rxjs": "^6.0.0",
+    "rxjs-compat": "^6.0.0",
+    "toobusy-js": "^0.5.1"
+  },
   "dependencies": {
     "hasha": "^4.0.1",
     "http-errors": "^1.7.3",
@@ -81,6 +88,7 @@
     "once": "^1.4.0",
     "split-string": "^6.0.0",
     "statuses": "^1.5.0",
+    "undici": "^1.0.1",
     "url-join": "^4.0.1",
     "xuid": "^3.0.2"
   }

@@ -1,17 +1,18 @@
-const http = require('http')
 const { Observable } = require('rxjs')
-const once = require('once')
 const querystring = require('querystring')
 const urljoin = require('url-join')
+const { Pool, Client } = require('undici')
+const { Writable } = require('stream')
+const EE = require('events')
 
-module.exports = function ({ config, agent }) {
+module.exports = function ({ config, client }) {
   config = config.couchdb || config
 
-  const defaultAgent = agent || new http.Agent({
-    keepAlive: config.keepAlive,
-    timeout: config.timeout || 2 * 60e3,
-    maxSockets: config.maxSockets || 256,
-    maxFreeSockets: config.maxFreeSockets || 256
+  const { protocol, hostname, port, pathname } = new URL(config.url)
+
+  const defaultClient = client || new Pool({ protocol, hostname, port }, {
+    connections: 8,
+    pipelining: 3
   })
 
   function onChanges (options) {
@@ -20,7 +21,6 @@ module.exports = function ({ config, agent }) {
       Accept: 'application/json'
     }
 
-    const url = '/_changes'
     let body
     let method = 'GET'
 
@@ -69,10 +69,12 @@ module.exports = function ({ config, agent }) {
     params.feed = 'continuous'
 
     return Observable.create(o => {
+      const client = new Client({ protocol, hostname, port })
       let buf = ''
-      const subscription = onRequest(url, {
+      const subscription = onRequest('/_changes', {
         params,
         body,
+        client: options.client || client,
         method,
         headers
       }).subscribe(data => {
@@ -96,8 +98,10 @@ module.exports = function ({ config, agent }) {
           o.error(err)
         }
       }, err => {
+        client.destroy(err)
         o.error(err)
       }, () => {
+        client.destroy()
         o.complete()
       })
 
@@ -115,7 +119,7 @@ module.exports = function ({ config, agent }) {
 
     return onRequest(url, {
       params,
-      agent: defaultAgent,
+      client: defaultClient,
       method: 'PUT',
       headers,
       body
@@ -132,7 +136,7 @@ module.exports = function ({ config, agent }) {
 
     return onRequest(url, {
       params,
-      agent: defaultAgent,
+      client: defaultClient,
       method: 'POST',
       headers,
       body
@@ -148,7 +152,7 @@ module.exports = function ({ config, agent }) {
 
     return onRequest(url, {
       params,
-      agent: defaultAgent,
+      client: defaultClient,
       method: 'GET',
       headers
     })
@@ -164,7 +168,7 @@ module.exports = function ({ config, agent }) {
 
     return onRequest('', {
       params,
-      agent: defaultAgent,
+      client: defaultClient,
       method: 'GET',
       headers
     })
@@ -245,7 +249,7 @@ module.exports = function ({ config, agent }) {
 
     return onRequest(url, {
       params,
-      agent: defaultAgent,
+      client: defaultClient,
       body,
       method,
       headers
@@ -254,48 +258,45 @@ module.exports = function ({ config, agent }) {
       .map(body => JSON.parse(body))
   }
 
-  function onRequest (url, {
+  function onRequest (path, {
     params,
-    agent,
+    client,
     body,
     method,
     headers,
-    timeout
+    requestTimeout
   }) {
     return Observable.create(o => {
-      const callback = once(err => err ? o.error(err) : o.complete())
-
-      const req = http
-        .request(urljoin(config.url, url, `?${querystring.stringify(params || {})}`), {
-          method,
-          agent,
-          timeout,
-          headers
-        })
-        .on('error', callback)
-        .on('timeout', () => callback(new Error('timeout')))
-        .on('response', res => {
-          if (res.statusCode < 200 || res.statusCode >= 300) {
-            const err = new Error(res.statusCode)
-            err.statusCode = res.statusCode
-            callback(err)
-          } else {
-            res
-              .setEncoding('utf-8')
-              .on('error', callback)
-              .on('aborted', () => callback(new Error('aborted')))
-              .on('data', buf => {
-                o.next(buf)
-              })
-              .on('end', () => {
-                callback()
-              })
+      const signal = new EE()
+      client.stream({
+        path: urljoin(pathname, path, `?${querystring.stringify(params || {})}`),
+        method,
+        signal,
+        body: body ? JSON.stringify(body) : null,
+        requestTimeout,
+        headers
+      }, ({ statusCode }) => {
+        if (statusCode < 200 || statusCode >= 300) {
+          const err = new Error(statusCode)
+          err.statusCode = statusCode
+          throw err
+        }
+        return new Writable(({
+          decodeStrings: false,
+          write (chunk, encoding, callback) {
+            o.next(chunk)
+            callback()
           }
-        })
-        .end(body ? JSON.stringify(body) : null)
-
+        }))
+      }, (err) => {
+        if (err) {
+          o.error(err)
+        } else {
+          o.complete()
+        }
+      })
       return () => {
-        req.abort()
+        signal.emit('abort')
       }
     })
   }

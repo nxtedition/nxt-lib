@@ -2205,6 +2205,11 @@ http-errors@^1.7.3:
     statuses ">= 1.5.0 < 2"
     toidentifier "1.0.0"
 
+http-parser-js@^0.5.2:
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/http-parser-js/-/http-parser-js-0.5.2.tgz#da2e31d237b393aae72ace43882dd7e270a8ff77"
+  integrity sha512-opCO9ASqg5Wy2FNo7A0sxy71yGbbkJJXLdgMK04Tcypw9jr2MgWbyubb0+WdmDmGnFflO7fRbqbaihh/ENDlRQ==
+
 http-signature@~1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/http-signature/-/http-signature-1.2.0.tgz#9aecd925114772f3d95b65a60abb8f7c18fbace1"
@@ -4872,6 +4877,13 @@ undefsafe@^2.0.2:
   integrity sha512-nrXZwwXrD/T/JXeygJqdCO6NZZ1L66HrxM/Z7mIq2oPanoN0F1nLx3lwJMu6AwJY69hdixaFQOuoYsMjE5/C2A==
   dependencies:
     debug "^2.2.0"
+
+undici@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-1.0.1.tgz#28641965d21130eb7f13120182cb6313f1e8efea"
+  integrity sha512-VWg5dNEd/yMpCrzlBFW8H/ZF+V11blLZqad674cSZ+4HWNXyRS79zmeGxPdq/D0OH0X/qizME9ifMJOP0XjJNw==
+  dependencies:
+    http-parser-js "^0.5.2"
 
 union-value@^1.0.0:
   version "1.0.1"
