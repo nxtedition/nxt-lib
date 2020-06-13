@@ -76,7 +76,7 @@ module.exports = function ({ config, client }) {
       const subscription = onRequest('/_changes', {
         params,
         body,
-        client: options.client || client,
+        client,
         method,
         headers
       }).subscribe(data => {
