@@ -12,8 +12,8 @@ module.exports = function ({ config }) {
 
   const defaultClient = new Pool({ protocol, hostname, port }, {
     connections: config.connections || 16,
-    socketTimeout: config.socketTimeout || 30e3,
-    requestTimeout: config.requestTimeout || 30e3,
+    socketTimeout: config.socketTimeout || 10e3,
+    requestTimeout: config.requestTimeout,
     pipelining: config.pipelining || 3
   })
 
@@ -71,12 +71,18 @@ module.exports = function ({ config }) {
     params.feed = 'continuous'
 
     return Observable.create(o => {
-      const client = new Client({ protocol, hostname, port })
+      const client = new Client({
+        protocol,
+        hostname,
+        port,
+        socketTimeout: 2 * 60e3
+      })
       let buf = ''
       const subscription = onRequest('/_changes', {
         params,
         body,
         client,
+        idempotent: true,
         method,
         headers
       }).subscribe(data => {
@@ -122,6 +128,7 @@ module.exports = function ({ config }) {
     return onRequest(url, {
       params,
       client: defaultClient,
+      idempotent: true,
       method: 'PUT',
       headers,
       body
@@ -155,6 +162,7 @@ module.exports = function ({ config }) {
     return onRequest(url, {
       params,
       client: defaultClient,
+      idempotent: true,
       method: 'GET',
       headers
     })
@@ -171,6 +179,7 @@ module.exports = function ({ config }) {
     return onRequest('', {
       params,
       client: defaultClient,
+      idempotent: true,
       method: 'GET',
       headers
     })
@@ -252,6 +261,7 @@ module.exports = function ({ config }) {
     return onRequest(url, {
       params,
       client: defaultClient,
+      idempotent: true,
       body,
       method,
       headers
@@ -263,6 +273,7 @@ module.exports = function ({ config }) {
   function onRequest (path, {
     params,
     client,
+    idempotent,
     body,
     method,
     headers,
@@ -272,6 +283,7 @@ module.exports = function ({ config }) {
       const signal = new EE()
       client.stream({
         path: urljoin(pathname, path, `?${querystring.stringify(params || {})}`),
+        idempotent,
         method,
         signal,
         body: body ? JSON.stringify(body) : null,
