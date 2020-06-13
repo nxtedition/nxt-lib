@@ -11,8 +11,8 @@ module.exports = function ({ config, client }) {
   const { protocol, hostname, port, pathname } = new URL(config.url)
 
   const defaultClient = client || new Pool({ protocol, hostname, port }, {
-    connections: 8,
-    pipelining: 3
+    connections: config.connections || 8,
+    pipelining: config.pipelining || 3
   })
 
   function onChanges (options) {
