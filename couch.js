@@ -11,7 +11,7 @@ module.exports = function ({ config, client }) {
   const { protocol, hostname, port, pathname } = new URL(config.url)
 
   const defaultClient = client || new Pool({ protocol, hostname, port }, {
-    connections: config.connections || 8,
+    connections: config.connections || 16,
     pipelining: config.pipelining || 3
   })
 
