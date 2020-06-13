@@ -11,9 +11,9 @@ module.exports = function ({ config }) {
   const { protocol, hostname, port, pathname } = new URL(config.url)
 
   const defaultClient = new Pool({ protocol, hostname, port }, {
-    connections: config.connections || 16,
-    socketTimeout: config.socketTimeout || 10e3,
-    requestTimeout: config.requestTimeout,
+    connections: config.connections || 32,
+    socketTimeout: config.socketTimeout || 30e3,
+    requestTimeout: config.requestTimeout || 30e3,
     pipelining: config.pipelining || 3
   })
 
