@@ -394,6 +394,12 @@ module.exports = ({ ds } = {}) => {
     const args = tokens
       .map(x => {
         try {
+          if (x === 'undefined') {
+            return undefined
+          }
+          if (x === 'null') {
+            return null
+          }
           return x ? JSON5.parse(x) : x
         } catch (err) {
           throw new NestedError(`failed to parse token ${x}`, err)
