@@ -1,5 +1,5 @@
 const xuid = require('xuid')
-const statuses = require('statuses')
+const status = require('statuses')
 const createError = require('http-errors')
 const { performance } = require('perf_hooks')
 
@@ -119,7 +119,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
         headers: err.headers
       }
       // TODO (fix): httpVersion?
-      socket.end(createHttpHeader(`HTTP/1.1 ${statusCode} ${statuses[statusCode]}\r\n\r\n`, err.headers))
+      socket.end(createHttpHeader(`HTTP/1.1 ${statusCode} ${status.message[statusCode]}\r\n\r\n`, err.headers))
     } else {
       socket.destroy()
     }
