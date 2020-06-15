@@ -1,4 +1,4 @@
-const { compareRev } = require('../src/util')
+const { compareRev } = require('../util')
 
 test('compare-rev', () => {
   expect(compareRev(null, '1-00000000000000')).toBe(-1)

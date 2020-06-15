@@ -1,4 +1,4 @@
-const { resolveTemplate } = require('../src/util/template')({
+const { resolveTemplate } = require('../util/template')({
   ds: {
     record: {
       observe: () => Observable.of({ foo: 'bar' })
@@ -28,6 +28,11 @@ test('integer ops', async () => {
   expect(await resolveTemplate('{{test | add(2)}}', { test: 10 })).toBe(12)
   expect(await resolveTemplate('{{test | sub(2)}}', { test: '10' })).toBe(8)
   expect(await resolveTemplate('{{test | sub(2)}}', { test: 10 })).toBe(8)
+})
+
+test('null undefined args', async () => {
+  expect(await resolveTemplate('{{asd | default(null, true)}}', {})).toBe(null)
+  expect(await resolveTemplate('{{asd | default(undefined, true)}}', {})).toBe(undefined)
 })
 
 test('path var', async () => {

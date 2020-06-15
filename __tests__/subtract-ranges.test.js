@@ -1,4 +1,4 @@
-const subtractRanges = require('../src/subtract-ranges')
+const subtractRanges = require('../subtract-ranges')
 const mergeRanges = require('merge-ranges')
 const assert = require('assert')
 
