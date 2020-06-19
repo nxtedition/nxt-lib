@@ -28,17 +28,11 @@ module.exports = function (config, onTerminate) {
     require('rxjs-compat')
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const cacheDb = config.deepstream.cache ? require('leveldown')(config.deepstream.cache) : null
-    const xuid = require('xuid')
-    const fsp = require('fs').promises
-    const fs = require('fs')
-    const stream = require('stream')
-    const pipeline = require('util').promisify(stream.pipeline)
-    const os = require('os')
-    const path = require('path')
 
     if (cacheDb) {
       logger.debug({ cache: config.deepstream.cache }, 'Deepstream Caching')
     }
+
     ds = deepstream(config.deepstream.url, {
       ...config.deepstream,
       cacheDb
@@ -67,26 +61,6 @@ module.exports = function (config, onTerminate) {
       })
 
     nxt = require('./deepstream')(ds)
-
-    const name = `${config.isProduction ? os.hostname() : config.id}`
-    ds.rpc.provide(`${name}.dump`, async () => {
-      const dirName = path.join('./.nxt-dump', name, new Date().toISOString())
-      await fsp.mkdir(dirName, { recursive: true })
-      const pathName = path.join(dirName, 'subscriptions')
-      const tmpPathName = pathName + `.${xuid()}`
-      await pipeline(
-        stream.Readable.from(ds.record._records.entries()),
-        stream.Transform({
-          objectMode: true,
-          transform ([key, val], encoding, callback) {
-            callback(null, `${key} ${val.version} ${val.state}`)
-          }
-        }),
-        fs.createWriteStream(tmpPathName)
-      )
-      await fsp.rename(tmpPathName, pathName)
-      return dirName
-    })
   }
 
   if (config.status && config.status.subscribe && process.env.NODE_ENV === 'production') {
