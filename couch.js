@@ -11,13 +11,13 @@ module.exports = function ({ config }) {
   const { protocol, hostname, port, pathname } = new URL(config.url)
 
   const defaultClient = new Pool({ protocol, hostname, port }, {
-    connections: config.connections || 32,
+    connections: config.connections || 8,
     socketTimeout: config.socketTimeout || 30e3,
     requestTimeout: config.requestTimeout || 30e3,
     pipelining: config.pipelining || 3
   })
 
-  function onChanges (options) {
+  function onChanges (options = {}) {
     const params = {}
     const headers = {
       Accept: 'application/json'
@@ -47,6 +47,7 @@ module.exports = function ({ config }) {
     }
 
     if (typeof options.timeout !== 'undefined') {
+      // TODO (fix): Investigate what this is?
       params.timeout = options.timeout
     }
 
@@ -68,13 +69,16 @@ module.exports = function ({ config }) {
       headers['Content-Type'] = 'application/json'
     }
 
+    // TODO (fix): Allow other modes.
     params.feed = 'continuous'
 
     return Observable.create(o => {
-      const client = new Client({
+      const userClient = options.client
+      const client = userClient || new Client({
         protocol,
         hostname,
         port,
+        // TODO (fix): Adjust according to heartbeat.
         socketTimeout: 2 * 60e3
       })
       let buf = ''
@@ -106,20 +110,21 @@ module.exports = function ({ config }) {
           o.error(err)
         }
       }, err => {
-        client.destroy(err)
         o.error(err)
       }, () => {
-        client.destroy()
         o.complete()
       })
 
       return () => {
         subscription.unsubscribe()
+        if (client !== userClient) {
+          client.destroy()
+        }
       }
     })
   }
 
-  function onPut (url, params, body) {
+  function onPut (url, params, body, options = {}) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json'
@@ -127,7 +132,7 @@ module.exports = function ({ config }) {
 
     return onRequest(url, {
       params,
-      client: defaultClient,
+      client: options.client,
       idempotent: true,
       method: 'PUT',
       headers,
@@ -137,7 +142,7 @@ module.exports = function ({ config }) {
       .map(body => JSON.parse(body))
   }
 
-  function onPost (url, params, body) {
+  function onPost (url, params, body, { client } = {}) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json'
@@ -145,7 +150,7 @@ module.exports = function ({ config }) {
 
     return onRequest(url, {
       params,
-      client: defaultClient,
+      client,
       method: 'POST',
       headers,
       body
@@ -154,14 +159,14 @@ module.exports = function ({ config }) {
       .map(body => JSON.parse(body))
   }
 
-  function onGet (url, params) {
+  function onGet (url, params, options = {}) {
     const headers = {
       Accept: 'application/json'
     }
 
     return onRequest(url, {
       params,
-      client: defaultClient,
+      client: options.client,
       idempotent: true,
       method: 'GET',
       headers
@@ -170,7 +175,7 @@ module.exports = function ({ config }) {
       .map(body => JSON.parse(body))
   }
 
-  function onInfo () {
+  function onInfo (options = {}) {
     const params = {}
     const headers = {
       Accept: 'application/json'
@@ -178,7 +183,7 @@ module.exports = function ({ config }) {
 
     return onRequest('', {
       params,
-      client: defaultClient,
+      client: options.cleint,
       idempotent: true,
       method: 'GET',
       headers
@@ -187,7 +192,7 @@ module.exports = function ({ config }) {
       .map(body => JSON.parse(body))
   }
 
-  function onAllDocs (url, options) {
+  function onAllDocs (url, options = {}) {
     const params = {}
     const headers = {
       Accept: 'application/json'
@@ -260,7 +265,7 @@ module.exports = function ({ config }) {
 
     return onRequest(url, {
       params,
-      client: defaultClient,
+      client: options.client,
       idempotent: true,
       body,
       method,
@@ -279,6 +284,7 @@ module.exports = function ({ config }) {
     headers,
     requestTimeout
   }) {
+    client = client || defaultClient
     return Observable.create(o => {
       const signal = new EE()
       client.stream({
