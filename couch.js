@@ -327,6 +327,9 @@ module.exports = function ({ config }) {
     onPost,
     onGet,
     onInfo,
-    onChanges
+    onChanges,
+    protocol,
+    hostname,
+    port
   }
 }
