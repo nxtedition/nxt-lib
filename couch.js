@@ -148,6 +148,7 @@ module.exports = function ({ config }) {
       'Content-Type': 'application/json'
     }
 
+    // TODO (fix): idempotent?
     return onRequest(url, {
       params,
       client,
@@ -288,6 +289,7 @@ module.exports = function ({ config }) {
     return Observable.create(o => {
       const signal = new EE()
       client.stream({
+        // TODO (fix): What if pathname or params is empty?
         path: urljoin(pathname, path, `?${querystring.stringify(params || {})}`),
         idempotent,
         method,
