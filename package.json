@@ -52,15 +52,15 @@
     ]
   },
   "devDependencies": {
-    "eslint": "^6.8.0",
+    "eslint": "^7.3.1",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.20.1",
-    "eslint-plugin-jest": "^23.8.2",
+    "eslint-plugin-jest": "^23.17.1",
     "eslint-plugin-node": "^11.0.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "husky": "^4.2.3",
-    "jest": "^25.1.0",
+    "jest": "^26.1.0",
     "nodemon": "^2.0.2",
     "standard": "^14.3.3",
     "validate-commit-msg": "^2.14.0"
@@ -81,7 +81,7 @@
     "memoizee": "^0.4.14",
     "merge-ranges": "^1.0.2",
     "mime": "^2.4.6",
-    "moment": "^2.26.0",
+    "moment": "^2.27.0",
     "moment-timezone": "^0.5.31",
     "nested-error-stacks": "^2.1.0",
     "object-hash": "^2.0.3",
