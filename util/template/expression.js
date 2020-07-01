@@ -7,7 +7,6 @@ const memoize = require('memoizee')
 const NestedError = require('nested-error-stacks')
 const hasha = require('hasha')
 const split = require('split-string')
-const xuid = require('xuid')
 
 const RETURN = {}
 
@@ -201,13 +200,9 @@ module.exports = ({ ds } = {}) => {
                     object: 'leaf',
                     text: line,
                     marks: []
-                  }],
-                  // TODO: make these deterministic
-                  key: xuid()
-                }],
-                key: xuid()
-              })),
-            key: xuid()
+                  }]
+                }]
+              }))
           }
         }),
         append: (post) => value => value + post,
