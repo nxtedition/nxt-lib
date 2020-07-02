@@ -71,6 +71,7 @@ module.exports = function ({ config }) {
 
     // TODO (fix): Allow other modes.
     params.feed = 'continuous'
+    params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
 
     return Observable.create(o => {
       const userClient = options.client
@@ -78,8 +79,7 @@ module.exports = function ({ config }) {
         protocol,
         hostname,
         port,
-        // TODO (fix): Adjust according to heartbeat.
-        socketTimeout: 2 * 60e3
+        socketTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3)
       })
       let buf = ''
       const subscription = onRequest('/_changes', {
