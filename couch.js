@@ -78,7 +78,8 @@ module.exports = function ({ config }) {
       const client = userClient || new Client({
         protocol,
         hostname,
-        port,
+        port
+      }, {
         socketTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3)
       })
       let buf = ''
