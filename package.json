@@ -87,7 +87,6 @@
     "object-hash": "^2.0.3",
     "once": "^1.4.0",
     "split-string": "^6.0.0",
-    "statuses": "^2.0.0",
     "undici": "^1.1.0",
     "url-join": "^4.0.1",
     "xuid": "^3.0.2"

@@ -1,5 +1,4 @@
 const xuid = require('xuid')
-const status = require('statuses')
 const createError = require('http-errors')
 const { performance } = require('perf_hooks')
 
@@ -111,18 +110,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
       reqLogger.warn({ err }, 'stream error')
     })
 
-    let res = null
-
-    if (socket.writable && !socket.writableEnded) {
-      res = {
-        statusCode: statusCode,
-        headers: err.headers
-      }
-      // TODO (fix): httpVersion?
-      socket.end(createHttpHeader(`HTTP/1.1 ${statusCode} ${status.message[statusCode]}\r\n\r\n`, err.headers))
-    } else {
-      socket.destroy()
-    }
+    socket.destroy()
 
     if (statusCode < 500) {
       reqLogger.warn({ err, res }, 'stream failed')
