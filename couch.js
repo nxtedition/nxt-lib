@@ -305,9 +305,8 @@ module.exports = function ({ config }) {
           throw err
         }
         return new Writable(({
-          decodeStrings: false,
           write (chunk, encoding, callback) {
-            o.next(chunk)
+            o.next(chunk.toString())
             callback()
           }
         }))
