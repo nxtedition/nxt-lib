@@ -85,15 +85,13 @@ module.exports = function ({ config }) {
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
 
     return Observable.create(o => {
-      const timeout = 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3)
       const userClient = options.client
       const client = userClient || createClient({
         protocol,
         hostname,
         port
       }, {
-        socketTimeout: timeout,
-        headersTimeout: timeout
+        socketTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3)
       })
       let buf = ''
       const subscription = onRequest('/_changes', {
