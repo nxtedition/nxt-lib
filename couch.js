@@ -1,16 +1,27 @@
 const { Observable } = require('rxjs')
 const querystring = require('querystring')
 const urljoin = require('url-join')
-const { Pool, Client } = require('undici')
 const { Writable } = require('stream')
 const EE = require('events')
+
+let undici
 
 module.exports = function ({ config }) {
   config = config.couchdb || config
 
   const { protocol, hostname, port, pathname } = new URL(config.url)
 
-  const defaultClient = new Pool({ protocol, hostname, port }, {
+  function createClient (...args) {
+    if (!undici) undici = require('undici')
+    return new undici.Client(...args)
+  }
+
+  function createPool (...args) {
+    if (!undici) undici = require('undici')
+    return new undici.Pool(...args)
+  }
+
+  const defaultClient = createPool({ protocol, hostname, port }, {
     connections: config.connections || 8,
     socketTimeout: config.socketTimeout || 30e3,
     requestTimeout: config.requestTimeout || 30e3,
@@ -75,7 +86,7 @@ module.exports = function ({ config }) {
 
     return Observable.create(o => {
       const userClient = options.client
-      const client = userClient || new Client({
+      const client = userClient || createClient({
         protocol,
         hostname,
         port
