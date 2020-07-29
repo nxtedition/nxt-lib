@@ -1,9 +1,9 @@
 const { Observable } = require('rxjs')
-const querystring = require('querystring')
-const urljoin = require('url-join')
 const { Writable } = require('stream')
 const EE = require('events')
 
+let urljoin
+let querystring
 let undici
 
 module.exports = function ({ config }) {
@@ -297,6 +297,9 @@ module.exports = function ({ config }) {
     headers,
     requestTimeout
   }) {
+    if (!querystring) querystring = require('querystring')
+    if (!urljoin) urljoin = require('url-join')
+
     client = client || defaultClient
     return Observable.create(o => {
       const signal = new EE()
