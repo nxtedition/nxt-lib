@@ -1,5 +1,6 @@
 module.exports = {
   auditMap: require('./auditMap'),
   combineMap: require('./combineMap'),
-  throttleTime2: require('./throttleTime2')
+  throttleTime2: require('./throttleTime2'),
+  retryBackoff: require('./retryBackoff')
 }
