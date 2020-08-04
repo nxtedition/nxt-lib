@@ -5,27 +5,49 @@ module.exports = Observable.prototype.retryBackoff = function retryBackoff (conf
     initialInterval,
     maxAttempts = Infinity,
     maxInterval = Infinity,
-    tap,
     shouldRetry = () => true,
-    backoffDelay = _exponentialBackoffDelay
+    backoffDelay = (attempt, initialInterval) => Math.pow(2, attempt) * initialInterval,
+    tap
   } = (typeof config === 'number') ? { initialInterval: config } : config
 
-  return this.retryWhen(err$ => err$.concatMap((err, i) => {
-    if (tap) {
-      tap(err, i)
+  return Observable.create(o => {
+    let attempt = 0
+    let timeout = null
+    let subscription = null
+
+    function _subscribe () {
+      timeout = null
+      subscription = this.subscribe(
+        val => {
+          attempt = 0
+          if (tap) {
+            tap(val)
+          }
+          o.next(val)
+        },
+        err => {
+          if (attempt++ < maxAttempts && shouldRetry(err)) {
+            const delay = backoffDelay(attempt, initialInterval)
+            timeout = setTimeout(_subscribe, Math.min(delay, maxInterval))
+          } else {
+            o.error(err)
+          }
+        },
+        () => o.complete()
+      )
     }
-    return Observable.if(
-      () => i < maxAttempts && shouldRetry(err),
-      Observable.timer(_getDelay(backoffDelay(i, initialInterval), maxInterval)),
-      Observable.throw(err)
-    )
-  }))
-}
 
-function _getDelay (backoffDelay, maxInterval) {
-  return Math.min(backoffDelay, maxInterval)
-}
+    _subscribe()
 
-function _exponentialBackoffDelay (iteration, initialInterval) {
-  return Math.pow(2, iteration) * initialInterval
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout)
+        timeout = null
+      }
+      if (subscription) {
+        subscription.unsubscribe()
+        subscription = null
+      }
+    }
+  })
 }
