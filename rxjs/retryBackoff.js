@@ -15,7 +15,7 @@ module.exports = Observable.prototype.retryBackoff = function retryBackoff (conf
     let timeout = null
     let subscription = null
 
-    function _subscribe () {
+    const _subscribe = () => {
       timeout = null
       subscription = this.subscribe(
         val => {
