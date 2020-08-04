@@ -23,12 +23,14 @@ module.exports = Observable.prototype.retryBackoff = function retryBackoff (conf
           o.next(val)
         },
         err => {
+          attempt++
+
           if (tap) {
-            tap(err)
+            tap(err, attempt)
           }
 
           if (attempt < maxAttempts && shouldRetry(err)) {
-            const delay = backoffDelay(attempt++, initialInterval)
+            const delay = backoffDelay(attempt, initialInterval)
             timeout = setTimeout(_subscribe, Math.min(delay, maxInterval))
           } else {
             o.error(err)
