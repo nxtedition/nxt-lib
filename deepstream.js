@@ -133,7 +133,12 @@ function rpcObserve (ds, rpcName, data) {
 function rpcMake (ds, rpcName, data, options) {
   const subject = new ReplaySubject(1)
   rpcObserve(ds, rpcName, data)
-    .timeout(options && options.timeout ? options.timeout : 10e3)
+    .timeout(Number.isFinite(options)
+      ? options
+      : Number.isFinite(options && options.timeout)
+        ? options.timeout
+        : 10e3
+    )
     .subscribe(subject)
   return subject
 }
