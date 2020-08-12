@@ -14,7 +14,7 @@ module.exports = {
         type: err.constructor.name,
         message: err.message,
         stack: err.stack,
-        data: err.data
+        data: JSON.stringify(err.data, undefined, 2)
       }
 
       for (var key in err) {
