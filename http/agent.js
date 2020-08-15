@@ -1,15 +1,10 @@
 const undici = require('undici')
 const stream = require('stream')
 
-/* global FinalizationRegistry, WeakRef */
-
 module.exports = class HttpAgent {
   constructor (factory = (url) => new undici.Pool(url)) {
     this._factory = factory
     this._origins = new Map()
-    this._registry = new FinalizationRegistry(origin => {
-      this._origins.delete(origin)
-    })
   }
 
   request (url, opts, callback) {
@@ -111,14 +106,38 @@ module.exports = class HttpAgent {
       handler.onError(err)
     }
   }
+
+  close (cb) {
+    const origins = Array.from(this._origins)
+    const promise = Promise.all(origins.map(c => c.close()))
+    if (cb) {
+      promise.then(() => cb(null, null), (err) => cb(err, null))
+    } else {
+      return promise
+    }
+  }
+
+  destroy (err, cb) {
+    if (typeof err === 'function') {
+      cb = err
+      err = null
+    }
+
+    const origins = Array.from(this._origins)
+    const promise = Promise.all(origins.map(c => c.destroy(err)))
+    if (cb) {
+      promise.then(() => cb(null, null))
+    } else {
+      return promise
+    }
+  }
 }
 
 function getClient (agent, origin) {
   let client = agent._origins.get(origin)?.deref()
   if (!client) {
     client = new undici.Pool(origin, agent._options)
-    agent._origins.set(origin, new WeakRef(client))
-    agent._registry.register(client, origin)
+    agent._origins.set(origin, client)
   }
   return client
 }
