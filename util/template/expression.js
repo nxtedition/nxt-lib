@@ -364,8 +364,8 @@ module.exports = ({ ds } = {}) => {
       null,
       null,
       {
-        timer: (initialDelay, period) => value => Observable
-          .timer(initialDelay, period)
+        timer: (dueTime, period) => value => Observable
+          .timer(moment.isMoment(dueTime) ? dueTime.toDate() : dueTime, period)
           .mapTo(value),
         now: (period) => () => period
           ? Observable.timer(0, period).map(() => moment())
