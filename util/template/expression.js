@@ -366,9 +366,16 @@ module.exports = ({ ds } = {}) => {
       {
         timer: (dueTime, period) => value => Observable
           .timer(moment.isMoment(dueTime) ? dueTime.toDate() : dueTime, period)
-          .mapTo(value),
+          .pipe(
+            rx.mapTo(value),
+            rx.startWith(RETURN)
+          ),
         now: (period) => () => period
-          ? Observable.timer(0, period).map(() => moment())
+          ? Observable
+            .timer(0, period)
+            .pipe(
+              rx.map(() => moment())
+            )
           : moment()
       }
     )
