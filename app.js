@@ -14,7 +14,13 @@ module.exports = function (config, onTerminate) {
 
   if (config.toobusy) {
     toobusy = require('toobusy-js')
-    toobusy.onLag(currentLag => logger.warn({ currentLag }, 'lag'))
+    toobusy.onLag(currentLag => {
+      if (currentLag > 5e3) {
+        logger.error({ currentLag }, 'lag')
+      } else {
+        logger.warn({ currentLag }, 'lag')
+      }
+    })
   }
 
   if (config.deepstream) {
