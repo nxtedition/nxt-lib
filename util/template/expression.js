@@ -62,7 +62,7 @@ module.exports = ({ ds } = {}) => {
         not: () => value => !value,
         and: (x) => value => x && value,
         or: (x) => value => x || value,
-        isDate: () => value => value instanceof Date,
+        isDate: () => value => moment.isMoment(value),
         isArray: () => value => Array.isArray(value),
         isEqual: (x) => value => fp.isEqual(value, x),
         isNil: () => value => value == null,
@@ -368,8 +368,8 @@ module.exports = ({ ds } = {}) => {
           .timer(initialDelay, period)
           .mapTo(value),
         now: (period) => () => period
-          ? Observable.timer(0, period).map(() => new Date())
-          : new Date()
+          ? Observable.timer(0, period).map(() => moment())
+          : moment()
       }
     )
   }
