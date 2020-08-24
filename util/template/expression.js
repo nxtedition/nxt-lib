@@ -371,10 +371,6 @@ module.exports = ({ ds } = {}) => {
             return null
           }
 
-          if (typeof period === 'string') {
-            period = Number(period)
-          }
-
           if (period != null && !Number.isFinite(period)) {
             return null
           }
