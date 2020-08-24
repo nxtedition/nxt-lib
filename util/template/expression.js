@@ -364,19 +364,28 @@ module.exports = ({ ds } = {}) => {
       null,
       null,
       {
-        timer: (dueTime, period) => value => Observable
-          .timer(moment.isMoment(dueTime) ? dueTime.toDate() : dueTime, period)
-          .pipe(
-            rx.mapTo(value),
-            rx.startWith(RETURN)
-          ),
-        now: (period) => () => period
-          ? Observable
-            .timer(0, period)
+        timer: (period) => dueTime => {
+          if (moment.isMoment(dueTime)) {
+            dueTime = dueTime.toDate()
+          } else if (!Number.isFinite(dueTime)) {
+            return null
+          }
+
+          if (typeof period === 'string') {
+            period = Number(period)
+          }
+
+          if (period != null && !Number.isFinite(period)) {
+            return null
+          }
+
+          return Observable
+            .timer(dueTime, period)
             .pipe(
-              rx.map(() => moment())
+              rx.map(() => moment()),
+              rx.startWith(null)
             )
-          : moment()
+        }
       }
     )
   }
