@@ -25,38 +25,33 @@ module.exports = ({ ds } = {}) => {
   }
 
   // TODO (perf): Optimize...
+  function compileArrayTemplate (arr) {
+    if (!fp.isArray(arr)) {
+      throw new Error('invalid argument')
+    }
+
+    const resolvers = arr.map(template => compileTemplate(template))
+
+    return context => resolvers.length === 0
+      ? Observable.of(arr)
+      : Observable.combineLatest(resolvers.map(resolver => resolver(context)))
+  }
+
+  // TODO (perf): Optimize...
   function compileObjectTemplate (obj) {
     if (!fp.isPlainObject(obj)) {
       throw new Error('invalid argument')
     }
 
-    const resolvers = []
-    // TODO (fix): Make iterative
-    function compile (path, obj) {
-      for (const [key, val] of Object.entries(obj)) {
-        if (fp.isObjectLike(val)) {
-          compile(path.concat(key), val)
-        } else if (isTemplate(val)) {
-          resolvers.push([path.concat(key), compileTemplate(val)])
-        }
-      }
-    }
-    compile([], obj)
+    const resolvers = Object.entries(obj).map(([key, template]) => [key, compileTemplate(template)])
 
     return context => resolvers.length === 0
-      ? Observable
-        .of(obj)
+      ? Observable.of(obj)
       : Observable
-        .combineLatest(resolvers.map(([path, resolver]) => resolver(context).map(val => [path, val])))
-        .map(fp.reduce((acc, [path, val]) => fp.set(path, val, acc), obj))
-  }
-
-  async function resolveTemplate (template, context) {
-    return onResolveTemplate(template, context)
-      .pipe(
-        rx.first()
-      )
-      .toPromise()
+        .combineLatest(resolvers.map(([key, resolver]) => resolver(context).pipe(rx.map(val => [key, val]))))
+        .pipe(
+          rx.map(pairs => Object.fromEntries(pairs))
+        )
   }
 
   function inner (str) {
@@ -76,7 +71,7 @@ module.exports = ({ ds } = {}) => {
     }
   }
 
-  const compileTemplate = memoize(str => {
+  const compileStringTemplate = memoize(str => {
     if (!fp.isString(str)) {
       throw new Error('invalid argument')
     }
@@ -104,18 +99,6 @@ module.exports = ({ ds } = {}) => {
     primitive: true
   })
 
-  function onResolveTemplate (str, context) {
-    if (fp.isString(str) && str.lastIndexOf('{{') === -1) {
-      return Observable.of(str)
-    }
-
-    try {
-      return compileTemplate(str)(context)
-    } catch (err) {
-      return Observable.throwError(err)
-    }
-  }
-
   function stringify (value) {
     if (value == null) {
       return ''
@@ -131,15 +114,47 @@ module.exports = ({ ds } = {}) => {
     return typeof val === 'string' && val.indexOf('{{') !== -1
   }
 
-  return {
-    resolveObjectTemplate,
-    onResolveObjectTemplate,
-    compileObjectTemplate,
+  function compileTemplate (template) {
+    if (fp.isPlainObject(template)) {
+      return compileObjectTemplate(template)
+    } else if (fp.isArray(template)) {
+      return compileArrayTemplate(template)
+    } else if (fp.isString) {
+      return compileStringTemplate(template)
+    } else {
+      return () => Observable.of(template)
+    }
+  }
 
+  async function resolveTemplate (template, context) {
+    return onResolveTemplate(template, context)
+      .pipe(
+        rx.first()
+      )
+      .toPromise()
+  }
+
+  function onResolveTemplate (str, context) {
+    if (fp.isString(str) && str.lastIndexOf('{{') === -1) {
+      return Observable.of(str)
+    }
+
+    try {
+      return compileTemplate(str)(context)
+    } catch (err) {
+      return Observable.throwError(err)
+    }
+  }
+
+  return {
     resolveTemplate,
     onResolveTemplate,
     compileTemplate,
 
+    // Deprecated
+    resolveObjectTemplate,
+    onResolveObjectTemplate,
+    compileObjectTemplate,
     isTemplate
   }
 }

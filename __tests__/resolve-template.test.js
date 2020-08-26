@@ -85,3 +85,7 @@ test('replace array', async () => {
 test('You Do Not Know Me', async () => {
   expect(await resolveTemplate('{{id | default("You Do Not Know", true)}} -', {})).toBe('You Do Not Know -')
 })
+
+test('object 1', async () => {
+  expect(await resolveTemplate({ asd: ['{{foo}}'] }, { foo: 'bar' })).toEqual({ asd: ['bar'] })
+})
