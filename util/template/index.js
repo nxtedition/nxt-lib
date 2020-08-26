@@ -119,7 +119,7 @@ module.exports = ({ ds } = {}) => {
       return compileObjectTemplate(template)
     } else if (fp.isArray(template)) {
       return compileArrayTemplate(template)
-    } else if (fp.isString) {
+    } else if (fp.isString(template)) {
       return compileStringTemplate(template)
     } else {
       return () => Observable.of(template)
