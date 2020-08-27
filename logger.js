@@ -11,7 +11,13 @@ module.exports.createLogger = function ({
   stream,
   ...options
 } = {}, onTerminate) {
+  let called = false
   const finalHandler = async (err, finalLogger, evt) => {
+    if (called) {
+      return
+    }
+    called = true
+
     finalLogger.info(`${evt} caught`)
     if (err) {
       finalLogger.fatal({ err }, 'error caused exit')
