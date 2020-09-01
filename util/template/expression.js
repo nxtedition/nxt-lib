@@ -366,7 +366,14 @@ module.exports = ({ ds } = {}) => {
       {
         timer: (period) => dueTime => {
           if (moment.isMoment(dueTime)) {
+            if (!dueTime.isValid()) {
+              return null
+            }
             dueTime = dueTime.toDate()
+          } else if (dueTime instanceof Date) {
+            if (isNaN(dueTime)) {
+              return null
+            }
           } else if (!Number.isFinite(dueTime)) {
             return null
           }
