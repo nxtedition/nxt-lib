@@ -408,7 +408,7 @@ module.exports = ({ ds } = {}) => {
     const args = tokens
       .map(x => {
         try {
-          if (x === 'undefined') {
+          if (x === 'undefined' || x === '') {
             return undefined
           }
           if (x === 'null') {
