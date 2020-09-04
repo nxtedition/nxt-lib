@@ -131,7 +131,7 @@ module.exports = ({ ds } = {}) => {
             if (tz) {
               value = value.tz(tz)
             }
-            return value.format(format)
+            return format ? value.format(format) : value.toISOString()
           }
         },
         startOf: (startOf) => {
