@@ -24,7 +24,6 @@ module.exports = function ({ config }) {
   const defaultClient = createPool({ protocol, hostname, port }, {
     connections: config.connections || 8,
     socketTimeout: config.socketTimeout || 30e3,
-    requestTimeout: config.requestTimeout || 30e3,
     pipelining: config.pipelining || 3
   })
 
@@ -295,7 +294,7 @@ module.exports = function ({ config }) {
     body,
     method,
     headers,
-    requestTimeout
+    requestTimeout = config.requestTimeout || 30e3
   }) {
     if (!querystring) querystring = require('querystring')
     if (!urljoin) urljoin = require('url-join')
