@@ -55,7 +55,7 @@ module.exports = {
   ureq: ureq => ureq && {
     id: ureq.id || (ureq.headers && ureq.headers['request-id']),
     method: ureq.method,
-    url: `${ureq.protocol}//${ureq.hostname}:${ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]}${ureq.path}`,
+    url: `${ureq.protocol || 'http'}//${ureq.hostname}:${ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]}${ureq.path}`,
     timeout: ureq.timeout,
     bytesWritten: ureq.bytesWritten,
     headers: ureq.headers
