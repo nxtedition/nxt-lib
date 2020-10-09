@@ -148,4 +148,16 @@ describe('subtractRanges', function () {
     assert.deepStrictEqual(positive, positiveCopy)
     assert.deepStrictEqual(negative, negativeCopy)
   })
+
+  test('should subtract even when rhs is not merged or sorted', function () {
+    assert.deepStrictEqual(subtractRanges([
+      [0, 100]
+    ], [
+      [15, 40],
+      [10, 20]
+    ]), [
+      [0, 10],
+      [40, 100]
+    ])
+  })
 })
