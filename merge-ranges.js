@@ -14,13 +14,16 @@ module.exports = function mergeRanges (ranges) {
 
   for (let n = 1; n < ranges.length; ++n) {
     const range = ranges[n]
+
+    if (range[1] <= range[0]) {
+      continue
+    }
+
     const top = stack[stack.length - 1]
 
     if (top[1] < range[0]) {
       // No overlap, push range onto stack
-      if (range[1] > range[0]) {
-        stack.push(range)
-      }
+      stack.push(range)
     } else if (top[1] < range[1]) {
       // Update previous range
       top[1] = range[1]
