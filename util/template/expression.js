@@ -432,65 +432,69 @@ module.exports = ({ ds } = {}) => {
     primitive: true
   })
 
-  return memoize(expression => {
-    try {
-      const [basePath, ...tokens] = split(expression, {
-        separator: '|',
-        quotes: ['"']
-      }).map(str => str.trim())
+  const getValue = (value, [path, ...rest]) => {
+    if (!path || !value || typeof value !== 'object') {
+      return Observable.isObservable(value)
+        ? value
+        : Observable.of(value)
+    } else {
+      return Observable.isObservable(value)
+        ? value
+          .pipe(
+            rx.switchMap(value => getValue(value[path], rest)),
+            rx.distinctUntilChanged()
+          )
+        : getValue(value[path], rest)
+    }
+  }
 
-      const get = (value, [path, ...rest]) => {
-        if (!path || !value || typeof value !== 'object') {
-          return Observable.isObservable(value)
-            ? value
-            : Observable.of(value)
-        } else {
-          return Observable.isObservable(value)
-            ? value.pipe(rx.switchMap(value => get(value[path], rest)))
-            : get(value[path], rest)
-        }
+  const reduceValue = (value, index, filters) => {
+    if (value === RETURN) {
+      return Observable.of(null)
+    }
+
+    while (index < filters.length) {
+      value = filters[index++](value)
+
+      if (value === RETURN) {
+        return Observable.of(null)
       }
 
-      const filters = tokens.map(getFilter)
-
-      return context => {
-        function reduce (value, index) {
-          if (value === RETURN) {
-            return Observable.of(null)
-          }
-
-          while (index < filters.length) {
-            value = filters[index++](value)
-
-            if (value === RETURN) {
-              return Observable.of(null)
-            }
-
-            if (Observable.isObservable(value)) {
-              return value
-                .pipe(
-                  rx.switchMap(value => reduce(value, index)),
-                  // TODO (fix): better error handling...
-                  rx.catchError(() => Observable.of(null))
-                )
-            }
-          }
-
-          return Observable.of(value)
-        }
-
-        return get(context, fp.toPath(basePath))
+      if (Observable.isObservable(value)) {
+        return value
           .pipe(
-            rx.switchMap(value => reduce(value, 0)),
+            rx.switchMap(value => reduceValue(value, index, filters)),
+            rx.distinctUntilChanged(),
             // TODO (fix): better error handling...
             rx.catchError(() => Observable.of(null))
           )
       }
+    }
+
+    return Observable.of(value)
+  }
+
+  return memoize(expression => {
+    try {
+      const [basePathStr, ...tokens] = split(expression, {
+        separator: '|',
+        quotes: ['"']
+      }).map(str => str.trim())
+
+      const filters = tokens.map(getFilter)
+      const basePath = fp.toPath(basePathStr)
+
+      return context => getValue(context, basePath)
+        .pipe(
+          rx.switchMap(value => reduceValue(value, 0, filters)),
+          // TODO (fix): better error handling...
+          rx.catchError(() => Observable.of(null))
+        )
     } catch (err) {
       throw new NestedError(`failed to parse expression ${expression}`, err)
     }
   }, {
-    max: 1024,
+    max: 4096,
     primitive: true
   })
 }
