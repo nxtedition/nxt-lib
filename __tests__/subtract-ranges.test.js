@@ -1,8 +1,6 @@
 const subtractRanges = require('../subtract-ranges')
-const mergeRanges = require('merge-ranges')
+const mergeRanges = require('../merge-ranges')
 const assert = require('assert')
-
-// Note that subtract ranges expects merged ranges as input.
 
 describe('subtractRanges', function () {
   test('should return the positive ranges if nothing is subtracted', function () {
