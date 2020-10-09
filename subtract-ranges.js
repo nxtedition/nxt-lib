@@ -8,7 +8,9 @@ module.exports = function subtractRanges (a, b) {
     if (ar[0] < ar[1]) {
       const br = b.find(br => ar[0] < br[1] && br[0] < ar[1])
       if (!br) {
-        c.push(ar)
+        if (ar[1] > ar[0]) {
+          c.push(ar)
+        }
       } else {
         a.unshift([br[1], ar[1]])
         a.unshift([ar[0], br[0]])
@@ -16,5 +18,5 @@ module.exports = function subtractRanges (a, b) {
     }
   }
 
-  return c.filter(([start, end]) => end > start)
+  return c
 }
