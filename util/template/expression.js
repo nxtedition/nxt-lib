@@ -487,6 +487,7 @@ module.exports = ({ ds } = {}) => {
       return context => getValue(context, basePath)
         .pipe(
           rx.switchMap(value => reduceValue(value, 0, filters)),
+          rx.distinctUntilChanged(),
           // TODO (fix): better error handling...
           rx.catchError(() => Observable.of(null))
         )
