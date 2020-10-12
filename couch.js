@@ -6,8 +6,17 @@ let urljoin
 let querystring
 let undici
 
-module.exports = function ({ config }) {
-  config = config.couchdb || config
+module.exports = function (opts) {
+  let config
+  if (typeof opts === 'string') {
+    config = { url: opts }
+  } else if (opts.url) {
+    config = opts
+  } else if (opts.config) {
+    config = opts.config.couchdb || opts.config
+  } else {
+    throw new Error('invalid options')
+  }
 
   const { protocol, hostname, port, pathname } = new URL(config.url)
 
