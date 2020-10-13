@@ -55,7 +55,7 @@ module.exports = function cached (fn, options, keySelector) {
   return function (...args) {
     const key = keySelector(...args)
 
-    return Observable.create(o => {
+    return new Observable(o => {
       let entry = cache.get(key)
 
       if (!entry) {

@@ -92,7 +92,7 @@ module.exports = function (opts) {
     params.feed = 'continuous'
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
 
-    return Observable.create(o => {
+    return new Observable(o => {
       const userClient = options.client
       const client = userClient || createClient({
         protocol,
@@ -309,7 +309,7 @@ module.exports = function (opts) {
     if (!urljoin) urljoin = require('url-join')
 
     client = client || defaultClient
-    return Observable.create(o => {
+    return new Observable(o => {
       const signal = new EE()
       client.stream({
         // TODO (fix): What if pathname or params is empty?

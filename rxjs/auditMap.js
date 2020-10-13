@@ -1,7 +1,7 @@
 const { Observable } = require('rxjs')
 
 module.exports = Observable.prototype.auditMap = function auditMap (project) {
-  return Observable.create(o => {
+  return new Observable(o => {
     let pendingValue = null
     let hasPendingValue = false
     let isComplete = false

@@ -10,7 +10,7 @@ module.exports = Observable.prototype.retryBackoff = function retryBackoff (conf
     tap
   } = (typeof config === 'number') ? { initialInterval: config } : config
 
-  return Observable.create(o => {
+  return new Observable(o => {
     let attempt = 0
     let timeout = null
     let subscription = null
