@@ -30,11 +30,13 @@ module.exports = ({ ds } = {}) => {
       throw new Error('invalid argument')
     }
 
+    if (arr.length === 0) {
+      return () => Observable.of([])
+    }
+
     const resolvers = arr.map(template => compileTemplate(template))
 
-    return context => resolvers.length === 0
-      ? Observable.of(arr)
-      : Observable.combineLatest(resolvers.map(resolver => resolver(context)))
+    return context => Observable.combineLatest(resolvers.map(resolver => resolver(context)))
   }
 
   // TODO (perf): Optimize...
@@ -43,15 +45,25 @@ module.exports = ({ ds } = {}) => {
       throw new Error('invalid argument')
     }
 
-    const resolvers = Object.entries(obj).map(([key, template]) => [key, compileTemplate(template)])
+    const keys = Object.keys(obj)
 
-    return context => resolvers.length === 0
-      ? Observable.of(obj)
-      : Observable
-        .combineLatest(resolvers.map(([key, resolver]) => resolver(context).pipe(rx.map(val => [key, val]))))
-        .pipe(
-          rx.map(pairs => Object.fromEntries(pairs))
-        )
+    if (keys.length === 0) {
+      return () => Observable.of({})
+    }
+
+    const resolvers = Object.values(obj).map(template => compileTemplate(template))
+
+    return context => Observable
+      .combineLatest(resolvers.map(resolver => resolver(context)))
+      .pipe(
+        rx.map(values => {
+          const ret = {}
+          for (let n = 0; n < values.length; ++n) {
+            ret[keys[n]] = values[n]
+          }
+          return ret
+        })
+      )
   }
 
   function inner (str) {
@@ -79,7 +91,7 @@ module.exports = ({ ds } = {}) => {
     const match = inner(str)
 
     if (!match) {
-      return context => Observable.of(str)
+      return () => Observable.of(str)
     }
 
     const { pre, body, post } = match
