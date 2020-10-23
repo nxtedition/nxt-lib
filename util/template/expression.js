@@ -3,12 +3,11 @@ const rx = require('rxjs/operators')
 const Observable = require('rxjs')
 const JSON5 = require('json5')
 const fp = require('lodash/fp')
-const memoize = require('memoizee')
 const NestedError = require('nested-error-stacks')
 const hasha = require('hasha')
 const split = require('split-string')
-
 const RETURN = {}
+const weakCache = require('../../weakCache')
 
 function asFilter (transform, predicate, obj) {
   return fp.mapValues(factory => (...args) => {
@@ -393,7 +392,7 @@ module.exports = ({ ds } = {}) => {
     )
   }
 
-  const getFilter = memoize((filterStr) => {
+  const getFilter = weakCache((filterStr) => {
     const [, filterName, argsStr] = filterStr
       .replace(/\n/g, '\\n')
       .replace(/\r/g, '\\r')
@@ -427,9 +426,6 @@ module.exports = ({ ds } = {}) => {
     }
 
     return factory(...args)
-  }, {
-    max: 1024,
-    primitive: true
   })
 
   const getValue = (value, [path, ...rest]) => {
@@ -474,7 +470,7 @@ module.exports = ({ ds } = {}) => {
     return Observable.of(value)
   }
 
-  return memoize(expression => {
+  return weakCache(expression => {
     try {
       const [basePathStr, ...tokens] = split(expression, {
         separator: '|',
@@ -494,8 +490,5 @@ module.exports = ({ ds } = {}) => {
     } catch (err) {
       throw new NestedError(`failed to parse expression ${expression}`, err)
     }
-  }, {
-    max: 4096,
-    primitive: true
   })
 }
