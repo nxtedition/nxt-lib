@@ -2,7 +2,7 @@ const rx = require('rxjs/operators')
 const Observable = require('rxjs')
 const fp = require('lodash/fp')
 const getExpressionCompiler = require('./expression')
-const memoize = require('memoizee')
+const weakCache = require('../../weakCache')
 const JSON5 = require('json5')
 
 module.exports = ({ ds } = {}) => {
@@ -83,7 +83,7 @@ module.exports = ({ ds } = {}) => {
     }
   }
 
-  const compileStringTemplate = memoize(str => {
+  const compileStringTemplate = weakCache(str => {
     if (!fp.isString(str)) {
       throw new Error('invalid argument')
     }
@@ -106,9 +106,6 @@ module.exports = ({ ds } = {}) => {
       .pipe(
         rx.switchMap(body => compileTemplate(`${pre}${stringify(body)}${post}`)(context))
       )
-  }, {
-    max: 1024,
-    primitive: true
   })
 
   function stringify (value) {
