@@ -34,6 +34,7 @@ module.exports = ({ ds } = {}) => {
         toJSON: (indent) => value => JSON.stringify(value, null, indent),
         toJSON5: () => value => JSON5.stringify(value),
         json: (indent) => value => JSON.stringify(value, null, indent),
+        isEmpty: () => value => fp.isEmpty(value),
         json5: () => value => JSON5.stringify(value),
         string: () => value => String(value),
         number: () => value => Number(value),
