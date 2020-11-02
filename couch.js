@@ -30,7 +30,7 @@ module.exports = function (opts) {
     return new undici.Pool(...args)
   }
 
-  const defaultClient = createPool({ protocol, hostname, port }, {
+  const defaultClient = opts.client || createPool({ protocol, hostname, port }, {
     connections: config.connections || 8,
     socketTimeout: config.socketTimeout || 30e3,
     pipelining: config.pipelining || 3
