@@ -7,7 +7,7 @@ module.exports = function (config, onTerminate) {
 
   const logger = createLogger({
     ...config.logger,
-    name: config.logger?.name || config.service?.name,
+    name: config.logger?.name || config.service?.name || config.name,
     base: config.logger ? {
       ...config.logger.base
     } : {}
@@ -36,6 +36,7 @@ module.exports = function (config, onTerminate) {
         name: (
           config.deepstream.credentials.name ||
           config.service?.name ||
+          config.name ||
           config.logger?.name
         )
       }
