@@ -7,6 +7,7 @@ module.exports = function (config, onTerminate) {
 
   const logger = createLogger({
     ...config.logger,
+    name: config.logger?.name || config.service?.name,
     base: config.logger ? {
       ...config.logger.base
     } : {}
@@ -29,7 +30,15 @@ module.exports = function (config, onTerminate) {
       maxReconnectAttempts: Infinity,
       maxReconnectInterval: 10000,
       cacheSize: 2048,
-      ...config.deepstream
+      ...config.deepstream,
+      credentials: {
+        ...config.deepstream.credentials,
+        name: (
+          config.deepstream.credentials.name ||
+          config.service?.name ||
+          config.logger?.name
+        )
+      }
     }
     require('rxjs-compat')
     const deepstream = require('@nxtedition/deepstream.io-client-js')
