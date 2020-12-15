@@ -5,6 +5,8 @@ module.exports = function (config, onTerminate) {
 
   const { createLogger } = require('./logger')
 
+  config = { ...config }
+
   const logger = createLogger({
     ...config.logger,
     name: config.logger?.name || config.service?.name || config.name,
@@ -25,6 +27,13 @@ module.exports = function (config, onTerminate) {
   }
 
   if (config.deepstream) {
+    const username = (
+      config.deepstream.credentials.username ||
+      config.service?.name ||
+      config.name ||
+      config.logger?.name
+    )
+
     config.deepstream = {
       url: 'ws://localhost:6020/deepstream',
       maxReconnectAttempts: Infinity,
@@ -33,14 +42,10 @@ module.exports = function (config, onTerminate) {
       ...config.deepstream,
       credentials: {
         ...config.deepstream.credentials,
-        name: (
-          config.deepstream.credentials.name ||
-          config.service?.name ||
-          config.name ||
-          config.logger?.name
-        )
+        username
       }
     }
+
     require('rxjs-compat')
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const cacheDb = config.deepstream.cache ? require('leveldown')(config.deepstream.cache) : null
@@ -69,7 +74,6 @@ module.exports = function (config, onTerminate) {
           ERROR: 'error',
           RECONNECTING: 'warn'
         }[connectionState] || 'info'
-        const username = config.deepstream.credentials.username
         logger[level]({ connectionState, username }, 'Deepstream Connection State Changed.')
       })
       .on('error', err => {
