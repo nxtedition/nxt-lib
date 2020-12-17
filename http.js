@@ -15,6 +15,11 @@ module.exports.request = async function request (ctx, next) {
 
     res.setHeader('request-id', req.id)
 
+    // Normalize OutgoingMessage.destroy
+    res.on('close', () => {
+      res.destroyed = true
+    })
+
     await Promise.all([
       next(),
       new Promise((resolve, reject) => {
