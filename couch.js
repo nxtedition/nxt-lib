@@ -98,7 +98,7 @@ module.exports = function (opts) {
         hostname,
         port
       }, {
-        socketTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3)
+        bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3)
       })
       let buf = ''
       const subscription = onRequest('/_changes', {
