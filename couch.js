@@ -32,7 +32,6 @@ module.exports = function (opts) {
 
   const defaultClient = opts.client || createPool({ protocol, hostname, port }, {
     connections: config.connections || 8,
-    socketTimeout: config.socketTimeout || 30e3,
     pipelining: config.pipelining || 3
   })
 
