@@ -301,8 +301,7 @@ module.exports = function (opts) {
     idempotent,
     body,
     method,
-    headers,
-    requestTimeout = config.requestTimeout || 30e3
+    headers
   }) {
     if (!querystring) querystring = require('querystring')
     if (!urljoin) urljoin = require('url-join')
@@ -323,7 +322,6 @@ module.exports = function (opts) {
         method,
         signal,
         body,
-        requestTimeout,
         headers
       }, ({ statusCode }) => {
         if (statusCode < 200 || statusCode >= 300) {
@@ -351,6 +349,7 @@ module.exports = function (opts) {
   }
 
   return {
+    onRequest,
     onAllDocs,
     onPut,
     onPost,
