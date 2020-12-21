@@ -143,13 +143,13 @@ module.exports = function (opts) {
     })
   }
 
-  function onPut (url, params, body, { client } = {}) {
+  function onPut (path, params, body, { client } = {}) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json'
     }
 
-    return onRequest(url, {
+    return onRequest(path, {
       params,
       client,
       idempotent: true,
@@ -161,14 +161,14 @@ module.exports = function (opts) {
       .map(body => JSON.parse(body))
   }
 
-  function onPost (url, params, body, { client } = {}) {
+  function onPost (path, params, body, { client } = {}) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json'
     }
 
     // TODO (fix): idempotent?
-    return onRequest(url, {
+    return onRequest(path, {
       params,
       client,
       method: 'POST',
@@ -179,12 +179,12 @@ module.exports = function (opts) {
       .map(body => JSON.parse(body))
   }
 
-  function onGet (url, params, { client } = {}) {
+  function onGet (path, params, { client } = {}) {
     const headers = {
       Accept: 'application/json'
     }
 
-    return onRequest(url, {
+    return onRequest(path, {
       params,
       client,
       idempotent: true,
@@ -212,7 +212,7 @@ module.exports = function (opts) {
       .map(body => JSON.parse(body))
   }
 
-  function onAllDocs (url, options = {}) {
+  function onAllDocs (path, options = {}) {
     const params = {}
     const headers = {
       Accept: 'application/json'
@@ -283,7 +283,7 @@ module.exports = function (opts) {
       headers['Content-Type'] = 'application/json'
     }
 
-    return onRequest(url, {
+    return onRequest(path, {
       params,
       client: options.client,
       idempotent: true,
@@ -307,6 +307,12 @@ module.exports = function (opts) {
     if (!querystring) querystring = require('querystring')
     if (!urljoin) urljoin = require('url-join')
 
+    if (!body) {
+      body = null
+    } else if (typeof body !== 'string') {
+      body = JSON.stringify(body)
+    }
+
     client = client || defaultClient
     return new Observable(o => {
       const signal = new EE()
@@ -316,7 +322,7 @@ module.exports = function (opts) {
         idempotent,
         method,
         signal,
-        body: body ? JSON.stringify(body) : null,
+        body,
         requestTimeout,
         headers
       }, ({ statusCode }) => {
