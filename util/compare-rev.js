@@ -11,15 +11,15 @@ module.exports = function compareRev (a, b) {
     return 0
   }
 
-  const [av, ar] = splitRev(a)
-  const [bv, br] = splitRev(b)
+  const av = a.charAt(0) === 'I' ? Infinity : parseInt(a)
+  const bv = b.charAt(0) === 'I' ? Infinity : parseInt(b)
 
-  return av !== bv ? (av < bv ? -1 : 1) : (ar < br ? -1 : 1)
-}
+  if (av !== bv) {
+    return av < bv ? -1 : 1
+  }
 
-function splitRev (s) {
-  const i = s.indexOf('-')
-  const ver = s.slice(0, i)
+  const ar = a.slice(a.indexOf('-') + 1)
+  const br = b.slice(b.indexOf('-') + 1)
 
-  return [ver === 'INF' ? Infinity : parseInt(ver, 10), s.slice(i + 1)]
+  return ar < br ? -1 : 1
 }
