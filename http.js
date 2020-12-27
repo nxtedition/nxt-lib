@@ -22,22 +22,22 @@ module.exports.request = async function request (ctx, next) {
 
     await Promise.all([
       next(),
-      new Promise((resolve, reject) => {
-        function onTimeout () {
+      new Promise((resolve, reject) => req
+        .on('close', resolve)
+        .on('aborted', resolve)
+        .on('error', reject)
+        .on('timeout', () => {
           reject(new createError.RequestTimeout())
-        }
-
-        req
-          .on('close', resolve)
-          .on('aborted', resolve)
-          .on('error', reject)
-          .on('timeout', onTimeout)
-        res
-          .on('close', resolve)
-          .on('finish', resolve)
-          .on('error', reject)
-          .on('timeout', onTimeout)
-      })
+        })
+      ),
+      new Promise((resolve, reject) => res
+        .on('close', resolve)
+        .on('finish', resolve)
+        .on('error', reject)
+        .on('timeout', () => {
+          reject(new createError.RequestTimeout())
+        })
+      )
     ])
 
     const responseTime = performance.now() - startTime
