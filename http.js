@@ -69,7 +69,16 @@ module.exports.request = async function request (ctx, next) {
 
       if (err.headers) {
         for (const [key, val] of Object.entries(err.headers)) {
-          res.setHeader(key, val)
+          if (
+            key.toLowerCase() !== 'content-length' &&
+            key.toLowerCase() !== 'content-type' &&
+            key.toLowerCase() !== 'transfer-encoding' &&
+            key.toLowerCase() !== 'connection' &&
+            key.toLowerCase() !== 'keep-alive' &&
+            key.toLowerCase() !== 'upgrade'
+          ) {
+            res.setHeader(key, val)
+          }
         }
       }
       res.statusCode = statusCode
