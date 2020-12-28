@@ -40,6 +40,10 @@ module.exports.request = async function request (ctx, next) {
       )
     ])
 
+    // This is a workaround for a node bug where the socket
+    // isn't always uncorked.
+    res.socket?.uncork()
+
     const responseTime = performance.now() - startTime
     if (req.aborted) {
       reqLogger.debug({ res, responseTime }, 'request aborted')
