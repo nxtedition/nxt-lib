@@ -10,9 +10,7 @@ module.exports = function (config, onTerminate) {
   const logger = createLogger({
     ...config.logger,
     name: config.logger?.name || config.service?.name || config.name,
-    base: config.logger ? {
-      ...config.logger.base
-    } : {}
+    base: config.logger ? { ...config.logger.base } : {}
   }, onTerminate)
 
   if (config.toobusy) {
