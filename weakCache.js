@@ -2,24 +2,24 @@
 
 module.exports = function weakCache (valueSelector, keySelector) {
   const cache = new Map()
-  const finalizationRegistry = new FinalizationRegistry(name => {
-    const ref = cache.get(name)
+  const finalizationRegistry = new FinalizationRegistry(key => {
+    const ref = cache.get(key)
     if (ref !== undefined && ref.deref() === undefined) {
-      cache.delete(name)
+      cache.delete(key)
     }
   })
   return (...args) => {
-    const name = keySelector ? keySelector(...args) : args[0]
-    const ref = cache.get(name)
+    const key = keySelector ? keySelector(...args) : args[0]
+    const ref = cache.get(key)
     if (ref !== undefined) {
       const deref = ref.deref()
       if (deref !== undefined) {
         return deref
       }
     }
-    const value = valueSelector(name)
-    cache.set(name, new WeakRef(value))
-    finalizationRegistry.register(value, name)
+    const value = valueSelector(key)
+    cache.set(key, new WeakRef(value))
+    finalizationRegistry.register(value, key)
     return value
   }
 }
