@@ -3,17 +3,21 @@ const createError = require('http-errors')
 const { performance } = require('perf_hooks')
 
 module.exports.request = async function request (ctx, next) {
-  const { req, res, logger } = ctx
+  const { req, res, logger, headers } = ctx
   const startTime = performance.now()
 
-  req.id = ctx.id = req.headers['request-id'] || xuid()
+  req.id = ctx.id = (headers && headers['request-id']) || req.headers['request-id'] || xuid()
   req.log = ctx.logger = logger.child({ req: { id: req.id } })
 
   const reqLogger = logger.child({ req })
   try {
     reqLogger.debug({ req }, 'request started')
 
-    res.setHeader('request-id', req.id)
+    if (ctx.headers) {
+      ctx.headers['request-id'] = req.id
+    } else {
+      res.setHeader('request-id', req.id)
+    }
 
     // Normalize OutgoingMessage.destroy
     res.on('close', () => {
