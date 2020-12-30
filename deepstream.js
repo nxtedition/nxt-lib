@@ -103,11 +103,13 @@ function rpcProvide (ds, rpcName, callback, options) {
       }
 
       return ret$
-        .map(ret => !ret ? null : ret
-          .map(data => ({ data }))
-          .concat(Observable.of({ error: null }))
-          .catch(err => Observable.of({ error: err.message }))
-          .scan((xs, x) => ({ ...xs, ...x }))
+        .map(ret => !ret
+          ? null
+          : ret
+            .map(data => ({ data }))
+            .concat(Observable.of({ error: null }))
+            .catch(err => Observable.of({ error: err.message }))
+            .scan((xs, x) => ({ ...xs, ...x }))
         )
     } catch (err) {
       return Observable.of({ error: err.message })
