@@ -64,12 +64,20 @@ module.exports.request = async function request (ctx, next) {
 
     if (!res.headersSent && !res.finished) {
       if (statusCode >= 500) {
-        for (const name of res.getHeaderNames()) {
-          res.removeHeader(name)
+        if (ctx.headers) {
+          ctx.headers = {}
+        } else if (res.getHeaderNames && res.removeHeader) {
+          for (const name of res.getHeaderNames()) {
+            res.removeHeader(name)
+          }
         }
       }
 
-      res.setHeader('request-id', req.id)
+      if (ctx.headers) {
+        ctx.headers['request-id'] = req.id
+      } else if (res.setHeader) {
+        res.setHeader('request-id', req.id)
+      }
 
       if (err.headers) {
         for (const [key, val] of Object.entries(err.headers)) {
@@ -81,11 +89,15 @@ module.exports.request = async function request (ctx, next) {
             key.toLowerCase() !== 'keep-alive' &&
             key.toLowerCase() !== 'upgrade'
           ) {
-            res.setHeader(key, val)
+            if (ctx.headers) {
+              ctx.headers[key] = val
+            } else if (res.setHeader) {
+              res.setHeader(key, val)
+            }
           }
         }
       }
-      res.statusCode = statusCode
+      res.writeHead(statusCode, ctx.headers)
       res.end()
     } else {
       res.destroy()
