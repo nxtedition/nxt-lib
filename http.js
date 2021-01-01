@@ -5,12 +5,25 @@ const EE = require('events')
 const requestTarget = require('request-target')
 const querystring = require('querystring')
 
+class AbortSignal extends EE {
+  constructor () {
+    super()
+    this.aborted = false
+  }
+
+  abort () {
+    if (!this.aborted) {
+      this.aborted = true
+      this.emit('abort')
+    }
+  }
+}
+
 module.exports.request = async function request (ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
 
-  const signal = new EE()
-  signal.aborted = false
+  const signal = new AbortSignal()
 
   ctx.id = req.id = req.headers['request-id'] || xuid()
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
@@ -26,9 +39,8 @@ module.exports.request = async function request (ctx, next) {
 
   // Normalize OutgoingMessage.destroy
   res.on('close', () => {
-    signal.aborted = true
     res.destroyed = true
-    signal.emit('abort')
+    signal.abort()
   })
 
   res.setHeader('request-id', req.id)
@@ -71,8 +83,7 @@ module.exports.request = async function request (ctx, next) {
     const statusCode = err.statusCode || 500
     const responseTime = Math.round(performance.now() - startTime)
 
-    signal.aborted = true
-    signal.emit('abort')
+    signal.abort()
 
     res.on('error', err => {
       reqLogger.warn({ err }, 'request error')
@@ -102,7 +113,7 @@ module.exports.request = async function request (ctx, next) {
       res.statusCode = statusCode
       res.end()
     } else {
-      res.destroy()
+      res.destroy(err)
     }
 
     if (statusCode < 500) {
@@ -116,18 +127,27 @@ module.exports.request = async function request (ctx, next) {
 module.exports.upgrade = async function upgrade (ctx, next) {
   const { req, res, socket = res, logger } = ctx
 
-  const signal = new EE()
-  signal.aborted = false
-  socket.on('close', () => {
-    signal.aborted = true
-    signal.emit('abort')
-  })
+  const signal = new AbortSignal()
+
+  ctx.id = req.id = req.headers['request-id'] || xuid()
+  ctx.logger = req.log = logger.child({ req: { id: req.id } })
   ctx.signal = signal
+  ctx.url = requestTarget(req)
+  ctx.query = ctx.url?.search
+    ? querystring.parse(ctx.url.search.slice(1))
+    : null
+
+  if (!ctx.url) {
+    throw new createError.BadRequest()
+  }
+
+  // Normalize OutgoingMessage.destroy
+  socket.on('close', () => {
+    signal.abort()
+  })
 
   const reqLogger = logger.child({ req })
   try {
-    req.id = req.id || req.headers['request-id'] || xuid()
-    req.log = logger.child({ req: { id: req.id, url: req.url } })
     reqLogger.debug('stream started')
 
     await next()
@@ -136,9 +156,15 @@ module.exports.upgrade = async function upgrade (ctx, next) {
       await new Promise((resolve, reject) => {
         req
           .on('error', reject)
+          .on('timeout', () => {
+            reject(new createError.RequestTimeout())
+          })
         socket
           .on('error', reject)
           .on('close', resolve)
+          .on('timeout', () => {
+            reject(new createError.RequestTimeout())
+          })
       })
     }
 
@@ -146,11 +172,13 @@ module.exports.upgrade = async function upgrade (ctx, next) {
   } catch (err) {
     const statusCode = err.statusCode || 500
 
+    signal.abort()
+
     socket.on('error', err => {
       reqLogger.warn({ err }, 'stream error')
     })
 
-    socket.destroy()
+    socket.destroy(err)
 
     if (statusCode < 500) {
       reqLogger.warn({ err, res }, 'stream failed')
