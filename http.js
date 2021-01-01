@@ -12,13 +12,6 @@ module.exports.request = async function request (ctx, next) {
   const signal = new EE()
   signal.aborted = false
 
-  // Normalize OutgoingMessage.destroy
-  res.on('close', () => {
-    signal.aborted = true
-    res.destroyed = true
-    signal.emit('abort')
-  })
-
   ctx.id = req.id = (headers && headers['request-id']) || req.headers['request-id'] || xuid()
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
   ctx.signal = signal
@@ -31,11 +24,18 @@ module.exports.request = async function request (ctx, next) {
     throw new createError.BadRequest()
   }
 
+  // Normalize OutgoingMessage.destroy
+  res.on('close', () => {
+    signal.aborted = true
+    res.destroyed = true
+    signal.emit('abort')
+  })
+
+  res.setHeader('request-id', req.id)
+
   const reqLogger = logger.child({ req })
   try {
     reqLogger.debug({ req }, 'request started')
-
-    res.setHeader('request-id', req.id)
 
     await Promise.all([
       next(),
