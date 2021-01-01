@@ -2,6 +2,7 @@ const xuid = require('xuid')
 const createError = require('http-errors')
 const { performance } = require('perf_hooks')
 const EE = require('events')
+const requestTarget = require('request-target')
 
 module.exports.request = async function request (ctx, next) {
   const { req, res, logger, headers } = ctx
@@ -20,7 +21,11 @@ module.exports.request = async function request (ctx, next) {
   ctx.id = req.id = (headers && headers['request-id']) || req.headers['request-id'] || xuid()
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
   ctx.signal = signal
-  ctx.url = req.url
+  ctx.url = requestTarget(req)
+
+  if (!ctx.url) {
+    throw new createError.BadRequest()
+  }
 
   const reqLogger = logger.child({ req })
   try {

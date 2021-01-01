@@ -88,6 +88,7 @@
     "nested-error-stacks": "^2.1.0",
     "object-hash": "^2.1.1",
     "once": "^1.4.0",
+    "request-target": "^1.0.2",
     "split-string": "^6.0.0",
     "url-join": "^4.0.1",
     "xuid": "^4.0.3"

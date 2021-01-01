@@ -4335,6 +4335,11 @@ request-promise-native@^1.0.8:
     stealthy-require "^1.1.1"
     tough-cookie "^2.3.3"
 
+request-target@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/request-target/-/request-target-1.0.2.tgz#a58d91e1807cce1d9ceaa7b67b3f2c50ceccf233"
+  integrity sha512-rKnT4kdOXM7NQqvL7t/6LbWFfirvUUzH36mz03XAvFlfBbxQEIgguZ1qaStrElw7w3nPaS9Cn3VVINniB+PQXA==
+
 request@^2.88.2:
   version "2.88.2"
   resolved "https://registry.yarnpkg.com/request/-/request-2.88.2.tgz#d73c918731cb5a87da047e207234146f664d12b3"
