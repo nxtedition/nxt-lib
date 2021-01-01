@@ -55,7 +55,7 @@ module.exports = {
     statusCode: ures.statusCode,
     bytesRead: ures.bytesRead,
     headers: (
-      (ures.headers && typeof ures.headers === 'object' && ures.headers) ||
+      (typeof ures.headers === 'object' && ures.headers) ||
       (typeof ures.getHeaders === 'function' ? ures.getHeaders() : ures.headers)
     )
   },
