@@ -141,7 +141,6 @@ module.exports.upgrade = async function upgrade (ctx, next) {
     throw new createError.BadRequest()
   }
 
-  // Normalize OutgoingMessage.destroy
   socket.on('close', () => {
     signal.abort()
   })
