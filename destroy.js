@@ -16,6 +16,10 @@ function destroy (stream, err, callback) {
     err = null
   }
 
+  if (!callback) {
+    callback = () => {}
+  }
+
   if (!isStream(stream) || isDestroyed(stream)) {
     process.nextTick(callback)
     return
