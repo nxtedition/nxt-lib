@@ -50,7 +50,8 @@ module.exports = {
     id: ures.id || (ures.req && ures.req.id),
     statusCode: ures.statusCode,
     bytesRead: ures.bytesRead,
-    headers: typeof ures.getHeaders === 'function' ? ures.getHeaders() : ures.headers
+    headers: ures.rawHeaders ? undefined : typeof ures.getHeaders === 'function' ? ures.getHeaders() : ures.headers,
+    rawheaders: ures.rawHeaders
   },
   ureq: ureq => ureq && {
     id: ureq.id || (ureq.headers && ureq.headers['request-id']),
@@ -62,6 +63,7 @@ module.exports = {
         : undefined,
     timeout: ureq.timeout || ureq.requestTimeout,
     bytesWritten: ureq.bytesWritten,
-    headers: ureq.headers
+    headers: ureq.headers ? undefined : ureq.headers,
+    rawheaders: ureq.rawHeaders
   }
 }
