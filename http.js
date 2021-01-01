@@ -3,6 +3,7 @@ const createError = require('http-errors')
 const { performance } = require('perf_hooks')
 const EE = require('events')
 const requestTarget = require('request-target')
+const querystring = require('querystring')
 
 module.exports.request = async function request (ctx, next) {
   const { req, res, logger, headers } = ctx
@@ -22,6 +23,9 @@ module.exports.request = async function request (ctx, next) {
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
   ctx.signal = signal
   ctx.url = requestTarget(req)
+  ctx.query = ctx.url?.search
+    ? querystring.parse(this.url.search.slice(1))
+    : null
 
   if (!ctx.url) {
     throw new createError.BadRequest()
