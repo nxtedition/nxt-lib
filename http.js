@@ -12,16 +12,13 @@ module.exports.request = async function request (ctx, next) {
   ctx.id = req.id = (headers && headers['request-id']) || req.headers['request-id'] || xuid()
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
   ctx.signal = res
+  ctx.url = req.url
 
   const reqLogger = logger.child({ req })
   try {
     reqLogger.debug({ req }, 'request started')
 
-    if (ctx.headers) {
-      ctx.headers['request-id'] = req.id
-    } else {
-      res.setHeader('request-id', req.id)
-    }
+    res.setHeader('request-id', req.id)
 
     // Normalize OutgoingMessage.destroy
     res.on('close', () => {
@@ -67,21 +64,11 @@ module.exports.request = async function request (ctx, next) {
     })
 
     if (!res.headersSent && !res.finished) {
-      if (statusCode >= 500) {
-        if (ctx.headers) {
-          ctx.headers = {}
-        } else if (res.getHeaderNames && res.removeHeader) {
-          for (const name of res.getHeaderNames()) {
-            res.removeHeader(name)
-          }
-        }
+      for (const name of res.getHeaderNames()) {
+        res.removeHeader(name)
       }
 
-      if (ctx.headers) {
-        ctx.headers['request-id'] = req.id
-      } else if (res.setHeader) {
-        res.setHeader('request-id', req.id)
-      }
+      res.setHeader('request-id', req.id)
 
       if (err.headers) {
         for (const [key, val] of Object.entries(err.headers)) {
@@ -93,15 +80,11 @@ module.exports.request = async function request (ctx, next) {
             key.toLowerCase() !== 'keep-alive' &&
             key.toLowerCase() !== 'upgrade'
           ) {
-            if (ctx.headers) {
-              ctx.headers[key] = val
-            } else if (res.setHeader) {
-              res.setHeader(key, val)
-            }
+            res.setHeader(key, val)
           }
         }
       }
-      res.writeHead(statusCode, ctx.headers)
+      res.statusCode = statusCode
       res.end()
     } else {
       res.destroy()
