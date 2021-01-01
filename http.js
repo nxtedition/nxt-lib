@@ -102,6 +102,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
   const { req, res, socket = res, logger } = ctx
 
   const signal = new EE()
+  signal.aborted = false
   socket.on('close', () => {
     signal.aborted = true
     signal.emit('abort')
