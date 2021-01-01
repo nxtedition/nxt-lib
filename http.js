@@ -7,9 +7,19 @@ module.exports.request = async function request (ctx, next) {
   const { req, res, logger, headers } = ctx
   const startTime = performance.now()
 
+  const signal = new EE()
+  signal.aborted = false
+
+  // Normalize OutgoingMessage.destroy
+  res.on('close', () => {
+    signal.aborted = true
+    res.destroyed = true
+    signal.emit('abort')
+  })
+
   ctx.id = req.id = (headers && headers['request-id']) || req.headers['request-id'] || xuid()
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
-  ctx.signal = res
+  ctx.signal = signal
   ctx.url = req.url
 
   const reqLogger = logger.child({ req })
@@ -17,11 +27,6 @@ module.exports.request = async function request (ctx, next) {
     reqLogger.debug({ req }, 'request started')
 
     res.setHeader('request-id', req.id)
-
-    // Normalize OutgoingMessage.destroy
-    res.on('close', () => {
-      res.destroyed = true
-    })
 
     await Promise.all([
       next(),
