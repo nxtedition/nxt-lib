@@ -17,7 +17,7 @@ module.exports.request = async function request (ctx, next) {
   ctx.signal = signal
   ctx.url = requestTarget(req)
   ctx.query = ctx.url?.search
-    ? querystring.parse(this.url.search.slice(1))
+    ? querystring.parse(ctx.url.search.slice(1))
     : null
 
   if (!ctx.url) {
