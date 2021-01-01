@@ -17,7 +17,7 @@ module.exports = {
         data: JSON.stringify(err.data, undefined, 2)
       }
 
-      for (var key in err) {
+      for (const key in err) {
         const val = err[key]
         if (obj[key] === undefined && typeof val !== 'object') {
           obj[key] = val
@@ -56,9 +56,9 @@ module.exports = {
     id: ureq.id || (ureq.headers && ureq.headers['request-id']),
     method: ureq.method,
     url: ureq.origin
-      ? `${ureq.origin}${ureq.path}`
+      ? `${ureq.origin}${ureq.path || ''}`
       : ureq.hostname
-        ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]}${ureq.path}`
+        ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]}${ureq.path || ''}`
         : undefined,
     timeout: ureq.timeout || ureq.requestTimeout,
     bytesWritten: ureq.bytesWritten,
