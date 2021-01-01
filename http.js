@@ -6,13 +6,13 @@ const requestTarget = require('request-target')
 const querystring = require('querystring')
 
 module.exports.request = async function request (ctx, next) {
-  const { req, res, logger, headers } = ctx
+  const { req, res, logger } = ctx
   const startTime = performance.now()
 
   const signal = new EE()
   signal.aborted = false
 
-  ctx.id = req.id = (headers && headers['request-id']) || req.headers['request-id'] || xuid()
+  ctx.id = req.id = req.headers['request-id'] || xuid()
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
   ctx.signal = signal
   ctx.url = requestTarget(req)
