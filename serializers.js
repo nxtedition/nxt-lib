@@ -51,23 +51,18 @@ module.exports = {
       ures.id ||
       (ures.headers && typeof ures.headers === 'object' && ures.headers['request-id']) ||
       (typeof ures.getHeader === 'function' && ures.getHeader('request-id'))
-      // TODO: ures.rawHeaders
     ),
     statusCode: ures.statusCode,
     bytesRead: ures.bytesRead,
-    headers: ures.rawHeaders
-      ? undefined
-      : (
-          (ures.headers && typeof ures.headers === 'object' && ures.headers) ||
-          (typeof ures.getHeaders === 'function' ? ures.getHeaders() : ures.headers)
-        ),
-    rawheaders: ures.rawHeaders
+    headers: (
+      (ures.headers && typeof ures.headers === 'object' && ures.headers) ||
+      (typeof ures.getHeaders === 'function' ? ures.getHeaders() : ures.headers)
+    )
   },
   ureq: ureq => ureq && {
     id: (
       ureq.id ||
       (ureq.headers && typeof ureq.headers === 'object' && ureq.headers['request-id'])
-      // TODO: ures.rawHeaders
     ),
     method: ureq.method,
     url: ureq.origin
@@ -76,9 +71,6 @@ module.exports = {
         ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]}${ureq.path || ''}`
         : undefined,
     bytesWritten: ureq.bytesWritten,
-    headers: ureq.rawHeaders
-      ? undefined
-      : ureq.headers,
-    rawheaders: ureq.rawHeaders
+    headers: ureq.headers
   }
 }
