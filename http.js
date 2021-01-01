@@ -1,13 +1,17 @@
 const xuid = require('xuid')
 const createError = require('http-errors')
 const { performance } = require('perf_hooks')
+const EE = require('events')
 
 module.exports.request = async function request (ctx, next) {
   const { req, res, logger, headers } = ctx
   const startTime = performance.now()
 
-  req.id = ctx.id = (headers && headers['request-id']) || req.headers['request-id'] || xuid()
-  req.log = ctx.logger = logger.child({ req: { id: req.id } })
+  ctx = { ...ctx }
+
+  ctx.id = req.id = (headers && headers['request-id']) || req.headers['request-id'] || xuid()
+  ctx.logger = req.log = logger.child({ req: { id: req.id } })
+  ctx.signal = res
 
   const reqLogger = logger.child({ req })
   try {
@@ -113,6 +117,13 @@ module.exports.request = async function request (ctx, next) {
 
 module.exports.upgrade = async function upgrade (ctx, next) {
   const { req, res, socket = res, logger } = ctx
+
+  const signal = new EE()
+  socket.on('close', () => {
+    signal.aborted = true
+    signal.emit('abort')
+  })
+  ctx.signal = signal
 
   const reqLogger = logger.child({ req })
   try {
