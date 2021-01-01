@@ -7,8 +7,6 @@ module.exports.request = async function request (ctx, next) {
   const { req, res, logger, headers } = ctx
   const startTime = performance.now()
 
-  ctx = { ...ctx }
-
   ctx.id = req.id = (headers && headers['request-id']) || req.headers['request-id'] || xuid()
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
   ctx.signal = res
