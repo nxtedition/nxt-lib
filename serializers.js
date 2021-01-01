@@ -47,23 +47,38 @@ module.exports = {
     remotePort: req.socket && req.socket.remotePort
   },
   ures: ures => ures && {
-    id: ures.id || (ures.req && ures.req.id),
+    id: (
+      ures.id ||
+      (ures.headers && typeof ures.headers === 'object' && ures.headers['request-id']) ||
+      (typeof ures.getHeader === 'function' && ures.getHeader('request-id'))
+      // TODO: ures.rawHeaders
+    ),
     statusCode: ures.statusCode,
     bytesRead: ures.bytesRead,
-    headers: ures.rawHeaders ? undefined : typeof ures.getHeaders === 'function' ? ures.getHeaders() : ures.headers,
+    headers: ures.rawHeaders
+      ? undefined
+      : (
+          (ures.headers && typeof ures.headers === 'object' && ures.headers) ||
+          (typeof ures.getHeaders === 'function' ? ures.getHeaders() : ures.headers)
+        ),
     rawheaders: ures.rawHeaders
   },
   ureq: ureq => ureq && {
-    id: ureq.id || (ureq.headers && ureq.headers['request-id']),
+    id: (
+      ureq.id ||
+      (ureq.headers && typeof ureq.headers === 'object' && ureq.headers['request-id'])
+      // TODO: ures.rawHeaders
+    ),
     method: ureq.method,
     url: ureq.origin
       ? `${ureq.origin}${ureq.path || ''}`
       : ureq.hostname
         ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]}${ureq.path || ''}`
         : undefined,
-    timeout: ureq.timeout || ureq.requestTimeout,
     bytesWritten: ureq.bytesWritten,
-    headers: ureq.headers ? undefined : ureq.headers,
+    headers: ureq.rawHeaders
+      ? undefined
+      : ureq.headers,
     rawheaders: ureq.rawHeaders
   }
 }
