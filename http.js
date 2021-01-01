@@ -71,6 +71,9 @@ module.exports.request = async function request (ctx, next) {
     const statusCode = err.statusCode || 500
     const responseTime = Math.round(performance.now() - startTime)
 
+    signal.aborted = true
+    signal.emit('abort')
+
     res.on('error', err => {
       reqLogger.warn({ err }, 'request error')
     })
