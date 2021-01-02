@@ -4,18 +4,71 @@ const { performance } = require('perf_hooks')
 const EE = require('events')
 const requestTarget = require('request-target')
 const querystring = require('querystring')
+const { Observable } = require('rxjs')
+
+const kPromise = Symbol('promise')
+const kObservable = Symbol('observable')
+const kAbort = Symbol('abort')
+const kAborted = Symbol('aborted')
+
+class AbortedError extends Error {
+  constructor (message) {
+    super(message)
+    Error.captureStackTrace(this, AbortedError)
+    this.name = 'AbortedError'
+    this.message = message || /* istanbul ignore next */ 'Aborted'
+    this.code = 'ERR_ABORTED'
+  }
+}
 
 class AbortSignal extends EE {
   constructor () {
     super()
-    this.aborted = false
+    this[kAborted] = false
+    this[kPromise] = null
+    this[kObservable] = null
   }
 
-  abort () {
-    if (!this.aborted) {
-      this.aborted = true
+  [kAbort] () {
+    if (!this[kAborted]) {
+      this[kAborted] = true
       this.emit('abort')
     }
+  }
+
+  get aborted () {
+    return this[kAborted]
+  }
+
+  get promise () {
+    if (!this[kPromise]) {
+      this[kPromise] = new Promise((resolve, reject) => {
+        const next = () => reject(new AbortedError())
+        if (this[kAborted]) {
+          next()
+        } else {
+          this.once('abort', next)
+        }
+      })
+    }
+    return this[kPromise]
+  }
+
+  get observable () {
+    if (!this[kObservable]) {
+      this[kObservable] = new Observable(o => {
+        const next = () => o.error(new AbortedError())
+        if (this[kAborted]) {
+          next()
+        } else {
+          this.on('abort', next)
+        }
+        return () => {
+          this.off('abort', next)
+        }
+      })
+    }
+    return this[kObservable]
   }
 }
 
@@ -40,7 +93,7 @@ module.exports.request = async function request (ctx, next) {
   // Normalize OutgoingMessage.destroy
   res.on('close', () => {
     res.destroyed = true
-    signal.abort()
+    signal[kAbort]()
   })
 
   res.setHeader('request-id', req.id)
@@ -83,7 +136,7 @@ module.exports.request = async function request (ctx, next) {
     const statusCode = err.statusCode || 500
     const responseTime = Math.round(performance.now() - startTime)
 
-    signal.abort()
+    signal[kAbort]()
 
     res.on('error', err => {
       reqLogger.warn({ err }, 'request error')
@@ -142,7 +195,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
   }
 
   socket.on('close', () => {
-    signal.abort()
+    signal[kAbort]()
   })
 
   const reqLogger = logger.child({ req })
@@ -171,7 +224,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
   } catch (err) {
     const statusCode = err.statusCode || 500
 
-    signal.abort()
+    signal[kAbort]()
 
     socket.on('error', err => {
       reqLogger.warn({ err }, 'stream error')
