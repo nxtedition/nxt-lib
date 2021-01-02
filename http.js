@@ -5,15 +5,22 @@ const EE = require('events')
 const requestTarget = require('request-target')
 const querystring = require('querystring')
 
+const kAbort = Symbol('abort')
+const kAborted = Symbol('aborted')
+
 class AbortSignal extends EE {
   constructor () {
     super()
-    this.aborted = false
+    this[kAborted] = false
   }
 
-  abort () {
-    if (!this.aborted) {
-      this.aborted = true
+  get aborted () {
+    return this[kAborted]
+  }
+
+  [kAbort] () {
+    if (!this[kAborted]) {
+      this[kAborted] = true
       this.emit('abort')
     }
   }
@@ -37,10 +44,10 @@ module.exports.request = async function request (ctx, next) {
     throw new createError.BadRequest()
   }
 
-  // Normalize OutgoingMessage.destroy
+  // Normalize OutgoingMessage.destroyed
   res.on('close', () => {
     res.destroyed = true
-    signal.abort()
+    signal[kAbort]()
   })
 
   res.setHeader('request-id', req.id)
@@ -83,8 +90,11 @@ module.exports.request = async function request (ctx, next) {
     const statusCode = err.statusCode || 500
     const responseTime = Math.round(performance.now() - startTime)
 
-    signal.abort()
+    signal[kAbort]()
 
+    req.on('error', err => {
+      reqLogger.warn({ err }, 'request error')
+    })
     res.on('error', err => {
       reqLogger.warn({ err }, 'request error')
     })
@@ -142,7 +152,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
   }
 
   socket.on('close', () => {
-    signal.abort()
+    signal[kAbort]()
   })
 
   const reqLogger = logger.child({ req })
@@ -171,8 +181,11 @@ module.exports.upgrade = async function upgrade (ctx, next) {
   } catch (err) {
     const statusCode = err.statusCode || 500
 
-    signal.abort()
+    signal[kAbort]()
 
+    req.on('error', err => {
+      reqLogger.warn({ err }, 'stream error')
+    })
     socket.on('error', err => {
       reqLogger.warn({ err }, 'stream error')
     })
