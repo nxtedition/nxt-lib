@@ -67,7 +67,7 @@ module.exports.request = async function request (ctx, next) {
             // Normalize OutgoingMessage.destroyed
             this.destroyed = true
 
-            if (this.writableEnded === false || this.finished === false) {
+            if (this.writableEnded === false) {
               reject(new Error('aborted'))
             } else {
               resolve()
