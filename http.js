@@ -77,7 +77,6 @@ module.exports.request = async function request (ctx, next) {
               resolve()
             }
           })
-          .on('finish', resolve)
           .on('error', reject)
           .on('timeout', () => {
             reject(new createError.RequestTimeout())
