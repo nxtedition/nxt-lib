@@ -55,6 +55,9 @@ module.exports.request = async function request (ctx, next) {
       await Promise.all([
         new Promise((resolve, reject) => req
           .on('close', function () {
+            // Normalize IncomingMessage.destroyed
+            this.destroyed = true
+
             if (this.readableEnded === false || this.complete === false) {
               reject(new Error('aborted'))
             } else {
@@ -102,7 +105,7 @@ module.exports.request = async function request (ctx, next) {
     const statusCode = (res.headersSent && res.statusCode) || err.statusCode || 500
     const responseTime = Math.round(performance.now() - startTime)
 
-    if (req.readableEnded === false) {
+    if (req.destroyed && req.readableEnded === false) {
       reqLogger.debug({ err, res, responseTime }, 'request aborted')
     } else if (statusCode < 500) {
       reqLogger.warn({ err, res, responseTime }, 'request failed')
