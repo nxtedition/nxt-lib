@@ -91,12 +91,13 @@ module.exports.request = async function request (ctx, next) {
       signal[kAbort]()
     }
 
-    const statusCode = res.statusCode
     const responseTime = Math.round(performance.now() - startTime)
 
-    if (statusCode && statusCode >= 500) {
+    assert(res.statusCode)
+
+    if (res.statusCode >= 500) {
       reqLogger.error({ res, responseTime }, 'request error')
-    } else if (statusCode && statusCode >= 400) {
+    } else if (res.statusCode >= 400) {
       reqLogger.warn({ res, responseTime }, 'request failed')
     } else {
       reqLogger.debug({ res, responseTime }, 'request completed')
