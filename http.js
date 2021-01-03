@@ -93,6 +93,7 @@ module.exports.request = async function request (ctx, next) {
 
     const responseTime = Math.round(performance.now() - startTime)
 
+    assert(res.writableEnded)
     assert(res.statusCode)
 
     if (res.statusCode >= 500) {
