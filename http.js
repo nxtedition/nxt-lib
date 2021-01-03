@@ -9,6 +9,8 @@ const assert = require('assert')
 const kAbort = Symbol('abort')
 const kAborted = Symbol('aborted')
 
+const ERR_HEADER_EXPR = /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
+
 class AbortSignal extends EE {
   constructor () {
     super()
@@ -124,14 +126,7 @@ module.exports.request = async function request (ctx, next) {
         assert(typeof err.headers === 'object')
 
         for (const [key, val] of Object.entries(err.headers)) {
-          if (
-            key.toLowerCase() !== 'content-length' &&
-            key.toLowerCase() !== 'content-type' &&
-            key.toLowerCase() !== 'transfer-encoding' &&
-            key.toLowerCase() !== 'connection' &&
-            key.toLowerCase() !== 'keep-alive' &&
-            key.toLowerCase() !== 'upgrade'
-          ) {
+          if (!ERR_HEADER_EXPR.test(key)) {
             res.setHeader(key, val)
           }
         }
