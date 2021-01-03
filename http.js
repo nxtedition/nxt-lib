@@ -47,7 +47,7 @@ module.exports.request = async function request (ctx, next) {
 
   res.setHeader('request-id', req.id)
 
-  const reqLogger = logger.child({ req: { id: req.id, path: req.url } })
+  const reqLogger = logger.child({ req: { id: req.id } })
   try {
     reqLogger.debug({ req }, 'request started')
 
