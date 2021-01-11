@@ -373,8 +373,8 @@ module.exports = function (opts) {
     onGet,
     onInfo,
     onChanges,
-    createClient (path = config.url, options) {
-      return createPool(path, options)
+    createClient (url, options) {
+      return createPool(url || config.url, options)
     }
   }
 }
