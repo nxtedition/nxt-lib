@@ -297,7 +297,7 @@ module.exports = function (opts) {
 
   function onRequest (path, {
     params,
-    client,
+    client = defaultClient,
     idempotent,
     body,
     method,
@@ -312,7 +312,6 @@ module.exports = function (opts) {
       body = JSON.stringify(body)
     }
 
-    client = client || defaultClient
     return new Observable(o => {
       const signal = new EE()
       client.stream({
