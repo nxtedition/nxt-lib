@@ -143,7 +143,7 @@ module.exports = function (opts) {
     })
   }
 
-  function onPut (path, params, body, { client } = {}) {
+  function onPut (path, params, body, { client, idempotent = true } = {}) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json'
@@ -152,7 +152,7 @@ module.exports = function (opts) {
     return onRequest(path, {
       params,
       client,
-      idempotent: true,
+      idempotent,
       method: 'PUT',
       headers,
       body
@@ -161,7 +161,7 @@ module.exports = function (opts) {
       .map(body => JSON.parse(body))
   }
 
-  function onPost (path, params, body, { client } = {}) {
+  function onPost (path, params, body, { client, idempotent = false } = {}) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json'
@@ -171,6 +171,7 @@ module.exports = function (opts) {
     return onRequest(path, {
       params,
       client,
+      idempotent,
       method: 'POST',
       headers,
       body
