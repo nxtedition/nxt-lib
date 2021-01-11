@@ -203,7 +203,7 @@ module.exports = function (opts) {
 
     return onRequest('', {
       params,
-      client: options.cleint,
+      client: options.client,
       idempotent: true,
       method: 'GET',
       headers
@@ -349,6 +349,24 @@ module.exports = function (opts) {
   }
 
   return {
+    async request (...args) {
+      return { body: await onRequest(...args).first().toPromise() }
+    },
+    async put (...args) {
+      return { body: await onPut(...args).first().toPromise() }
+    },
+    async post (...args) {
+      return { body: await onPost(...args).first().toPromise() }
+    },
+    async get (...args) {
+      return { body: await onGet(...args).first().toPromise() }
+    },
+    info (...args) {
+      return onInfo(...args).first().toPromise()
+    },
+    allDocs (...args) {
+      return onAllDocs(...args).first().toPromise()
+    },
     onRequest,
     onAllDocs,
     onPut,
