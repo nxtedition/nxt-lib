@@ -372,9 +372,6 @@ module.exports = function (opts) {
     onPost,
     onGet,
     onInfo,
-    onChanges,
-    protocol,
-    hostname,
-    port
+    onChanges
   }
 }
