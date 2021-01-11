@@ -374,7 +374,7 @@ module.exports = function (opts) {
     onInfo,
     onChanges,
     createClient (url, options) {
-      return createPool(url || config.url, options)
+      return createPool(url || { protocol, hostname, port }, options)
     }
   }
 }
