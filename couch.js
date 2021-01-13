@@ -1,6 +1,7 @@
 const { Observable } = require('rxjs')
 const { Writable } = require('stream')
 const EE = require('events')
+const createError = require('http-errors')
 
 let urljoin
 let querystring
@@ -325,10 +326,7 @@ module.exports = function (opts) {
         headers
       }, ({ statusCode }) => {
         if (statusCode < 200 || statusCode >= 300) {
-          const err = new Error(statusCode)
-          err.statusCode = statusCode
-          err.headers = headers
-          throw err
+          throw createError(statusCode, { headers })
         }
         return new Writable(({
           write (chunk, encoding, callback) {
