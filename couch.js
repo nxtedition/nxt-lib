@@ -327,6 +327,7 @@ module.exports = function (opts) {
         if (statusCode < 200 || statusCode >= 300) {
           const err = new Error(statusCode)
           err.statusCode = statusCode
+          err.headers = headers
           throw err
         }
         return new Writable(({
