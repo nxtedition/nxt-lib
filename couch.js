@@ -352,13 +352,13 @@ module.exports = function (opts) {
       return { body: await onRequest(...args).first().toPromise() }
     },
     async put (...args) {
-      return { body: await onPut(...args).first().toPromise() }
+      return await onPut(...args).first().toPromise()
     },
     async post (...args) {
-      return { body: await onPost(...args).first().toPromise() }
+      return await onPost(...args).first().toPromise()
     },
     async get (...args) {
-      return { body: await onGet(...args).first().toPromise() }
+      return await onGet(...args).first().toPromise()
     },
     info (...args) {
       return onInfo(...args).first().toPromise()
