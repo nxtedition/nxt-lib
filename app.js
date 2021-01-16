@@ -111,7 +111,7 @@ module.exports = function (config, onTerminate) {
     }
 
     stats$ = stats$
-      .auditTime(10e3)
+      .auditTime(config.statsInterval || 10e3)
       .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
 
     if (process.env.NODE_ENV === 'production' && ds) {
