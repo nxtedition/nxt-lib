@@ -45,6 +45,7 @@ module.exports = function (config, onTerminate) {
     }
 
     require('rxjs-compat')
+
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const cacheDb = config.deepstream.cache ? require('leveldown')(config.deepstream.cache) : null
 
@@ -81,37 +82,56 @@ module.exports = function (config, onTerminate) {
     nxt = require('./deepstream')(ds)
   }
 
-  if (config.status && config.status.subscribe && process.env.NODE_ENV === 'production') {
+  if (config.status && config.status.subscribe && process.env.NODE_ENV === 'production' && ds) {
     const os = require('os')
     ds.nxt.record.provide(`${os.hostname()}:monitor.status`, () => config.status)
   }
 
   if (config.stats && process.env.NODE_ENV === 'production') {
     const v8 = require('v8')
+    const os = require('os')
 
-    const _log = (stats) => {
-      logger.debug({
-        ds: ds.stats,
-        lag: toobusy && toobusy.lag(),
-        memory: process.memoryUsage(),
-        v8: {
-          heap: v8.getHeapStatistics()
-        },
-        ...stats
-      }, 'STATS')
-    }
+    // TOOD (fix): unref?
 
+    let stats$
     if (config.stats.subscribe) {
-      // TOOD (fix): unref?
-      config.stats
-        .auditTime(10e3)
-        .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
-        .subscribe(_log)
+      stats$ = config.stats
     } else if (typeof config.stats === 'function') {
-      setInterval(() => _log(config.stats()), config.statsInterval || 10e3).unref()
+      const { Observable } = require('rxjs')
+
+      stats$ = Observable
+        .interval(config.statsInterval || 10e3)
+        .map(() => config.stats())
     } else {
-      setInterval(() => _log(config.stats), config.statsInterval || 10e3).unref()
+      const { Observable } = require('rxjs')
+
+      stats$ = Observable
+        .interval(config.statsInterval || 10e3)
+        .map(() => config.stats)
     }
+
+    stats$ = stats$
+      .auditTime(10e3)
+      .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
+
+    if (process.env.NODE_ENV === 'production' && ds) {
+      ds.nxt.record.provide(`${os.hostname()}:monitor.stats`, () => config.status)
+    }
+
+    stats$
+      .auditTime(10e3)
+      .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
+      .subscribe((stats) => {
+        logger.debug({
+          ds: ds.stats,
+          lag: toobusy && toobusy.lag(),
+          memory: process.memoryUsage(),
+          v8: {
+            heap: v8.getHeapStatistics()
+          },
+          ...stats
+        }, 'STATS')
+      })
   }
 
   return { ds, nxt, logger, toobusy }
