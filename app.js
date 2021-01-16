@@ -7,11 +7,13 @@ module.exports = function (config, onTerminate) {
 
   config = { ...config }
 
+  const destroyers = [onTerminate]
+
   const logger = createLogger({
     ...config.logger,
     name: config.logger?.name || config.service?.name || config.name,
     base: config.logger ? { ...config.logger.base } : {}
-  }, onTerminate)
+  }, (...args) => Promise.all(destroyers.filter(Boolean).map(fn => fn(...args))))
 
   if (config.toobusy) {
     toobusy = require('toobusy-js')
@@ -91,8 +93,6 @@ module.exports = function (config, onTerminate) {
     const v8 = require('v8')
     const os = require('os')
 
-    // TOOD (fix): unref?
-
     let stats$
     if (config.stats.subscribe) {
       stats$ = config.stats
@@ -118,7 +118,7 @@ module.exports = function (config, onTerminate) {
       ds.nxt.record.provide(`${os.hostname()}:monitor.stats`, () => config.status)
     }
 
-    stats$
+    const subscription = stats$
       .auditTime(10e3)
       .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
       .subscribe((stats) => {
@@ -132,7 +132,11 @@ module.exports = function (config, onTerminate) {
           ...stats
         }, 'STATS')
       })
+
+    destroyers.push(() => {
+      subscription.unsubscribe()
+    })
   }
 
-  return { ds, nxt, logger, toobusy }
+  return { ds, nxt, logger, toobusy, destroyers }
 }
