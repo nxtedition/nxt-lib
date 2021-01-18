@@ -93,6 +93,10 @@ module.exports = function (opts) {
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
 
     return new Observable(o => {
+      // Continuos feed never ends even with limit.
+      // Limit 0 is the same as 1.
+      const limit = opts.limit != null ? (opts.limit || 1) : Infinity
+
       const userClient = options.client
       const client = userClient || createClient({
         protocol,
@@ -101,6 +105,7 @@ module.exports = function (opts) {
       }, {
         bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3)
       })
+      let count = 0
       let buf = ''
       const subscription = onRequest('/_changes', {
         params,
@@ -117,10 +122,18 @@ module.exports = function (opts) {
           for (const line of lines) {
             if (line) {
               const change = JSON.parse(line)
+
               if (change.last_seq != null) {
                 o.complete()
-              } else {
-                o.next(change)
+                return
+              }
+
+              o.next(change)
+
+              count += 1
+              if (count === limit) {
+                o.complete()
+                return
               }
             } else {
               o.next(null)
@@ -142,9 +155,6 @@ module.exports = function (opts) {
         }
       }
     })
-      // Continuos feed never ends even with limit.
-      // Limit 0 is the same as 1.
-      .take(opts.limit != null ? (opts.limit || 1) : Infinity)
   }
 
   function onPut (path, params, body, { client, idempotent = true } = {}) {
