@@ -142,6 +142,9 @@ module.exports = function (opts) {
         }
       }
     })
+      // Continuos feed never ends even with limit.
+      // Limit 0 is the same as 1.
+      .take(opts.limit != null ? (opts.limit || 1) : Infinity)
   }
 
   function onPut (path, params, body, { client, idempotent = true } = {}) {
