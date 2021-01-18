@@ -95,7 +95,7 @@ module.exports = function (opts) {
     return new Observable(o => {
       // Continuos feed never ends even with limit.
       // Limit 0 is the same as 1.
-      const limit = opts.limit != null ? (opts.limit || 1) : Infinity
+      const limit = params.limit != null ? (params.limit || 1) : Infinity
 
       const userClient = options.client
       const client = userClient || createClient({
