@@ -215,22 +215,22 @@ module.exports = ({ ds } = {}) => {
 
           return value => value
             ? ds.record
-              .observe2(`${value}:asset.rawTypes`)
-              .pipe(
-                rx.map(({ state, data }) => ({
-                  state: Math.min(state, fp.isFinite(data.state) ? data.state : ds.record.PROVIDER),
-                  data: fp.includes(type, data.value)
-                })),
-                rx.filter(({ state, data }) => data || state >= ds.record.PROVIDER),
-                rx.pluck('data'),
-                rx.distinctUntilChanged(),
-                rx.map(isType => isType
-                  ? value
-                  : _return
-                    ? RETURN
-                    : null
+                .observe2(`${value}:asset.rawTypes`)
+                .pipe(
+                  rx.map(({ state, data }) => ({
+                    state: Math.min(state, fp.isFinite(data.state) ? data.state : ds.record.PROVIDER),
+                    data: fp.includes(type, data.value)
+                  })),
+                  rx.filter(({ state, data }) => data || state >= ds.record.PROVIDER),
+                  rx.pluck('data'),
+                  rx.distinctUntilChanged(),
+                  rx.map(isType => isType
+                    ? value
+                    : _return
+                      ? RETURN
+                      : null
+                  )
                 )
-              )
             : null
         },
         lower: () => value => value.toLowerCase(),
@@ -408,6 +408,7 @@ module.exports = ({ ds } = {}) => {
     const args = tokens
       .map(x => {
         try {
+          x = x.trim()
           if (x === 'undefined' || x === '') {
             return undefined
           }
@@ -437,10 +438,10 @@ module.exports = ({ ds } = {}) => {
     } else {
       return Observable.isObservable(value)
         ? value
-          .pipe(
-            rx.switchMap(value => getValue(value[path], rest)),
-            rx.distinctUntilChanged()
-          )
+            .pipe(
+              rx.switchMap(value => getValue(value[path], rest)),
+              rx.distinctUntilChanged()
+            )
         : getValue(value[path], rest)
     }
   }

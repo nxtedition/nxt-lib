@@ -89,3 +89,7 @@ test('You Do Not Know Me', async () => {
 test('object 1', async () => {
   expect(await resolveTemplate({ asd: ['{{foo}}'] }, { foo: 'bar' })).toEqual({ asd: ['bar'] })
 })
+
+test('empty arg', async () => {
+  expect(await resolveTemplate('{{source.value | includes("salami") | ternary([], )}}', {})).toEqual(undefined)
+})
