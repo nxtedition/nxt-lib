@@ -97,7 +97,9 @@ module.exports.request = async function request (ctx, next) {
       reqLogger.debug({ res, responseTime }, 'request completed')
     }
   } catch (err) {
-    const statusCode = (res.headersSent && res.statusCode) || err.statusCode || 500
+    const statusCode = res.headersSent
+      ? res.statusCode
+      : err.statusCode || 500
     const responseTime = Math.round(performance.now() - startTime)
 
     if (res.destroyed && res.writableEnded === false) {
@@ -185,7 +187,9 @@ module.exports.upgrade = async function upgrade (ctx, next) {
 
     reqLogger.debug('stream completed')
   } catch (err) {
-    if (err.statusCode && err.statusCode < 500) {
+    const statusCode = err.statusCode || 500
+
+    if (statusCode < 500) {
       reqLogger.warn({ err, res }, 'stream failed')
     } else {
       reqLogger.error({ err, res }, 'stream error')
