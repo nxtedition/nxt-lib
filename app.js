@@ -2,6 +2,7 @@ module.exports = function (config, onTerminate) {
   let ds
   let nxt
   let toobusy
+  let couch
 
   const { createLogger } = require('./logger')
 
@@ -24,6 +25,10 @@ module.exports = function (config, onTerminate) {
         logger.warn({ currentLag }, 'lag')
       }
     })
+  }
+
+  if (config.couchdb) {
+    couch = require('./couch')({ config })
   }
 
   if (config.deepstream) {
@@ -138,5 +143,5 @@ module.exports = function (config, onTerminate) {
     })
   }
 
-  return { ds, nxt, logger, toobusy, destroyers }
+  return { ds, nxt, logger, toobusy, destroyers, couch }
 }
