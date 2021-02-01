@@ -72,8 +72,8 @@ function query (ds, { view, filter, state = ds.record.PROVIDER, ...options }, st
     x$ = ds.record.observe2(`query?${querystring.stringify(options)}`)
   }
   return x$
-    .map(({ data, state, ...value }) => ({
-      ...value,
+    .map(({ data, state }) => ({
+      ...data,
       state: Math.min(data.state || 0, state),
       rows: Array.isArray(data && data.rows) ? data.rows : []
     }))
