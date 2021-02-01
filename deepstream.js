@@ -94,6 +94,16 @@ function observe (ds, name, ...args) {
   return ds.record.observe(`${name}${options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''}`, ...args)
 }
 
+function observe2 (ds, name, ...args) {
+  let options = null
+
+  if (args[0] && typeof args[0] === 'object') {
+    options = JSON.parse(JSON.stringify(args.shift()))
+  }
+
+  return ds.record.observe2(`${name}${options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''}`, ...args)
+}
+
 function rpcProvide (ds, rpcName, callback, options) {
   return provide(ds, rpcName, (id, options) => {
     try {
@@ -175,7 +185,8 @@ module.exports = Object.assign(init, {
   record: {
     query,
     provide,
-    observe
+    observe,
+    observe2
   },
   rpc: {
     provide: rpcProvide,
