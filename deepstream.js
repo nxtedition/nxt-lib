@@ -164,6 +164,7 @@ function init (ds) {
       query: (...args) => query(ds, ...args),
       provide: (...args) => provide(ds, ...args),
       observe: (...args) => observe(ds, ...args),
+      observe2: (...args) => observe2(ds, ...args),
       set: (...args) => ds.set(...args),
       get: (...args) => ds.get(...args),
       update: (...args) => ds.update(...args)
@@ -182,6 +183,7 @@ module.exports = Object.assign(init, {
   provide,
   query,
   observe,
+  observe2,
   record: {
     query,
     provide,
