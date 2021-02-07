@@ -31,10 +31,7 @@ module.exports = function (opts) {
     return new undici.Pool(...args)
   }
 
-  const defaultClient = opts.client || createPool({ protocol, hostname, port }, {
-    connections: config.connections || 8,
-    pipelining: config.pipelining || 3
-  })
+  let defaultClient = opts.client
 
   function onChanges (options = {}) {
     const params = {}
@@ -312,7 +309,7 @@ module.exports = function (opts) {
 
   function onRequest (path, {
     params,
-    client = defaultClient,
+    client,
     idempotent,
     body,
     method,
@@ -320,6 +317,16 @@ module.exports = function (opts) {
   }) {
     if (!querystring) querystring = require('querystring')
     if (!urljoin) urljoin = require('url-join')
+
+    if (!client) {
+      if (!defaultClient) {
+        defaultClient = createPool({ protocol, hostname, port }, {
+          connections: config.connections || 8,
+          pipelining: config.pipelining || 3
+        })
+      }
+      client = defaultClient
+    }
 
     if (!body) {
       body = null
