@@ -10,12 +10,11 @@ module.exports = function (config, onTerminate) {
 
   const destroyers = [onTerminate]
 
-  const pmId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
   const serviceName = (
     config.logger?.name ||
     config.service?.name ||
     config.name
-  ) + `${pmId ? `-${pmId}` : ''}`
+  )
 
   const logger = createLogger({
     ...config.logger,
@@ -53,7 +52,7 @@ module.exports = function (config, onTerminate) {
       config.name ||
       config.logger?.name ||
       process.env.name
-    ) + `${pmId ? `-${pmId}` : ''}`
+    )
 
     config.deepstream = {
       url: 'ws://localhost:6020/deepstream',
