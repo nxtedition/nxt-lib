@@ -107,7 +107,7 @@ module.exports = function (config, onTerminate) {
 
   if (config.status && config.status.subscribe && process.env.NODE_ENV === 'production' && ds) {
     const os = require('os')
-    ds.nxt.record.provide(`${os.hostname()}:monitor.status`, () => config.status)
+    ds.nxt.record.provide(`^${os.hostname()}:monitor.status$`, () => config.status)
   }
 
   if (config.stats && process.env.NODE_ENV === 'production') {
