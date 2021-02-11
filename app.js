@@ -10,9 +10,16 @@ module.exports = function (config, onTerminate) {
 
   const destroyers = [onTerminate]
 
+  const pmId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
+  const serviceName = (
+    config.logger?.name ||
+    config.service?.name ||
+    config.name
+  ) + `${pmId ? `-${pmId}` : ''}`
+
   const logger = createLogger({
     ...config.logger,
-    name: config.logger?.name || config.service?.name || config.name,
+    name: serviceName,
     base: config.logger ? { ...config.logger.base } : {}
   }, (...args) => Promise.all(destroyers.filter(Boolean).map(fn => fn(...args))))
 
@@ -32,22 +39,32 @@ module.exports = function (config, onTerminate) {
   }
 
   if (config.deepstream) {
-    const username = (
+    if (!config.deepstream.credentials) {
+      throw new Error('missing deepstream credentials')
+    }
+
+    const cacheName = serviceName + `${config.version ? `-${config.version}` : ''}`
+
+    const userName = (
       config.deepstream.credentials.username ||
+      config.deepstream.credentials.userName ||
+      config.deepstream.credentials.user ||
       config.service?.name ||
       config.name ||
-      config.logger?.name
-    )
+      config.logger?.name ||
+      process.env.name
+    ) + `${pmId ? `-${pmId}` : ''}`
 
     config.deepstream = {
       url: 'ws://localhost:6020/deepstream',
       maxReconnectAttempts: Infinity,
       maxReconnectInterval: 10000,
       cacheSize: 2048,
+      cache: cacheName ? `./.nxt${cacheName ? `-${cacheName}` : ''}` : undefined,
       ...config.deepstream,
       credentials: {
         ...config.deepstream.credentials,
-        username
+        username: userName
       }
     }
 
@@ -80,7 +97,7 @@ module.exports = function (config, onTerminate) {
           ERROR: 'error',
           RECONNECTING: 'warn'
         }[connectionState] || 'info'
-        logger[level]({ connectionState, username }, 'Deepstream Connection State Changed.')
+        logger[level]({ connectionState, username: userName }, 'Deepstream Connection State Changed.')
       })
       .on('error', err => {
         logger.error({ err }, 'Deepstream Error.')
