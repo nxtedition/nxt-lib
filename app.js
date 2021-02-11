@@ -11,14 +11,15 @@ module.exports = function (config, onTerminate) {
   const destroyers = [onTerminate]
 
   const serviceName = (
+    config.name ||
     config.logger?.name ||
     config.service?.name ||
-    config.name
+    process.env.name
   )
 
   const logger = createLogger({
     ...config.logger,
-    name: serviceName,
+    name: config.logger?.name || serviceName,
     base: config.logger ? { ...config.logger.base } : {}
   }, (...args) => Promise.all(destroyers.filter(Boolean).map(fn => fn(...args))))
 
@@ -50,10 +51,7 @@ module.exports = function (config, onTerminate) {
       config.deepstream.credentials.username ||
       config.deepstream.credentials.userName ||
       config.deepstream.credentials.user ||
-      config.service?.name ||
-      config.name ||
-      config.logger?.name ||
-      process.env.name
+      serviceName
     )
 
     config.deepstream = {
