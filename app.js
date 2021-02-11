@@ -42,7 +42,9 @@ module.exports = function (config, onTerminate) {
       throw new Error('missing deepstream credentials')
     }
 
-    const cacheName = serviceName + `${config.version ? `-${config.version}` : ''}`
+    const version = config.version || process.env.NXT_VERSION
+
+    const cacheName = serviceName + `${version ? `-${version}` : ''}`
 
     const userName = (
       config.deepstream.credentials.username ||
