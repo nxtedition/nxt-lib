@@ -23,7 +23,7 @@ module.exports = function (opts) {
     config = { url: config }
   }
 
-  const { protocol, hostname, port, pathname } = new URL(config.url)
+  const { protocol, hostname, port, pathname } = new URL(config.url || config.name)
 
   function createClient (...args) {
     if (!undici) undici = require('undici')
