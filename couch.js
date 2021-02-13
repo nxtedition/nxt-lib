@@ -19,6 +19,10 @@ module.exports = function (opts) {
     throw new Error('invalid options')
   }
 
+  if (typeof config === 'string') {
+    config = { url: config }
+  }
+
   const { protocol, hostname, port, pathname } = new URL(config.url)
 
   function createClient (...args) {
