@@ -74,10 +74,10 @@
     "pino-pretty": "^4.0.0",
     "rxjs": "^6.0.0",
     "rxjs-compat": "^6.0.0",
-    "toobusy-js": "^0.5.1",
     "undici": "^3.0.0"
   },
   "dependencies": {
+    "toobusy-js": "^0.5.1",
     "hasha": "^5.2.2",
     "http-errors": "^1.8.0",
     "json5": "^2.1.3",
