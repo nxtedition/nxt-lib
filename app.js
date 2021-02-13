@@ -260,24 +260,39 @@ module.exports = function (config, onTerminate) {
     })
   }
 
-  if (typeof config.http === 'function' || config.http === true || typeof config.http === 'number') {
+  if (config.http) {
     const hasha = require('hasha')
     const http = require('http')
 
-    const port = typeof config.http === 'number'
-      ? config.http
-      : process.env.NODE_ENV === 'production'
-        ? 8000
-        : 8000 + parseInt(hasha(serviceName).slice(-3), 16)
+    const port = config.http.port
+      ? config.http.port
+      : typeof config.http === 'number'
+        ? config.http
+        : process.env.NODE_ENV === 'production'
+          ? 8000
+          : 8000 + parseInt(hasha(serviceName).slice(-3), 16)
+
+    const handler = config.http.handler
+      ? config.http.handler
+      : typeof config.http === 'function' ? config.http : null
 
     server = http
-      .createServer(typeof config.http === 'function'
-        ? config.http({ ds, couch })
-        : (req, res) => {
-            res.statusCode = req.url.startsWith('/healthcheck') ? 200 : 404
-            res.end()
-          }
-      )
+      .createServer(async (req, res) => {
+        if (req.url.startsWith('/healthcheck')) {
+          res.statusCode = 200
+          res.end()
+          return
+        }
+
+        if (handler) {
+          await handler({ ds, couch })
+        }
+
+        if (!res.writableEnded) {
+          res.statusCode = 404
+          res.end()
+        }
+      })
       .listen(port, () => {
         logger.debug({ port }, `http listening on port ${port}`)
       })
