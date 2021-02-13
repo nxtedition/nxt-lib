@@ -7,7 +7,7 @@ module.exports = function (config, onTerminate) {
 
   const { createLogger } = require('./logger')
 
-  config = JSON.parse(JSON.stringify(config))
+  config = { ...config }
 
   const destroyers = [onTerminate]
 
@@ -314,7 +314,12 @@ module.exports = function (config, onTerminate) {
       name: process.env.name,
       version: process.env.NXT_VERSION,
       isProduction: process.env.NODE_ENV === 'production',
-      ...config
+      ...config,
+      stats: null,
+      status: null,
+      logger: null,
+      toobusy: null,
+      http: null
     })
     .get()
 
