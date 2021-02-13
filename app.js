@@ -1,27 +1,30 @@
-module.exports = function (config, onTerminate) {
+module.exports = function (appConfig, onTerminate) {
   let ds
   let nxt
   let toobusy
   let couch
   let server
 
+  require('rxjs-compat')
+  require('./rxjs')
+
   const { createLogger } = require('./logger')
 
-  config = { ...config }
+  appConfig = { ...appConfig }
 
   const destroyers = [onTerminate]
 
   const serviceName = (
-    config.service?.name ||
-    config.name ||
-    config.logger?.name ||
+    appConfig.service?.name ||
+    appConfig.name ||
+    appConfig.logger?.name ||
     process.env.name
   )
 
   const logger = createLogger({
-    ...config.logger,
-    name: config.logger?.name || serviceName,
-    base: config.logger ? { ...config.logger.base } : {}
+    ...appConfig.logger,
+    name: appConfig.logger?.name || serviceName,
+    base: appConfig.logger ? { ...appConfig.logger.base } : {}
   }, (finalLogger) => Promise
     .all(destroyers.filter(Boolean).map(fn => fn(finalLogger)))
     .catch(err => {
@@ -31,7 +34,7 @@ module.exports = function (config, onTerminate) {
     })
   )
 
-  if (config.toobusy) {
+  if (appConfig.toobusy) {
     toobusy = require('toobusy-js')
     toobusy.onLag(currentLag => {
       if (currentLag > 1e3) {
@@ -42,35 +45,35 @@ module.exports = function (config, onTerminate) {
     })
   }
 
-  if (config.couchdb) {
-    couch = require('./couch')({ config })
+  if (appConfig.couchdb) {
+    couch = require('./couch')({ config: appConfig })
   }
 
-  if (config.deepstream) {
-    if (!config.deepstream.credentials) {
+  if (appConfig.deepstream) {
+    if (!appConfig.deepstream.credentials) {
       throw new Error('missing deepstream credentials')
     }
 
-    const version = config.version || process.env.NXT_VERSION
+    const version = appConfig.version || process.env.NXT_VERSION
 
     const cacheName = serviceName + `${version ? `-${version}` : ''}`
 
     const userName = (
-      config.deepstream.credentials.username ||
-      config.deepstream.credentials.userName ||
-      config.deepstream.credentials.user ||
+      appConfig.deepstream.credentials.username ||
+      appConfig.deepstream.credentials.userName ||
+      appConfig.deepstream.credentials.user ||
       serviceName
     )
 
-    config.deepstream = {
+    appConfig.deepstream = {
       url: 'ws://localhost:6020/deepstream',
       maxReconnectAttempts: Infinity,
       maxReconnectInterval: 10000,
       cacheSize: 2048,
       cache: cacheName ? `./.nxt${cacheName ? `-${cacheName}` : ''}` : undefined,
-      ...config.deepstream,
+      ...appConfig.deepstream,
       credentials: {
-        ...config.deepstream.credentials,
+        ...appConfig.deepstream.credentials,
         username: userName
       }
     }
@@ -78,17 +81,17 @@ module.exports = function (config, onTerminate) {
     require('rxjs-compat')
 
     const deepstream = require('@nxtedition/deepstream.io-client-js')
-    const cacheDb = config.deepstream.cache ? require('leveldown')(config.deepstream.cache) : null
+    const cacheDb = appConfig.deepstream.cache ? require('leveldown')(appConfig.deepstream.cache) : null
 
     if (cacheDb) {
-      logger.debug({ cache: config.deepstream.cache }, 'Deepstream Caching')
+      logger.debug({ cache: appConfig.deepstream.cache }, 'Deepstream Caching')
     }
 
-    ds = deepstream(config.deepstream.url, {
-      ...config.deepstream,
+    ds = deepstream(appConfig.deepstream.url, {
+      ...appConfig.deepstream,
       cacheDb
     })
-      .login(config.deepstream.credentials, (success, authData) => {
+      .login(appConfig.deepstream.credentials, (success, authData) => {
         if (!success) {
           throw new Error('deepstream authentication failed.')
         }
@@ -113,28 +116,28 @@ module.exports = function (config, onTerminate) {
     nxt = require('./deepstream')(ds)
   }
 
-  if (config.status) {
+  if (appConfig.status) {
     const os = require('os')
     const { Observable } = require('rxjs')
     const fp = require('lodash/fp')
 
     let status$
-    if (config.status.subscribe) {
-      status$ = config.status
-    } else if (typeof config.status === 'function' || config.status === true) {
+    if (appConfig.status.subscribe) {
+      status$ = appConfig.status
+    } else if (typeof appConfig.status === 'function' || appConfig.status === true) {
       status$ = Observable
         .interval(10e3)
         .exhaustMap(async () => {
           try {
-            return await config.status({ ds, couch, logger })
+            return await appConfig.status({ ds, couch, logger })
           } catch (err) {
             return { warnings: [err.message] }
           }
         })
-    } else if (config.status && typeof config.status === 'object') {
+    } else if (appConfig.status && typeof appConfig.status === 'object') {
       status$ = Observable
         .interval(10e3)
-        .exhaustMap(async () => config.status)
+        .exhaustMap(async () => appConfig.status)
     } else {
       status$ = Observable
         .interval(10e3)
@@ -201,22 +204,22 @@ module.exports = function (config, onTerminate) {
     })
   }
 
-  if (config.stats) {
+  if (appConfig.stats) {
     const v8 = require('v8')
     const os = require('os')
     const { Observable } = require('rxjs')
 
     let stats$
-    if (config.stats.subscribe) {
-      stats$ = config.stats
-    } else if (typeof config.stats === 'function') {
+    if (appConfig.stats.subscribe) {
+      stats$ = appConfig.stats
+    } else if (typeof appConfig.stats === 'function') {
       stats$ = Observable
         .timer(0, 10e3)
-        .exhaustMap(async () => config.stats({ ds, couch, logger }))
-    } else if (config.stats && typeof config.stats === 'object') {
+        .exhaustMap(async () => appConfig.stats({ ds, couch, logger }))
+    } else if (appConfig.stats && typeof appConfig.stats === 'object') {
       stats$ = Observable
         .timer(0, 10e3)
-        .exhaustMap(async () => config.stats)
+        .exhaustMap(async () => appConfig.stats)
     } else {
       stats$ = Observable
         .timer(0, 10e3)
@@ -260,22 +263,22 @@ module.exports = function (config, onTerminate) {
     })
   }
 
-  if (config.http) {
+  if (appConfig.http) {
     const hasha = require('hasha')
     const http = require('http')
 
-    const port = config.http.port
-      ? config.http.port
-      : typeof config.http === 'number'
-        ? config.http
+    const port = appConfig.http.port
+      ? appConfig.http.port
+      : typeof appConfig.http === 'number'
+        ? appConfig.http
         : process.env.NODE_ENV === 'production'
           ? 8000
           : 8000 + parseInt(hasha(serviceName).slice(-3), 16)
 
-    const request = config.http.request
-      ? config.http.request
-      : typeof config.http === 'function'
-        ? config.http
+    const request = appConfig.http.request
+      ? appConfig.http.request
+      : typeof appConfig.http === 'function'
+        ? appConfig.http
         : null
 
     server = http
@@ -287,7 +290,7 @@ module.exports = function (config, onTerminate) {
         }
 
         if (request) {
-          await request({ req, res, ds, couch, config, logger })
+          await request({ req, res, ds, couch, appConfig, logger })
         }
 
         if (!res.writableEnded) {
@@ -304,7 +307,7 @@ module.exports = function (config, onTerminate) {
 
   const nconf = require('nconf')
 
-  config = nconf
+  const config = nconf
     .argv()
     .env({
       separator: '__',
@@ -314,11 +317,13 @@ module.exports = function (config, onTerminate) {
       name: process.env.name,
       version: process.env.NXT_VERSION,
       isProduction: process.env.NODE_ENV === 'production',
-      ...config,
+      ...appConfig,
       stats: null,
       status: null,
+      couchdb: null,
       logger: null,
       toobusy: null,
+      deepstream: null,
       http: null
     })
     .get()
