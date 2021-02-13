@@ -31,12 +31,14 @@ module.exports = function (appConfig, onTerminate) {
 
   const destroyers = [onTerminate]
 
+  const instanceId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
+
   const serviceName = (
     appConfig.service?.name ||
     appConfig.name ||
     appConfig.logger?.name ||
     process.env.name
-  )
+  ) + (instanceId ? `-${instanceId}` : '')
 
   const logger = createLogger({
     ...appConfig.logger,
