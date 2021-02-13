@@ -126,14 +126,12 @@ module.exports = function (appConfig, onTerminate) {
       status$ = appConfig.status
     } else if (typeof appConfig.status === 'function') {
       status$ = Observable
-        .timer(0, 10e3)
-        .exhaustMap(async () => {
-          try {
-            return await appConfig.status({ ds, couch, logger })
-          } catch (err) {
-            return { warnings: [err.message] }
-          }
+        .defer(() => {
+          const ret = appConfig.status({ ds, couch, logger })
+          return ret?.then || ret?.subscribe ? ret : Observable.of(ret)
         })
+        .catch(err => Observable.of({ warnings: [err.message] }))
+        .repeatWhen(() => Observable.timer(10e3))
     } else if (appConfig.status && typeof appConfig.status === 'object') {
       status$ = Observable
         .timer(0, 10e3)
@@ -171,7 +169,7 @@ module.exports = function (appConfig, onTerminate) {
         ...status,
         warnings: [...(status?.warnings || []), lag, couch].filter(Boolean)
       }))
-      .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
+      .retryWhen(err$ => err$.do(err => logger.error({ err }, 'monitor.status')).delay(10e3))
       .publishReplay(1)
       .refCount()
 
@@ -213,7 +211,10 @@ module.exports = function (appConfig, onTerminate) {
     } else if (typeof appConfig.stats === 'function') {
       stats$ = Observable
         .timer(0, 10e3)
-        .exhaustMap(async () => appConfig.stats({ ds, couch, logger }))
+        .exhaustMap(() => {
+          const ret = appConfig.stats({ ds, couch, logger })
+          return ret?.then || ret?.subscribe ? ret : Observable.of(ret)
+        })
     } else if (appConfig.stats && typeof appConfig.stats === 'object') {
       stats$ = Observable
         .timer(0, 10e3)
@@ -226,7 +227,7 @@ module.exports = function (appConfig, onTerminate) {
 
     stats$ = stats$
       .filter(Boolean)
-      .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
+      .retryWhen(err$ => err$.do(err => logger.error({ err }, 'monitor.stats')).delay(10e3))
       .publishReplay(1)
       .refCount()
 
