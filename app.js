@@ -124,9 +124,9 @@ module.exports = function (appConfig, onTerminate) {
     let status$
     if (appConfig.status.subscribe) {
       status$ = appConfig.status
-    } else if (typeof appConfig.status === 'function' || appConfig.status === true) {
+    } else if (typeof appConfig.status === 'function') {
       status$ = Observable
-        .interval(10e3)
+        .timer(0, 10e3)
         .exhaustMap(async () => {
           try {
             return await appConfig.status({ ds, couch, logger })
@@ -136,11 +136,11 @@ module.exports = function (appConfig, onTerminate) {
         })
     } else if (appConfig.status && typeof appConfig.status === 'object') {
       status$ = Observable
-        .interval(10e3)
+        .timer(0, 10e3)
         .exhaustMap(async () => appConfig.status)
     } else {
       status$ = Observable
-        .interval(10e3)
+        .timer(0, 10e3)
         .mapTo({})
     }
 
@@ -180,11 +180,11 @@ module.exports = function (appConfig, onTerminate) {
       .startWith([])
       .pairwise()
       .subscribe(([prev, next]) => {
-        for (const add of fp.difference(next, prev)) {
-          logger.warn({ message: add }, 'warning added')
+        for (const message of fp.difference(next, prev)) {
+          logger.warn({ message }, 'warning added')
         }
-        for (const rm of fp.difference(prev, next)) {
-          logger.debug({ message: rm }, 'warning removed')
+        for (const message of fp.difference(prev, next)) {
+          logger.debug({ message }, 'warning removed')
         }
       })
 
