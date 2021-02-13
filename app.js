@@ -4,6 +4,8 @@ module.exports = function (appConfig, onTerminate) {
   let toobusy
   let couch
   let server
+  let compiler
+  let config
 
   require('rxjs-compat')
   require('./rxjs')
@@ -13,21 +15,21 @@ module.exports = function (appConfig, onTerminate) {
   const nconf = require('nconf')
   const fp = require('lodash/fp')
 
-  const config = nconf
-    .argv()
-    .env({
-      separator: '__',
-      parseValues: true
-    })
-    .defaults({
-      name: process.env.name,
-      version: process.env.NXT_VERSION,
-      isProduction: process.env.NODE_ENV === 'production',
-      ...appConfig
-    })
-    .get()
-
-  appConfig = appConfig.NODE_ENV || appConfig.NODE ? appConfig : config
+  if (appConfig.config) {
+    appConfig = config = nconf
+      .argv()
+      .env({
+        separator: '__',
+        parseValues: true
+      })
+      .defaults({
+        name: process.env.name,
+        version: process.env.NXT_VERSION,
+        isProduction: process.env.NODE_ENV === 'production',
+        ...appConfig
+      })
+      .get()
+  }
 
   const destroyers = [onTerminate]
 
@@ -133,6 +135,11 @@ module.exports = function (appConfig, onTerminate) {
       })
 
     nxt = require('./deepstream')(ds)
+  }
+
+  if (appConfig.compiler) {
+    const createTemplateCompiler = require('./util/template')
+    compiler = createTemplateCompiler({ ds })
   }
 
   if (appConfig.status) {
@@ -322,5 +329,5 @@ module.exports = function (appConfig, onTerminate) {
     destroyers.push(() => new Promise(resolve => server.close(resolve)))
   }
 
-  return { ds, nxt, logger, toobusy, destroyers, couch, server, config }
+  return { ds, nxt, logger, toobusy, destroyers, couch, server, config, compiler }
 }
