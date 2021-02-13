@@ -179,8 +179,6 @@ module.exports = function (appConfig, onTerminate) {
       .pluck('warnings')
       .startWith([])
       .pairwise()
-      .scan((prev, next) => {
-      }, [])
       .subscribe(([prev, next]) => {
         for (const add of fp.difference(next, prev)) {
           logger.warn({ message: add }, 'warning added')
