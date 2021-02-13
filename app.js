@@ -23,14 +23,7 @@ module.exports = function (appConfig, onTerminate) {
       name: process.env.name,
       version: process.env.NXT_VERSION,
       isProduction: process.env.NODE_ENV === 'production',
-      ...appConfig,
-      stats: null,
-      status: null,
-      couchdb: null,
-      logger: null,
-      toobusy: null,
-      deepstream: null,
-      http: null
+      ...appConfig
     })
     .get()
 
