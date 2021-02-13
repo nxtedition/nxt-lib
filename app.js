@@ -272,9 +272,11 @@ module.exports = function (config, onTerminate) {
           ? 8000
           : 8000 + parseInt(hasha(serviceName).slice(-3), 16)
 
-    const handler = config.http.handler
-      ? config.http.handler
-      : typeof config.http === 'function' ? config.http : null
+    const request = config.http.request
+      ? config.http.request
+      : typeof config.http === 'function'
+        ? config.http
+        : null
 
     server = http
       .createServer(async (req, res) => {
@@ -284,8 +286,8 @@ module.exports = function (config, onTerminate) {
           return
         }
 
-        if (handler) {
-          await handler({ ds, couch })
+        if (request) {
+          await request({ req, res, ds, couch, config, logger })
         }
 
         if (!res.writableEnded) {
