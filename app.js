@@ -10,7 +10,31 @@ module.exports = function (appConfig, onTerminate) {
 
   const { createLogger } = require('./logger')
 
-  appConfig = { ...appConfig }
+  const nconf = require('nconf')
+  const fp = require('lodash/fp')
+
+  const config = nconf
+    .argv()
+    .env({
+      separator: '__',
+      parseValues: true
+    })
+    .defaults({
+      name: process.env.name,
+      version: process.env.NXT_VERSION,
+      isProduction: process.env.NODE_ENV === 'production',
+      ...appConfig,
+      stats: null,
+      status: null,
+      couchdb: null,
+      logger: null,
+      toobusy: null,
+      deepstream: null,
+      http: null
+    })
+    .get()
+
+  appConfig = appConfig.NODE_ENV || appConfig.NODE ? appConfig : config
 
   const destroyers = [onTerminate]
 
@@ -119,7 +143,6 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.status) {
     const os = require('os')
     const { Observable } = require('rxjs')
-    const fp = require('lodash/fp')
 
     let status$
     if (appConfig.status.subscribe) {
@@ -148,7 +171,7 @@ module.exports = function (appConfig, onTerminate) {
           .filter(Boolean)
           .startWith(null),
         new Observable(o => {
-          toobusy.onLag(currentLag => {
+          toobusy?.onLag(currentLag => {
             if (currentLag > 1e3) {
               o.next(`lag: ${currentLag}`)
             }
@@ -303,29 +326,6 @@ module.exports = function (appConfig, onTerminate) {
 
     destroyers.push(() => new Promise(resolve => server.close(resolve)))
   }
-
-  const nconf = require('nconf')
-
-  const config = nconf
-    .argv()
-    .env({
-      separator: '__',
-      parseValues: true
-    })
-    .defaults({
-      name: process.env.name,
-      version: process.env.NXT_VERSION,
-      isProduction: process.env.NODE_ENV === 'production',
-      ...appConfig,
-      stats: null,
-      status: null,
-      couchdb: null,
-      logger: null,
-      toobusy: null,
-      deepstream: null,
-      http: null
-    })
-    .get()
 
   return { ds, nxt, logger, toobusy, destroyers, couch, server, config }
 }
