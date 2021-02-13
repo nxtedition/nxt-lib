@@ -34,7 +34,7 @@ module.exports = function (config, onTerminate) {
   if (config.toobusy) {
     toobusy = require('toobusy-js')
     toobusy.onLag(currentLag => {
-      if (currentLag > 5e3) {
+      if (currentLag > 1e3) {
         logger.error({ currentLag }, 'lag')
       } else {
         logger.warn({ currentLag }, 'lag')
@@ -44,31 +44,6 @@ module.exports = function (config, onTerminate) {
 
   if (config.couchdb) {
     couch = require('./couch')({ config })
-  }
-
-  if (typeof config.http === 'function' || config.http === true) {
-    const hasha = require('hasha')
-    const http = require('http')
-
-    const port = parseInt(hasha(serviceName).slice(-13), 16)
-
-    server = http
-      .createServer(typeof config.http === 'function'
-        ? config.http
-        : (req, res) => {
-            if (!req.url.startsWith('/healthcheck')) {
-              res.statusCode = 404
-            } else {
-              res.statusCode = 200
-            }
-            res.end()
-          }
-      )
-      .listen(process.env.NODE_ENV === 'production' ? 8000 : port, () => {
-        logger.debug({ port }, `http listening on port ${port}`)
-      })
-
-    destroyers.push(() => new Promise(resolve => server.close(resolve)))
   }
 
   if (config.deepstream) {
@@ -138,82 +113,176 @@ module.exports = function (config, onTerminate) {
     nxt = require('./deepstream')(ds)
   }
 
-  if (config.status && config.status.subscribe && process.env.NODE_ENV === 'production' && ds) {
+  if (config.status) {
     const os = require('os')
+    const { Observable } = require('rxjs')
+    const fp = require('lodash/fp')
 
     let status$
     if (config.status.subscribe) {
       status$ = config.status
-    } else if (typeof config.status === 'function') {
-      const { Observable } = require('rxjs')
-
+    } else if (typeof config.status === 'function' || config.status === true) {
       status$ = Observable
         .interval(10e3)
-        .map(() => config.status())
+        .exhaustMap(async () => {
+          try {
+            return await config.status({ ds, couch, logger })
+          } catch (err) {
+            return { warnings: [err.message] }
+          }
+        })
     } else if (config.status && typeof config.status === 'object') {
-      const { Observable } = require('rxjs')
-
       status$ = Observable
         .interval(10e3)
-        .map(() => config.status)
+        .exhaustMap(async () => config.status)
     } else {
-      throw new Error('invalid status')
+      status$ = Observable
+        .interval(10e3)
+        .mapTo({})
     }
 
-    status$ = status$.retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
+    status$ = Observable
+      .combineLatest([
+        status$
+          .filter(Boolean)
+          .startWith(null),
+        new Observable(o => {
+          toobusy.onLag(currentLag => {
+            if (currentLag > 1e3) {
+              o.next(`lag: ${currentLag}`)
+            }
+          })
+          o.next(null)
+        }),
+        Observable
+          .timer(0, 10e3)
+          .exhaustMap(async () => {
+            try {
+              couch?.info()
+            } catch (err) {
+              return 'couch: ' + err.message
+            }
+          })
+      ])
+      .map(([x, lag, couch]) => ({
+        ...x,
+        warnings: [...(x.warnings || []), lag, couch].filter(Boolean)
+      }))
+      .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
+      .publishReplay(1)
+      .refCount()
 
-    if (process.env.NODE_ENV === 'production' && ds) {
-      ds.nxt.record.provide(`^${os.hostname()}:monitor.status$`, () => status$)
-    }
+    const subscription = status$
+      .pluck('warnings')
+      .startWith([])
+      .pairwise()
+      .scan((prev, next) => {
+      }, [])
+      .subscribe(([prev, next]) => {
+        for (const add of fp.difference(next, prev)) {
+          logger.warn({ message: add }, 'warning added')
+        }
+        for (const rm of fp.difference(prev, next)) {
+          logger.debug({ message: rm }, 'warning removed')
+        }
+      })
+
+    const hostname = process.env.NODE_ENV === 'production' ? os.hostname() : serviceName
+
+    logger.debug({ hostname }, 'monitor.status')
+
+    const unprovide = nxt?.record.provide(`^${hostname}:monitor.status$`, () => status$)
+
+    destroyers.push(() => {
+      if (unprovide) {
+        unprovide()
+      }
+      subscription.unsubscribe()
+    })
   }
 
-  if (config.stats && process.env.NODE_ENV === 'production') {
+  if (config.stats) {
     const v8 = require('v8')
     const os = require('os')
+    const { Observable } = require('rxjs')
 
     let stats$
     if (config.stats.subscribe) {
       stats$ = config.stats
     } else if (typeof config.stats === 'function') {
-      const { Observable } = require('rxjs')
-
       stats$ = Observable
-        .interval(10e3)
-        .map(() => config.stats())
+        .timer(0, 10e3)
+        .exhaustMap(async () => config.stats({ ds, couch, logger }))
     } else if (config.stats && typeof config.stats === 'object') {
-      const { Observable } = require('rxjs')
-
       stats$ = Observable
-        .interval(10e3)
-        .map(() => config.stats)
+        .timer(0, 10e3)
+        .exhaustMap(async () => config.stats)
     } else {
-      throw new Error('invalid stats')
+      stats$ = Observable
+        .timer(0, 10e3)
+        .mapTo({})
     }
 
-    stats$ = stats$.retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
+    stats$ = stats$
+      .filter(Boolean)
+      .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
+      .publishReplay(1)
+      .refCount()
 
-    if (process.env.NODE_ENV === 'production' && ds) {
-      ds.nxt.record.provide(`${os.hostname()}:monitor.stats`, () => config.status)
-    }
+    const hostname = process.env.NODE_ENV === 'production' ? os.hostname() : serviceName
+
+    const unprovide = nxt?.record.provide(`${hostname}:monitor.stats`, () => stats$)
+
+    logger.debug({ hostname }, 'monitor.stats')
 
     const subscription = stats$
       .auditTime(10e3)
       .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
       .subscribe((stats) => {
-        logger.debug({
-          ds: ds.stats,
-          lag: toobusy && toobusy.lag(),
-          memory: process.memoryUsage(),
-          v8: {
-            heap: v8.getHeapStatistics()
-          },
-          ...stats
-        }, 'STATS')
+        if (process.env.NODE_ENV === 'production') {
+          logger.debug({
+            ds: ds.stats,
+            lag: toobusy && toobusy.lag(),
+            memory: process.memoryUsage(),
+            v8: {
+              heap: v8.getHeapStatistics()
+            },
+            ...stats
+          }, 'STATS')
+        }
       })
 
     destroyers.push(() => {
+      if (unprovide) {
+        unprovide()
+      }
       subscription.unsubscribe()
     })
+  }
+
+  if (typeof config.http === 'function' || config.http === true || typeof config.http === 'number') {
+    const hasha = require('hasha')
+    const http = require('http')
+
+    const port = typeof config.http === 'number'
+      ? config.http
+      : process.env.NODE_ENV === 'production'
+        ? 8000
+        : parseInt(hasha(serviceName).slice(-13), 16)
+
+    server = http
+      .createServer(typeof config.http === 'function'
+        ? config.http({ ds, couch })
+        : (req, res) => {
+            res.statusCode = req.url.startsWith('/healthcheck') ? 200 : 404
+            res.end()
+          }
+      )
+      .listen(port, () => {
+        logger.debug({ port }, `http listening on port ${port}`)
+      })
+
+    destroyers.push(() => new Promise(resolve => server.close(resolve)))
   }
 
   return { ds, nxt, logger, toobusy, destroyers, couch, server }
