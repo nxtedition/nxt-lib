@@ -3,6 +3,7 @@ module.exports = function (config, onTerminate) {
   let nxt
   let toobusy
   let couch
+  let server
 
   const { createLogger } = require('./logger')
 
@@ -11,9 +12,9 @@ module.exports = function (config, onTerminate) {
   const destroyers = [onTerminate]
 
   const serviceName = (
+    config.service?.name ||
     config.name ||
     config.logger?.name ||
-    config.service?.name ||
     process.env.name
   )
 
@@ -21,7 +22,14 @@ module.exports = function (config, onTerminate) {
     ...config.logger,
     name: config.logger?.name || serviceName,
     base: config.logger ? { ...config.logger.base } : {}
-  }, (...args) => Promise.all(destroyers.filter(Boolean).map(fn => fn(...args))))
+  }, (finalLogger) => Promise
+    .all(destroyers.filter(Boolean).map(fn => fn(finalLogger)))
+    .catch(err => {
+      if (err) {
+        finalLogger.error({ err }, 'shutdown error')
+      }
+    })
+  )
 
   if (config.toobusy) {
     toobusy = require('toobusy-js')
@@ -36,6 +44,31 @@ module.exports = function (config, onTerminate) {
 
   if (config.couchdb) {
     couch = require('./couch')({ config })
+  }
+
+  if (typeof config.http === 'function' || config.http === true) {
+    const hasha = require('hasha')
+    const http = require('http')
+
+    const port = parseInt(hasha(serviceName).slice(-13), 16)
+
+    server = http
+      .createServer(typeof config.http === 'function'
+        ? config.http
+        : (req, res) => {
+            if (!req.url.startsWith('/healthcheck')) {
+              res.statusCode = 404
+            } else {
+              res.statusCode = 200
+            }
+            res.end()
+          }
+      )
+      .listen(process.env.NODE_ENV === 'production' ? 8000 : port, () => {
+        logger.debug({ port }, `http listening on port ${port}`)
+      })
+
+    destroyers.push(() => new Promise(resolve => server.close(resolve)))
   }
 
   if (config.deepstream) {
@@ -107,7 +140,31 @@ module.exports = function (config, onTerminate) {
 
   if (config.status && config.status.subscribe && process.env.NODE_ENV === 'production' && ds) {
     const os = require('os')
-    ds.nxt.record.provide(`^${os.hostname()}:monitor.status$`, () => config.status)
+
+    let status$
+    if (config.status.subscribe) {
+      status$ = config.status
+    } else if (typeof config.status === 'function') {
+      const { Observable } = require('rxjs')
+
+      status$ = Observable
+        .interval(10e3)
+        .map(() => config.status())
+    } else if (config.status && typeof config.status === 'object') {
+      const { Observable } = require('rxjs')
+
+      status$ = Observable
+        .interval(10e3)
+        .map(() => config.status)
+    } else {
+      throw new Error('invalid status')
+    }
+
+    status$ = status$.retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
+
+    if (process.env.NODE_ENV === 'production' && ds) {
+      ds.nxt.record.provide(`^${os.hostname()}:monitor.status$`, () => status$)
+    }
   }
 
   if (config.stats && process.env.NODE_ENV === 'production') {
@@ -121,19 +178,19 @@ module.exports = function (config, onTerminate) {
       const { Observable } = require('rxjs')
 
       stats$ = Observable
-        .interval(config.statsInterval || 10e3)
+        .interval(10e3)
         .map(() => config.stats())
-    } else {
+    } else if (config.stats && typeof config.stats === 'object') {
       const { Observable } = require('rxjs')
 
       stats$ = Observable
-        .interval(config.statsInterval || 10e3)
+        .interval(10e3)
         .map(() => config.stats)
+    } else {
+      throw new Error('invalid stats')
     }
 
-    stats$ = stats$
-      .auditTime(config.statsInterval || 10e3)
-      .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
+    stats$ = stats$.retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
 
     if (process.env.NODE_ENV === 'production' && ds) {
       ds.nxt.record.provide(`${os.hostname()}:monitor.stats`, () => config.status)
@@ -159,5 +216,5 @@ module.exports = function (config, onTerminate) {
     })
   }
 
-  return { ds, nxt, logger, toobusy, destroyers, couch }
+  return { ds, nxt, logger, toobusy, destroyers, couch, server }
 }
