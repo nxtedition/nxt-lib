@@ -7,7 +7,7 @@ module.exports = function (config, onTerminate) {
 
   const { createLogger } = require('./logger')
 
-  config = { ...config }
+  config = JSON.parse(JSON.stringify(config))
 
   const destroyers = [onTerminate]
 
@@ -164,9 +164,9 @@ module.exports = function (config, onTerminate) {
             }
           })
       ])
-      .map(([x, lag, couch]) => ({
-        ...x,
-        warnings: [...(x.warnings || []), lag, couch].filter(Boolean)
+      .map(([status, lag, couch]) => ({
+        ...status,
+        warnings: [...(status?.warnings || []), lag, couch].filter(Boolean)
       }))
       .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
       .publishReplay(1)
@@ -302,5 +302,21 @@ module.exports = function (config, onTerminate) {
     destroyers.push(() => new Promise(resolve => server.close(resolve)))
   }
 
-  return { ds, nxt, logger, toobusy, destroyers, couch, server }
+  const nconf = require('nconf')
+
+  config = nconf
+    .argv()
+    .env({
+      separator: '__',
+      parseValues: true
+    })
+    .defaults({
+      name: process.env.name,
+      version: process.env.NXT_VERSION,
+      isProduction: process.env.NODE_ENV === 'production',
+      ...config
+    })
+    .get()
+
+  return { ds, nxt, logger, toobusy, destroyers, couch, server, config }
 }
