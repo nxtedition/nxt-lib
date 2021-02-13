@@ -190,10 +190,17 @@ module.exports = function (appConfig, onTerminate) {
             }
           })
       ])
-      .map(([status, lag, couch]) => ({
-        ...status,
-        warnings: [...(status?.warnings || status || []), lag, couch].filter(Boolean)
-      }))
+      .map(([status, lag, couch]) => {
+        const warnings = [
+          status?.warnings,
+          status
+        ].find(Array.isArray)
+
+        return {
+          ...status,
+          warnings: [warnings, lag, couch].flat().filter(Boolean)
+        }
+      })
       .retryWhen(err$ => err$.do(err => logger.error({ err }, 'monitor.status')).delay(10e3))
       .publishReplay(1)
       .refCount()
@@ -331,7 +338,7 @@ module.exports = function (appConfig, onTerminate) {
         }
 
         if (requestHandler) {
-          await requestHandler({ req, res, ds, couch, appConfig, logger })
+          await requestHandler({ req, res, ds, couch, config, logger })
         }
 
         if (!res.writableEnded) {
