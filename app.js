@@ -12,10 +12,9 @@ module.exports = function (appConfig, onTerminate) {
 
   const { createLogger } = require('./logger')
 
-  const nconf = require('nconf')
-  const fp = require('lodash/fp')
-
   if (appConfig.config) {
+    const nconf = require('nconf')
+
     appConfig = config = nconf
       .argv()
       .env({
@@ -145,6 +144,7 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.status) {
     const os = require('os')
     const { Observable } = require('rxjs')
+    const fp = require('lodash/fp')
 
     let status$
     if (appConfig.status.subscribe) {
