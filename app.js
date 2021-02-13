@@ -192,7 +192,7 @@ module.exports = function (appConfig, onTerminate) {
       ])
       .map(([status, lag, couch]) => ({
         ...status,
-        warnings: [...(status?.warnings || []), lag, couch].filter(Boolean)
+        warnings: [...(status?.warnings || status || []), lag, couch].filter(Boolean)
       }))
       .retryWhen(err$ => err$.do(err => logger.error({ err }, 'monitor.status')).delay(10e3))
       .publishReplay(1)
@@ -290,6 +290,8 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.http) {
     const hasha = require('hasha')
     const http = require('http')
+    const compose = require('koa-compose')
+    const { request } = require('./http')
 
     const port = appConfig.http.port
       ? appConfig.http.port
@@ -299,11 +301,26 @@ module.exports = function (appConfig, onTerminate) {
           ? 8000
           : 8000 + parseInt(hasha(serviceName).slice(-3), 16)
 
-    const request = appConfig.http.request
-      ? appConfig.http.request
-      : typeof appConfig.http === 'function'
-        ? appConfig.http
-        : null
+    const requestHandler = compose([
+      request,
+      ({ req, res }, next) => {
+        if (req.url.startsWith('/healthcheck')) {
+          res.statusCode = 200
+          res.end()
+        } else {
+          return next()
+        }
+      },
+      appConfig.http.request
+        ? appConfig.http.request
+        : typeof appConfig.http === 'function'
+          ? appConfig.http
+          : null,
+      ({ res }) => {
+        res.statusCode = 404
+        res.end()
+      }
+    ].flat().filter(Boolean))
 
     server = http
       .createServer(async (req, res) => {
@@ -313,8 +330,8 @@ module.exports = function (appConfig, onTerminate) {
           return
         }
 
-        if (request) {
-          await request({ req, res, ds, couch, appConfig, logger })
+        if (requestHandler) {
+          await requestHandler({ req, res, ds, couch, appConfig, logger })
         }
 
         if (!res.writableEnded) {
