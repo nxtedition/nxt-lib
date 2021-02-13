@@ -268,7 +268,7 @@ module.exports = function (config, onTerminate) {
       ? config.http
       : process.env.NODE_ENV === 'production'
         ? 8000
-        : parseInt(hasha(serviceName).slice(-13), 16)
+        : 8000 + parseInt(hasha(serviceName).slice(-3), 16)
 
     server = http
       .createServer(typeof config.http === 'function'
