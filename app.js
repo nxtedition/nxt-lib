@@ -62,7 +62,7 @@ module.exports = function (appConfig, onTerminate) {
     })
   }
 
-  if (appConfig.couchdb) {
+  if (appConfig.couchdb || appConfig.couch) {
     couch = require('./couch')({ config: appConfig })
   }
 

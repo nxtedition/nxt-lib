@@ -14,7 +14,7 @@ module.exports = function (opts) {
   } else if (opts.url) {
     config = opts
   } else if (opts.config) {
-    config = opts.config.couchdb || opts.config
+    config = opts.config.couchdb || opts.config.couch || opts.config
   } else {
     throw new Error('invalid options')
   }
