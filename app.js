@@ -262,7 +262,6 @@ module.exports = function (appConfig, onTerminate) {
 
     const subscription = stats$
       .auditTime(10e3)
-      .retryWhen(err$ => err$.do(err => logger.error({ err })).delay(10e3))
       .subscribe((stats) => {
         if (process.env.NODE_ENV === 'production') {
           logger.debug({
