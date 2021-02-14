@@ -15,7 +15,7 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.config) {
     const nconf = require('nconf')
 
-    appConfig = config = nconf
+    config = appConfig = nconf
       .argv()
       .env({
         separator: '__',
@@ -28,6 +28,8 @@ module.exports = function (appConfig, onTerminate) {
         ...appConfig
       })
       .get()
+  } else {
+    config = appConfig
   }
 
   const destroyers = [onTerminate]
