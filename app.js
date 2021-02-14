@@ -281,8 +281,8 @@ module.exports = function (appConfig, onTerminate) {
       .subscribe((stats) => {
         if (process.env.NODE_ENV === 'production') {
           logger.debug({
-            ds: ds.stats,
-            couch: couch.stats,
+            ds: ds?.stats,
+            couch: couch?.stats,
             lag: toobusy?.lag(),
             memory: process.memoryUsage(),
             v8: {
