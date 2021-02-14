@@ -165,24 +165,24 @@ module.exports = function (appConfig, onTerminate) {
         status$
           .filter(Boolean)
           .startWith(null),
-        new Observable(o => {
-          toobusy?.onLag(currentLag => {
+        toobusy && new Observable(o => {
+          toobusy.onLag(currentLag => {
             if (currentLag > 1e3) {
               o.next(`lag: ${currentLag}`)
             }
           })
           o.next(null)
         }),
-        Observable
+        couch && Observable
           .timer(0, 10e3)
           .exhaustMap(async () => {
             try {
-              couch?.info()
+              await couch.info()
             } catch (err) {
               return 'couch: ' + err.message
             }
           })
-      ])
+      ].filter(Boolean))
       .map(([status, lag, couch]) => {
         const warnings = [
           status?.warnings,
