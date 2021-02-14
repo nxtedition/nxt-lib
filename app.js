@@ -191,8 +191,8 @@ module.exports = function (appConfig, onTerminate) {
           .exhaustMap(async () => {
             try {
               if (ds._url || ds.url) {
-                const { origin } = new URL(ds._url || ds.url)
-                await undici.request(`${origin}/healthcheck`)
+                const { origin, protocol } = new URL(ds._url || ds.url)
+                await undici.request(`${protocol}://${origin}/healthcheck`)
               }
             } catch (err) {
               return 'ds: ' + err.message
@@ -322,8 +322,8 @@ module.exports = function (appConfig, onTerminate) {
         if (req.url.startsWith('/healthcheck')) {
           if (ds._url || ds.url) {
             try {
-              const { origin } = new URL(ds._url || ds.url)
-              await undici.request(`${origin}/healthcheck`)
+              const { origin, protocol } = new URL(ds._url || ds.url)
+              await undici.request(`${protocol}://${origin}/healthcheck`)
             } catch (err) {
               logger.warn({ err }, 'deepstream healthcheck failed')
               if (err.code === 'ENOTFOUND') {
