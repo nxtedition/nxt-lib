@@ -330,21 +330,14 @@ module.exports = function (appConfig, onTerminate) {
     ].flat().filter(Boolean))
 
     server = http
-      .createServer(async (req, res) => {
+      .createServer((req, res) => {
         if (req.url.startsWith('/healthcheck')) {
           res.statusCode = 200
           res.end()
           return
         }
 
-        if (requestHandler) {
-          await requestHandler({ req, res, ds, couch, config, logger })
-        }
-
-        if (!res.writableEnded) {
-          res.statusCode = 404
-          res.end()
-        }
+        requestHandler({ req, res, ds, couch, config, logger })
       })
       .listen(port, () => {
         logger.debug({ port }, `http listening on port ${port}`)
