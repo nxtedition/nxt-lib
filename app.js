@@ -42,7 +42,7 @@ module.exports = function (appConfig, onTerminate) {
     config.name ||
     config.logger?.name ||
     process.env.name
-  ) + (instanceId ? `-${instanceId}` : '')
+  ) + (instanceId && instanceId !== '0' ? `-${instanceId}` : '')
 
   const logger = createLogger({
     ...config.logger,
