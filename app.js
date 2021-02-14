@@ -201,13 +201,14 @@ module.exports = function (appConfig, onTerminate) {
       ].filter(Boolean))
       .map(([status, lag, couch]) => {
         const warnings = [
-          status?.warnings,
-          status
-        ].find(Array.isArray)
+          [status?.warnings, status].find(Array.isArray),
+          lag,
+          couch
+        ].flat().filter(Boolean)
 
         return {
           ...status,
-          warnings: [warnings, lag, couch].flat().filter(Boolean)
+          warnings: warnings.length === 0 ? null : warnings
         }
       })
       .retryWhen(err$ => err$.do(err => logger.error({ err }, 'monitor.status')).delay(10e3))
