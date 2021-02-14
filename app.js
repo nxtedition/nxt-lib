@@ -157,9 +157,7 @@ module.exports = function (appConfig, onTerminate) {
         .timer(0, 10e3)
         .exhaustMap(async () => appConfig.status)
     } else {
-      status$ = Observable
-        .timer(0, 10e3)
-        .mapTo({})
+      status$ = Observable.of({})
     }
 
     status$ = Observable
@@ -247,9 +245,7 @@ module.exports = function (appConfig, onTerminate) {
         .timer(0, 10e3)
         .exhaustMap(async () => appConfig.stats)
     } else {
-      stats$ = Observable
-        .timer(0, 10e3)
-        .mapTo({})
+      stats$ = Observable.of({})
     }
 
     stats$ = stats$
