@@ -15,7 +15,7 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.config) {
     const nconf = require('nconf')
 
-    config = appConfig = nconf
+    config = nconf
       .argv()
       .env({
         separator: '__',
@@ -38,16 +38,16 @@ module.exports = function (appConfig, onTerminate) {
   const instanceId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
 
   const serviceName = (
-    appConfig.service?.name ||
-    appConfig.name ||
-    appConfig.logger?.name ||
+    config.service?.name ||
+    config.name ||
+    config.logger?.name ||
     process.env.name
   ) + (instanceId ? `-${instanceId}` : '')
 
   const logger = createLogger({
-    ...appConfig.logger,
-    name: appConfig.logger?.name || serviceName,
-    base: appConfig.logger ? { ...appConfig.logger.base } : {}
+    ...config.logger,
+    name: config.logger?.name || serviceName,
+    base: config.logger ? { ...config.logger.base } : {}
   }, (finalLogger) => Promise
     .all(destroyers.filter(Boolean).map(fn => fn(finalLogger)))
     .catch(err => {
@@ -69,25 +69,25 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.couchdb || appConfig.couch) {
-    couch = require('./couch')({ config: appConfig })
+    couch = require('./couch')({ config })
   }
 
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const leveldown = require('leveldown')
 
-    if (!appConfig.deepstream.credentials) {
+    if (!config.deepstream.credentials) {
       throw new Error('missing deepstream credentials')
     }
 
-    const version = appConfig.version || process.env.NXT_VERSION
+    const version = config.version || process.env.NXT_VERSION
 
     const cacheName = serviceName + `${version ? `-${version}` : ''}`
 
     const userName = (
-      appConfig.deepstream.credentials.username ||
-      appConfig.deepstream.credentials.userName ||
-      appConfig.deepstream.credentials.user ||
+      config.deepstream.credentials.username ||
+      config.deepstream.credentials.userName ||
+      config.deepstream.credentials.user ||
       serviceName
     )
 
@@ -97,10 +97,10 @@ module.exports = function (appConfig, onTerminate) {
       maxReconnectInterval: 10e3,
       cacheSize: 4096,
       cacheDb: leveldown(`./.nxt${cacheName ? `-${cacheName}` : ''}`),
-      ...appConfig.deepstream,
+      ...config.deepstream,
       credentials: {
         username: userName,
-        ...appConfig.deepstream.credentials
+        ...config.deepstream.credentials
       }
     }
 
@@ -109,7 +109,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     ds = deepstream(dsConfig.url, dsConfig)
-      .login(appConfig.deepstream.credentials, (success, authData) => {
+      .login(dsConfig.deepstream.credentials, (success, authData) => {
         if (!success) {
           throw new Error('deepstream authentication failed.')
         }
@@ -308,10 +308,10 @@ module.exports = function (appConfig, onTerminate) {
     const compose = require('koa-compose')
     const { request } = require('./http')
 
-    const port = appConfig.http.port
-      ? appConfig.http.port
-      : typeof appConfig.http === 'number'
-        ? appConfig.http
+    const port = config.http.port
+      ? config.http.port
+      : typeof config.http === 'number'
+        ? config.http
         : process.env.NODE_ENV === 'production'
           ? 8000
           : 10000 + parseInt(hasha(serviceName).slice(-3), 16)
@@ -361,7 +361,7 @@ module.exports = function (appConfig, onTerminate) {
     ].flat().filter(Boolean))
 
     server = http
-      .createServer(typeof config.http === 'object' ? config.http : {}, async (req, res) => {
+      .createServer(typeof appConfig.http === 'object' ? appConfig.http : {}, async (req, res) => {
         requestHandler({ req, res, ds, couch, config, logger })
       })
 
