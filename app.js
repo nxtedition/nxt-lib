@@ -70,6 +70,9 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.deepstream) {
+    const deepstream = require('@nxtedition/deepstream.io-client-js')
+    const leveldown = require('leveldown')
+
     if (!appConfig.deepstream.credentials) {
       throw new Error('missing deepstream credentials')
     }
@@ -85,12 +88,12 @@ module.exports = function (appConfig, onTerminate) {
       serviceName
     )
 
-    appConfig.deepstream = {
+    const dsConfig = {
       url: 'ws://localhost:6020/deepstream',
       maxReconnectAttempts: Infinity,
-      maxReconnectInterval: 10000,
-      cacheSize: 2048,
-      cache: cacheName ? `./.nxt${cacheName ? `-${cacheName}` : ''}` : undefined,
+      maxReconnectInterval: 10e3,
+      cacheSize: 4096,
+      cacheDb: leveldown(`./.nxt${cacheName ? `-${cacheName}` : ''}`),
       ...appConfig.deepstream,
       credentials: {
         username: userName,
@@ -98,17 +101,11 @@ module.exports = function (appConfig, onTerminate) {
       }
     }
 
-    const deepstream = require('@nxtedition/deepstream.io-client-js')
-    const cacheDb = appConfig.deepstream.cache ? require('leveldown')(appConfig.deepstream.cache) : null
-
-    if (cacheDb) {
-      logger.debug({ cache: appConfig.deepstream.cache }, 'Deepstream Caching')
+    if (dsConfig.cacheDb) {
+      logger.debug({ cache: dsConfig.cacheDb.location }, 'Deepstream Caching')
     }
 
-    ds = deepstream(appConfig.deepstream.url, {
-      ...appConfig.deepstream,
-      cacheDb
-    })
+    ds = deepstream(dsConfig.url, dsConfig)
       .login(appConfig.deepstream.credentials, (success, authData) => {
         if (!success) {
           throw new Error('deepstream authentication failed.')
