@@ -169,14 +169,9 @@ module.exports = function (appConfig, onTerminate) {
         status$
           .filter(Boolean)
           .startWith(null),
-        toobusy && new Observable(o => {
-          toobusy.onLag(currentLag => {
-            if (currentLag > 1e3) {
-              o.next(`lag: ${currentLag}`)
-            }
-          })
-          o.next(null)
-        }),
+        toobusy && Observable
+          .timer(0, 1e3)
+          .map(() => toobusy.lag() > 1e3 ? `lag: ${toobusy.lag()}` : null),
         couch && Observable
           .timer(0, 10e3)
           .exhaustMap(async () => {
