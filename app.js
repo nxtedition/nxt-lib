@@ -324,7 +324,7 @@ module.exports = function (appConfig, onTerminate) {
     ].flat().filter(Boolean))
 
     server = http
-      .createServer((req, res) => {
+      .createServer(typeof config.http === 'object' ? config.http : {}, (req, res) => {
         if (req.url.startsWith('/healthcheck')) {
           res.statusCode = 200
           res.end()
