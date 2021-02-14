@@ -109,7 +109,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     ds = deepstream(dsConfig.url, dsConfig)
-      .login(dsConfig.deepstream.credentials, (success, authData) => {
+      .login(dsConfig.credentials, (success, authData) => {
         if (!success) {
           throw new Error('deepstream authentication failed.')
         }
