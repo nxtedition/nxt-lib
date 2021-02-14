@@ -267,7 +267,8 @@ module.exports = function (appConfig, onTerminate) {
         if (process.env.NODE_ENV === 'production') {
           logger.debug({
             ds: ds.stats,
-            lag: toobusy && toobusy.lag(),
+            couch: couch.stats,
+            lag: toobusy?.lag(),
             memory: process.memoryUsage(),
             v8: {
               heap: v8.getHeapStatistics()
