@@ -98,8 +98,6 @@ module.exports = function (appConfig, onTerminate) {
       }
     }
 
-    require('rxjs-compat')
-
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const cacheDb = appConfig.deepstream.cache ? require('leveldown')(appConfig.deepstream.cache) : null
 
