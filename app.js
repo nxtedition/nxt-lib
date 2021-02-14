@@ -93,8 +93,8 @@ module.exports = function (appConfig, onTerminate) {
       cache: cacheName ? `./.nxt${cacheName ? `-${cacheName}` : ''}` : undefined,
       ...appConfig.deepstream,
       credentials: {
-        ...appConfig.deepstream.credentials,
-        username: userName
+        username: userName,
+        ...appConfig.deepstream.credentials
       }
     }
 
