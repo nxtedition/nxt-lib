@@ -5307,6 +5307,11 @@ undefsafe@^2.0.3:
   dependencies:
     debug "^2.2.0"
 
+undici@^3.3.3:
+  version "3.3.3"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-3.3.3.tgz#a90a783a5605fd3d0e093624e261aae234646452"
+  integrity sha512-JcC6p86DLPDne5vhm9nZ9N6hW/WPCtO8/NV+7YHS+x/mQ+NpWvtGxIt28ObBsySPec8FsabyiLPhmn7Htl9w3A==
+
 union-value@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/union-value/-/union-value-1.0.1.tgz#0b6fe7b835aecda61c6ea4d4f02c14221e109847"

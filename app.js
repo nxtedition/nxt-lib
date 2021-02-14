@@ -142,6 +142,7 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.status) {
     const os = require('os')
     const { Observable } = require('rxjs')
+    const undici = require('undici')
     const fp = require('lodash/fp')
 
     let status$
@@ -183,6 +184,18 @@ module.exports = function (appConfig, onTerminate) {
               await couch.info()
             } catch (err) {
               return 'couch: ' + err.message
+            }
+          }),
+        ds && Observable
+          .timer(0, 10e3)
+          .exhaustMap(async () => {
+            try {
+              if (ds._url || ds.url) {
+                const { origin } = new URL(ds._url || ds.url)
+                await undici.request(`${origin}/healthcheck`)
+              }
+            } catch (err) {
+              return 'ds: ' + err.message
             }
           })
       ].filter(Boolean))
@@ -291,6 +304,7 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.http) {
     const hasha = require('hasha')
     const http = require('http')
+    const undici = require('undici')
     const compose = require('koa-compose')
     const { request } = require('./http')
 
@@ -304,8 +318,31 @@ module.exports = function (appConfig, onTerminate) {
 
     const requestHandler = compose([
       request,
-      ({ req, res }, next) => {
+      async ({ req, res }, next) => {
         if (req.url.startsWith('/healthcheck')) {
+          if (ds._url || ds.url) {
+            try {
+              const { origin } = new URL(ds._url || ds.url)
+              await undici.request(`${origin}/healthcheck`)
+            } catch (err) {
+              logger.warn({ err }, 'deepstream healthcheck failed')
+              if (err.code === 'ENOTFOUND') {
+                throw err
+              }
+            }
+          }
+
+          if (couch) {
+            try {
+              await couch.info()
+            } catch (err) {
+              logger.warn({ err }, 'couch healthcheck failed')
+              if (err.code === 'ENOTFOUND') {
+                throw err
+              }
+            }
+          }
+
           res.statusCode = 200
           res.end()
         } else {
@@ -324,13 +361,7 @@ module.exports = function (appConfig, onTerminate) {
     ].flat().filter(Boolean))
 
     server = http
-      .createServer(typeof config.http === 'object' ? config.http : {}, (req, res) => {
-        if (req.url.startsWith('/healthcheck')) {
-          res.statusCode = 200
-          res.end()
-          return
-        }
-
+      .createServer(typeof config.http === 'object' ? config.http : {}, async (req, res) => {
         requestHandler({ req, res, ds, couch, config, logger })
       })
 
