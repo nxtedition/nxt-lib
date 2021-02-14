@@ -333,9 +333,18 @@ module.exports = function (appConfig, onTerminate) {
 
         requestHandler({ req, res, ds, couch, config, logger })
       })
-      .listen(port, () => {
-        logger.debug({ port }, `http listening on port ${port}`)
-      })
+
+    if (config.http.keepAlive != null) {
+      server.keepAliveTimeout = config.http.keepAlive
+    }
+
+    if (config.http.timeout != null) {
+      server.setTimeout(config.http.timeout)
+    }
+
+    server.listen(port, () => {
+      logger.debug({ port }, `http listening on port ${port}`)
+    })
 
     destroyers.push(() => new Promise(resolve => server.close(resolve)))
   }
