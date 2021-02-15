@@ -40,7 +40,7 @@ module.exports.createLogger = function ({
   let logger
   let handler
 
-  if (!stream && process.stdout.write !== process.stdout.constructor.prototype.write) {
+  if (!stream && (process.stdout.write !== process.stdout.constructor.prototype.write || !process.stdout.fd)) {
     stream = process.stdout
   }
 
