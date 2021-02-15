@@ -228,7 +228,7 @@ module.exports = function (appConfig, onTerminate) {
 
     logger.debug({ hostname }, 'monitor.status')
 
-    const unprovide = nxt?.record.provide(`^${hostname}:monitor.status$`, () => status$)
+    const unprovide = nxt?.record.provide(`${hostname}:monitor.status`, () => status$)
 
     destroyers.push(() => {
       if (unprovide) {
