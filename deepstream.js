@@ -159,7 +159,6 @@ function rpcMake (ds, rpcName, data, options) {
 function init (ds) {
   const nxt = {
     ds,
-    query: (...args) => query(ds, ...args),
     record: {
       query: (...args) => query(ds, ...args),
       provide: (...args) => provide(ds, ...args),
