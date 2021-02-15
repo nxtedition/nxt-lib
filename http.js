@@ -1,39 +1,20 @@
+/* globals AbortController */
+
 const xuid = require('xuid')
 const createError = require('http-errors')
 const { performance } = require('perf_hooks')
-const EE = require('events')
 const requestTarget = require('request-target')
 const querystring = require('querystring')
 const assert = require('assert')
 
-const kAbort = Symbol('abort')
-const kAborted = Symbol('aborted')
-
 const ERR_HEADER_EXPR = /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
-
-class AbortSignal extends EE {
-  constructor () {
-    super()
-    this[kAborted] = false
-  }
-
-  get aborted () {
-    return this[kAborted]
-  }
-
-  [kAbort] () {
-    if (!this[kAborted]) {
-      this[kAborted] = true
-      this.emit('abort')
-    }
-  }
-}
 
 module.exports.request = async function request (ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
 
-  const signal = new AbortSignal()
+  const ac = new AbortController()
+  const signal = ac.signal
 
   ctx.id = req.id = req.headers['request-id'] || xuid()
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
@@ -81,7 +62,7 @@ module.exports.request = async function request (ctx, next) {
         next()
       ])
     } finally {
-      signal[kAbort]()
+      ac.abort()
     }
 
     assert(res.writableEnded)
@@ -145,7 +126,8 @@ module.exports.request = async function request (ctx, next) {
 module.exports.upgrade = async function upgrade (ctx, next) {
   const { req, res, socket = res, logger } = ctx
 
-  const signal = new AbortSignal()
+  const ac = new AbortController()
+  const signal = ac.signal
 
   ctx.id = req.id = req.headers['request-id'] || xuid()
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
@@ -182,7 +164,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
         next()
       ])
     } finally {
-      signal[kAbort]()
+      signal.abort()
     }
 
     reqLogger.debug('stream completed')
