@@ -194,11 +194,12 @@ module.exports = function (appConfig, onTerminate) {
             }
           })
       ].filter(Boolean))
-      .map(([status, lag, couch]) => {
+      .map(([status, lag, couch, ds]) => {
         const warnings = [
           [status?.warnings, status].find(Array.isArray),
           lag,
-          couch
+          couch,
+          ds
         ].flat().filter(Boolean)
 
         return {
