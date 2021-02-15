@@ -7,7 +7,7 @@ module.exports.createLogger = function ({
   extreme = isProduction,
   prettyPrint = isProduction ? null : { translateTime: true },
   level = isProduction ? 'info' : 'trace',
-  flushInterval = 10e3,
+  flushInterval = 2e3,
   stream,
   ...options
 } = {}, onTerminate) {
