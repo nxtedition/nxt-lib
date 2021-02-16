@@ -17,7 +17,7 @@ module.exports.request = async function request (ctx, next) {
   const signal = ac.signal
 
   ctx.id = req.id = req.headers['request-id'] || xuid()
-  ctx.logger = req.log = logger.child({ req: { id: req.id } })
+  ctx.logger = req.log = logger.child({ req })
   ctx.signal = signal
   ctx.url = requestTarget(req)
   ctx.query = ctx.url?.search
@@ -30,9 +30,9 @@ module.exports.request = async function request (ctx, next) {
 
   res.setHeader('request-id', req.id)
 
-  const reqLogger = logger.child({ req: { id: req.id } })
+  let reqLogger = logger.child({ req })
   try {
-    reqLogger.debug({ req }, 'request started')
+    reqLogger.debug('request started')
 
     try {
       await Promise.all([
@@ -70,25 +70,30 @@ module.exports.request = async function request (ctx, next) {
 
     const responseTime = Math.round(performance.now() - startTime)
 
+    reqLogger = reqLogger.child({ res })
+
     if (res.statusCode >= 500) {
-      reqLogger.error({ req, res, responseTime }, 'request error')
+      reqLogger.error({ responseTime }, 'request error')
     } else if (res.statusCode >= 400) {
-      reqLogger.warn({ req, res, responseTime }, 'request failed')
+      reqLogger.warn({ responseTime }, 'request failed')
     } else {
-      reqLogger.debug({ res, responseTime }, 'request completed')
+      reqLogger.debug({ responseTime }, 'request completed')
     }
   } catch (err) {
     const statusCode = res.headersSent
       ? res.statusCode
       : err.statusCode || 500
+
     const responseTime = Math.round(performance.now() - startTime)
 
+    reqLogger = reqLogger.child({ res })
+
     if (res.destroyed && res.writableEnded === false) {
-      reqLogger.debug({ err, res, responseTime }, 'request aborted')
+      reqLogger.debug({ err, statusCode, responseTime }, 'request aborted')
     } if (statusCode < 500) {
-      reqLogger.warn({ err, res, responseTime }, 'request failed')
+      reqLogger.warn({ err, statusCode, responseTime }, 'request failed')
     } else {
-      reqLogger.error({ err, res, responseTime }, 'request error')
+      reqLogger.error({ err, statusCode, responseTime }, 'request error')
     }
 
     req.on('error', err => {
