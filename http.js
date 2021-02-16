@@ -71,9 +71,9 @@ module.exports.request = async function request (ctx, next) {
     const responseTime = Math.round(performance.now() - startTime)
 
     if (res.statusCode >= 500) {
-      reqLogger.error({ res, responseTime }, 'request error')
+      reqLogger.error({ req, res, responseTime }, 'request error')
     } else if (res.statusCode >= 400) {
-      reqLogger.warn({ res, responseTime }, 'request failed')
+      reqLogger.warn({ req, res, responseTime }, 'request failed')
     } else {
       reqLogger.debug({ res, responseTime }, 'request completed')
     }
