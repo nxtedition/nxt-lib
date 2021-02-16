@@ -1,11 +1,10 @@
-/* globals AbortController */
-
 const xuid = require('xuid')
 const createError = require('http-errors')
 const { performance } = require('perf_hooks')
 const requestTarget = require('request-target')
 const querystring = require('querystring')
 const assert = require('assert')
+const AbortController = require('abort-controller')
 
 const ERR_HEADER_EXPR = /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
 
