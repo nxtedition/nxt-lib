@@ -74,11 +74,13 @@ module.exports = {
       (ureq.headers && typeof ureq.headers === 'object' && ureq.headers['request-id'])
     ),
     method: ureq.method,
-    url: ureq.origin
-      ? `${ureq.origin}${ureq.path || ''}`
-      : ureq.hostname
-        ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]}${ureq.path || ''}`
-        : undefined,
+    url: typeof ureq.url === 'string'
+      ? ureq.url
+      : ureq.origin
+        ? `${ureq.origin}${ureq.path || ''}`
+        : ureq.hostname
+          ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]}${ureq.path || ''}`
+          : undefined,
     bytesWritten: ureq.bytesWritten,
     headers: ureq.headers
   }
