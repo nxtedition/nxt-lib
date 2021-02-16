@@ -32,19 +32,28 @@ module.exports = {
     return obj
   },
   res: res => res && {
-    id: res.id || (res.req && res.req.id),
-    statusCode: res.statusCode,
+    id: (
+      res.id ||
+      res.req?.id ||
+      (typeof res.getHeader === 'function' && res.getHeader('request-id')) ||
+      (res.headers && typeof res.headers === 'object' && res.headers['request-id']) ||
+      (res.req.headers && typeof res.req.headers === 'object' && res.req.headers['request-id'])
+    ),
+    statusCode: res.statusCode || res.status,
     bytesWritten: res.bytesWritten,
     headers: typeof res.getHeaders === 'function' ? res.getHeaders() : res.headers
   },
   req: req => req && {
-    id: req.id || (req.headers && req.headers['request-id']),
+    id: (
+      req.id ||
+      (req.headers && typeof req.headers === 'object' && req.headers['request-id'])
+    ),
     method: req.method,
     url: req.url,
     headers: req.headers,
     bytesRead: req.bytesRead,
-    remoteAddress: req.socket && req.socket.remoteAddress,
-    remotePort: req.socket && req.socket.remotePort
+    remoteAddress: req.socket?.remoteAddress,
+    remotePort: req.socket?.remotePort
   },
   ures: ures => ures && {
     id: (
