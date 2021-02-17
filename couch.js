@@ -122,14 +122,7 @@ module.exports = function (opts) {
         try {
           for (const line of lines) {
             if (line) {
-              const change = JSON.parse(line)
-
-              if (change.last_seq != null) {
-                o.complete()
-                return
-              }
-
-              o.next(change)
+              o.next(options.parse === false ? line : JSON.parse(line))
 
               count += 1
               if (count === limit) {
@@ -176,7 +169,7 @@ module.exports = function (opts) {
       .map(body => JSON.parse(body))
   }
 
-  function onPost (path, params, body, { client, idempotent = false } = {}) {
+  function onPost (path, params, body, { client, idempotent = false, parse } = {}) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json'
@@ -192,10 +185,10 @@ module.exports = function (opts) {
       body
     })
       .reduce((body, data) => body + data, '')
-      .map(body => JSON.parse(body))
+      .map(body => parse === false ? body : JSON.parse(body))
   }
 
-  function onGet (path, params, { client } = {}) {
+  function onGet (path, params, { client, parse } = {}) {
     const headers = {
       Accept: 'application/json'
     }
@@ -208,10 +201,10 @@ module.exports = function (opts) {
       headers
     })
       .reduce((body, data) => body + data, '')
-      .map(body => JSON.parse(body))
+      .map(body => parse === false ? body : JSON.parse(body))
   }
 
-  function onInfo (options = {}) {
+  function onInfo ({ client, parse } = {}) {
     const params = {}
     const headers = {
       Accept: 'application/json'
@@ -219,13 +212,13 @@ module.exports = function (opts) {
 
     return onRequest('', {
       params,
-      client: options.client,
+      client,
       idempotent: true,
       method: 'GET',
       headers
     })
       .reduce((body, data) => body + data, '')
-      .map(body => JSON.parse(body))
+      .map(body => parse === false ? body : JSON.parse(body))
   }
 
   function onAllDocs (path, options = {}) {
@@ -308,7 +301,7 @@ module.exports = function (opts) {
       headers
     })
       .reduce((body, data) => body + data, '')
-      .map(body => JSON.parse(body))
+      .map(body => options.parse === false ? body : JSON.parse(body))
   }
 
   function onRequest (path, {
