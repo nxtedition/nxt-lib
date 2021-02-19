@@ -1,6 +1,6 @@
 {
   "name": "@nxtedition/lib",
-  "version": "4.0.32",
+  "version": "4.0.33",
   "files": [
     "rxjs/*",
     "util/*",
