@@ -12,6 +12,17 @@ module.exports = function (appConfig, onTerminate) {
 
   const { createLogger } = require('./logger')
 
+  const cleanAppConfig = ({
+    status,
+    stats,
+    http,
+    deepstream,
+    couchdb,
+    couch,
+    compiler,
+    ...config
+  }) => config
+
   if (appConfig.config) {
     const nconf = require('nconf')
 
@@ -25,12 +36,14 @@ module.exports = function (appConfig, onTerminate) {
         name: process.env.name,
         version: process.env.NXT_VERSION,
         isProduction: process.env.NODE_ENV === 'production',
-        ...appConfig,
-        ...appConfig.config
+        ...cleanAppConfig({
+          ...appConfig,
+          ...appConfig.config
+        })
       })
       .get()
   } else {
-    config = appConfig
+    config = cleanAppConfig(appConfig)
   }
 
   const destroyers = [onTerminate]
