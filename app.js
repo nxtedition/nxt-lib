@@ -16,6 +16,7 @@ module.exports = function (appConfig, onTerminate) {
     status,
     stats,
     http,
+    logger,
     deepstream,
     couchdb,
     couch,
@@ -43,7 +44,7 @@ module.exports = function (appConfig, onTerminate) {
       })
       .get()
   } else {
-    config = cleanAppConfig(appConfig)
+    config = appConfig
   }
 
   const destroyers = [onTerminate]
@@ -82,7 +83,7 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.couchdb || appConfig.couch) {
-    couch = require('./couch')({ config })
+    couch = require('./couch')(appConfig.couchdb || appConfig.couch)
   }
 
   if (appConfig.deepstream) {
