@@ -43,6 +43,12 @@ module.exports = function (appConfig, onTerminate) {
         ...appConfig.config
       })
       .get()
+
+    for (const key of Object.keys(config)) {
+      if (/^(nvm|npm|pm2)_/i.test(key)) {
+        delete config[key]
+      }
+    }
   } else {
     config = appConfig
   }
