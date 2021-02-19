@@ -6,6 +6,7 @@ module.exports = function (appConfig, onTerminate) {
   let server
   let compiler
   let config
+  let logger
 
   require('rxjs-compat')
   require('./rxjs')
@@ -56,18 +57,22 @@ module.exports = function (appConfig, onTerminate) {
     process.env.name
   ) + (instanceId && instanceId !== '0' ? `-${instanceId}` : '')
 
-  const logger = createLogger({
-    ...config.logger,
-    name: config.logger?.name || serviceName,
-    base: config.logger ? { ...config.logger.base } : {}
-  }, (finalLogger) => Promise
-    .all(destroyers.filter(Boolean).map(fn => fn(finalLogger)))
-    .catch(err => {
-      if (err) {
-        finalLogger.error({ err }, 'shutdown error')
-      }
-    })
-  )
+  {
+    const loggerConfig = { ...appConfig, ...config.logger }
+
+    logger = createLogger({
+      ...loggerConfig,
+      name: loggerConfig?.name || serviceName,
+      base: loggerConfig?.base ? { ...loggerConfig.base } : {}
+    }, (finalLogger) => Promise
+      .all(destroyers.filter(Boolean).map(fn => fn(finalLogger)))
+      .catch(err => {
+        if (err) {
+          finalLogger.error({ err }, 'shutdown error')
+        }
+      })
+    )
+  }
 
   if (appConfig.toobusy) {
     toobusy = require('toobusy-js')
@@ -88,9 +93,7 @@ module.exports = function (appConfig, onTerminate) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const leveldown = require('leveldown')
 
-    let dsConfig = typeof config.deepstream === 'object' && config.deepstream
-      ? config.deepstream
-      : appConfig.deepstream
+    let dsConfig = { ...appConfig.deepstream, ...config.deepstream }
 
     if (!dsConfig.credentials) {
       throw new Error('missing deepstream credentials')
@@ -321,9 +324,7 @@ module.exports = function (appConfig, onTerminate) {
     const compose = require('koa-compose')
     const { request } = require('./http')
 
-    const httpConfig = typeof config.http === 'object' && config.http
-      ? config.http
-      : appConfig.http
+    const httpConfig = { ...appConfig.http, ...config.http }
 
     const port = httpConfig.port
       ? httpConfig.port
