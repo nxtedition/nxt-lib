@@ -37,10 +37,8 @@ module.exports = function (appConfig, onTerminate) {
         name: process.env.name,
         version: process.env.NXT_VERSION,
         isProduction: process.env.NODE_ENV === 'production',
-        ...cleanAppConfig({
-          ...appConfig,
-          ...appConfig.config
-        })
+        ...cleanAppConfig(appConfig),
+        ...appConfig.config
       })
       .get()
   } else {
