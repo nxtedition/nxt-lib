@@ -88,7 +88,11 @@ module.exports = function (appConfig, onTerminate) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const leveldown = require('leveldown')
 
-    if (!config.deepstream.credentials) {
+    let dsConfig = typeof config.deepstream === 'object' && config.deepstream
+      ? config.deepstream
+      : appConfig.deepstream
+
+    if (!dsConfig.credentials) {
       throw new Error('missing deepstream credentials')
     }
 
@@ -97,22 +101,22 @@ module.exports = function (appConfig, onTerminate) {
     const cacheName = serviceName + `${version ? `-${version}` : ''}`
 
     const userName = (
-      config.deepstream.credentials.username ||
-      config.deepstream.credentials.userName ||
-      config.deepstream.credentials.user ||
+      dsConfig.credentials.username ||
+      dsConfig.credentials.userName ||
+      dsConfig.credentials.user ||
       serviceName
     )
 
-    const dsConfig = {
+    dsConfig = {
       url: 'ws://localhost:6020/deepstream',
       maxReconnectAttempts: Infinity,
       maxReconnectInterval: 10e3,
       cacheSize: 4096,
       cacheDb: leveldown(`./.nxt${cacheName ? `-${cacheName}` : ''}`),
-      ...config.deepstream,
+      ...dsConfig,
       credentials: {
         username: userName,
-        ...config.deepstream.credentials
+        ...dsConfig.credentials
       }
     }
 
@@ -317,10 +321,14 @@ module.exports = function (appConfig, onTerminate) {
     const compose = require('koa-compose')
     const { request } = require('./http')
 
-    const port = config.http.port
-      ? config.http.port
-      : typeof config.http === 'number'
-        ? config.http
+    const httpConfig = typeof config.http === 'object' && config.http
+      ? config.http
+      : appConfig.http
+
+    const port = httpConfig.port
+      ? httpConfig.port
+      : typeof httpConfig === 'number'
+        ? httpConfig
         : process.env.NODE_ENV === 'production'
           ? 8000
           : 10000 + parseInt(hasha(serviceName).slice(-3), 16)
@@ -371,14 +379,14 @@ module.exports = function (appConfig, onTerminate) {
 
     server = http
       .createServer(typeof appConfig.http === 'object' ? appConfig.http : {}, async (req, res) => {
-        requestHandler({ req, res, ds, couch, config, logger })
+        requestHandler({ req, res, ds, couch, config: httpConfig, logger })
       })
 
-    if (config.http.keepAlive != null) {
-      server.keepAliveTimeout = config.http.keepAlive
+    if (httpConfig.keepAlive != null) {
+      server.keepAliveTimeout = httpConfig.keepAlive
     }
 
-    if (config.http.timeout != null) {
+    if (httpConfig.timeout != null) {
       server.setTimeout(config.http.timeout)
     }
 
