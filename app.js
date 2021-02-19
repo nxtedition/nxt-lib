@@ -21,9 +21,10 @@ module.exports = function (appConfig, onTerminate) {
     deepstream,
     couchdb,
     couch,
+    config,
     compiler,
-    ...config
-  }) => config
+    ...values
+  }) => values
 
   if (appConfig.config) {
     const nconf = require('nconf')
