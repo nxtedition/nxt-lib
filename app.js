@@ -454,7 +454,7 @@ module.exports = function (appConfig, onTerminate) {
       }
 
       if (httpConfig.timeout != null) {
-        server.setTimeout(config.http.timeout)
+        server.setTimeout(httpConfig.timeout)
       }
 
       server.listen(port, () => {
