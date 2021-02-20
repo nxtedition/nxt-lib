@@ -138,7 +138,7 @@ module.exports = function (appConfig, onTerminate) {
         })
         this._interval = setInterval(() => {
           this._flush()
-        }, 1e3)
+        }, 1e3).unref()
       }
 
       get (key, callback) {
