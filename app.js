@@ -143,10 +143,6 @@ module.exports = function (appConfig, onTerminate) {
       }
 
       get (name, callback) {
-        if (this._filter && !this._filter(name, null, null)) {
-          return
-        }
-
         const key = name
 
         const ref = this._cache.get(key)
