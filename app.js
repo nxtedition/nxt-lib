@@ -339,7 +339,7 @@ module.exports = function (appConfig, onTerminate) {
         ? httpConfig
         : process.env.NODE_ENV === 'production'
           ? 8000
-          : 10000 + parseInt(hasha(serviceName).slice(-3), 16)
+          : 10000 + 10000 + (parseInt(hasha(serviceName).slice(-8), 16) % 10000)
 
     const requestHandler = compose([
       request,
