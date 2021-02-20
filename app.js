@@ -99,7 +99,7 @@ module.exports = function (appConfig, onTerminate) {
 
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
-    const leveldown = require('leveldown')
+    const level = require('level-party')
 
     let dsConfig = { ...appConfig.deepstream, ...config.deepstream }
 
@@ -107,9 +107,12 @@ module.exports = function (appConfig, onTerminate) {
       throw new Error('missing deepstream credentials')
     }
 
-    const version = config.version || process.env.NXT_VERSION
-
-    const cacheName = serviceName + `${version ? `-${version}` : ''}`
+    const cacheName = config.cacheName ?? (
+      config.service?.name ||
+      config.name ||
+      config.logger?.name ||
+      process.env.name
+    )
 
     const userName = (
       dsConfig.credentials.username ||
@@ -124,7 +127,7 @@ module.exports = function (appConfig, onTerminate) {
       maxReconnectInterval: 10e3,
       cacheSize: 4096,
       ...dsConfig,
-      cacheDb: dsConfig.cacheDb ?? leveldown(`./.nxt${cacheName ? `-${cacheName}` : ''}`),
+      cacheDb: dsConfig.cacheDb ?? level(`./.nxt${cacheName ? `-${cacheName}` : ''}`, { valueEncoding: 'json' }),
       credentials: {
         username: userName,
         ...dsConfig.credentials
