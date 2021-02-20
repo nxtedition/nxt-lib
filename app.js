@@ -325,7 +325,6 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.http) {
-    const hasha = require('hasha')
     const http = require('http')
     const undici = require('undici')
     const compose = require('koa-compose')
@@ -339,70 +338,72 @@ module.exports = function (appConfig, onTerminate) {
         ? httpConfig
         : process.env.NODE_ENV === 'production'
           ? 8000
-          : 10000 + 10000 + (parseInt(hasha(serviceName).slice(-8), 16) % 10000)
+          : null
 
-    const requestHandler = compose([
-      request,
-      async ({ req, res }, next) => {
-        if (req.url.startsWith('/healthcheck')) {
-          if (ds._url || ds.url) {
-            try {
-              const { host } = new URL(ds._url || ds.url)
-              await undici.request(`http://${host}/healthcheck`)
-            } catch (err) {
-              logger.warn({ err }, 'deepstream healthcheck failed')
-              if (err.code === 'ENOTFOUND') {
-                throw err
+    if (port != null) {
+      const requestHandler = compose([
+        request,
+        async ({ req, res }, next) => {
+          if (req.url.startsWith('/healthcheck')) {
+            if (ds._url || ds.url) {
+              try {
+                const { host } = new URL(ds._url || ds.url)
+                await undici.request(`http://${host}/healthcheck`)
+              } catch (err) {
+                logger.warn({ err }, 'deepstream healthcheck failed')
+                if (err.code === 'ENOTFOUND') {
+                  throw err
+                }
               }
             }
-          }
 
-          if (couch) {
-            try {
-              await couch.info()
-            } catch (err) {
-              logger.warn({ err }, 'couch healthcheck failed')
-              if (err.code === 'ENOTFOUND') {
-                throw err
+            if (couch) {
+              try {
+                await couch.info()
+              } catch (err) {
+                logger.warn({ err }, 'couch healthcheck failed')
+                if (err.code === 'ENOTFOUND') {
+                  throw err
+                }
               }
             }
-          }
 
-          res.statusCode = 200
+            res.statusCode = 200
+            res.end()
+          } else {
+            return next()
+          }
+        },
+        appConfig.http.request
+          ? appConfig.http.request
+          : typeof appConfig.http === 'function'
+            ? appConfig.http
+            : null,
+        ({ res }) => {
+          res.statusCode = 404
           res.end()
-        } else {
-          return next()
         }
-      },
-      appConfig.http.request
-        ? appConfig.http.request
-        : typeof appConfig.http === 'function'
-          ? appConfig.http
-          : null,
-      ({ res }) => {
-        res.statusCode = 404
-        res.end()
-      }
-    ].flat().filter(Boolean))
+      ].flat().filter(Boolean))
 
-    server = http
-      .createServer(typeof appConfig.http === 'object' ? appConfig.http : {}, async (req, res) => {
-        requestHandler({ req, res, ds, couch, config: httpConfig, logger })
+      server = http
+        .createServer(typeof appConfig.http === 'object' ? appConfig.http : {}, async (req, res) => {
+          requestHandler({ req, res, ds, couch, config: httpConfig, logger })
+        })
+
+      if (httpConfig.keepAlive != null) {
+        server.keepAliveTimeout = httpConfig.keepAlive
+      }
+
+      if (httpConfig.timeout != null) {
+        server.setTimeout(config.http.timeout)
+      }
+
+      server.listen(port, () => {
+        logger.debug({ port }, `http listening on port ${port}`)
       })
 
-    if (httpConfig.keepAlive != null) {
-      server.keepAliveTimeout = httpConfig.keepAlive
+      destroyers.push(() => new Promise(resolve => server.close(resolve)))
     }
-
-    if (httpConfig.timeout != null) {
-      server.setTimeout(config.http.timeout)
-    }
-
-    server.listen(port, () => {
-      logger.debug({ port }, `http listening on port ${port}`)
-    })
-
-    destroyers.push(() => new Promise(resolve => server.close(resolve)))
   }
 
   return { ds, nxt, logger, toobusy, destroyers, couch, server, config, compiler }
