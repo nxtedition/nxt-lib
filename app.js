@@ -147,8 +147,6 @@ module.exports = function (appConfig, onTerminate) {
           return
         }
 
-        // TODO (fix): Should we invoke callback as callback(err, name, version, data)?
-
         const key = name
 
         const ref = this._cache.get(key)
