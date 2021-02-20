@@ -21,6 +21,7 @@ module.exports = function (appConfig, onTerminate) {
     deepstream,
     couchdb,
     couch,
+    toobusy,
     config,
     compiler,
     ...values
@@ -122,8 +123,8 @@ module.exports = function (appConfig, onTerminate) {
       maxReconnectAttempts: Infinity,
       maxReconnectInterval: 10e3,
       cacheSize: 4096,
-      cacheDb: leveldown(`./.nxt${cacheName ? `-${cacheName}` : ''}`),
       ...dsConfig,
+      cacheDb: dsConfig.cacheDb ?? leveldown(`./.nxt${cacheName ? `-${cacheName}` : ''}`),
       credentials: {
         username: userName,
         ...dsConfig.credentials
