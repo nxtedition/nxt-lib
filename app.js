@@ -14,6 +14,7 @@ module.exports = function (appConfig, onTerminate) {
   const { createLogger } = require('./logger')
 
   const cleanAppConfig = ({
+    pkg,
     status,
     stats,
     http,
@@ -37,8 +38,8 @@ module.exports = function (appConfig, onTerminate) {
         parseValues: true
       })
       .defaults({
-        name: process.env.name,
-        version: process.env.NXT_VERSION,
+        name: process.env.name || appConfig.pkg?.name,
+        version: process.env.NXT_VERSION || appConfig.pkg?.version,
         isProduction: process.env.NODE_ENV === 'production',
         ...cleanAppConfig(appConfig),
         ...appConfig.config
