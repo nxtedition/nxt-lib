@@ -118,8 +118,8 @@ module.exports = function (appConfig, onTerminate) {
 
     function defaultFilter (name, version, data) {
       return (
-        name.charAt(0) !== '{' &&
-        version.charAt(0) !== '0'
+        (!name || name.charAt(0) !== '{') &&
+        (!version || version.charAt(0) !== '0')
       )
     }
 
@@ -142,7 +142,15 @@ module.exports = function (appConfig, onTerminate) {
         }, 1e3).unref()
       }
 
-      get (key, callback) {
+      get (name, callback) {
+        if (this._filter && !this._filter(name, null, null)) {
+          return
+        }
+
+        // TODO (fix): Should we invoke callback as callback(err, name, version, data)?
+
+        const key = name
+
         const ref = this._cache.get(key)
         if (ref !== undefined) {
           const deref = ref.deref()
@@ -155,7 +163,14 @@ module.exports = function (appConfig, onTerminate) {
         this._db.get(key, callback)
       }
 
-      put (key, value) {
+      set (name, version, data) {
+        if (this._filter && !this._filter(name, version, data)) {
+          return
+        }
+
+        const key = name
+        const value = [version, data]
+
         this._cache.set(key, new WeakRef(value))
         this._registry.register(value, key)
         this._batch.push({ type: 'put', key, value })
