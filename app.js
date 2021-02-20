@@ -94,7 +94,8 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.couchdb || appConfig.couch) {
-    couch = require('./couch')(appConfig.couchdb || appConfig.couch)
+    const couchConfig = { ...(appConfig.couchdb || appConfig.couch), ...(config.couchdb ?? config.couch) }
+    couch = require('./couch')(couchConfig)
   }
 
   if (appConfig.deepstream) {
