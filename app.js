@@ -107,12 +107,7 @@ module.exports = function (appConfig, onTerminate) {
       throw new Error('missing deepstream credentials')
     }
 
-    const cacheName = config.cacheName ?? (
-      config.service?.name ||
-      config.name ||
-      config.logger?.name ||
-      process.env.name
-    )
+    const cacheName = config.cacheName ?? ''
 
     const userName = (
       dsConfig.credentials.username ||
