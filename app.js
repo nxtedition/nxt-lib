@@ -143,6 +143,8 @@ module.exports = function (appConfig, onTerminate) {
       }
 
       get (name, callback) {
+        // TODO (perf): Check filter.
+
         const key = name
 
         const ref = this._cache.get(key)
