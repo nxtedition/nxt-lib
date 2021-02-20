@@ -69,7 +69,7 @@
     "validate-commit-msg": "^2.14.0"
   },
   "peerDependencies": {
-    "@nxtedition/deepstream.io-client-js": ">=12.0.0",
+    "@nxtedition/deepstream.io-client-js": ">=14.1.0",
     "pino": "^6.0.0",
     "pino-pretty": "^4.0.0",
     "rxjs": "^6.0.0",
@@ -82,6 +82,7 @@
     "json5": "^2.2.0",
     "koa-compose": "^4.1.0",
     "level-party": "^4.0.0",
+    "levelup": "^4.4.0",
     "lodash": "^4.17.20",
     "mime": "^2.5.0",
     "moment": "^2.29.1",

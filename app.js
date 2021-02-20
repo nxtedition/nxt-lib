@@ -100,15 +100,14 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const level = require('level-party')
+    const levelup = require('levelup')
+    const EE = require('events')
 
     let dsConfig = { ...appConfig.deepstream, ...config.deepstream }
 
     if (!dsConfig.credentials) {
       throw new Error('missing deepstream credentials')
     }
-
-    const cacheName = config.cacheName ?? ''
-    const cachePath = `./.nxt${cacheName ? `-${cacheName}` : ''}`
 
     const userName = (
       dsConfig.credentials.username ||
@@ -117,13 +116,71 @@ module.exports = function (appConfig, onTerminate) {
       serviceName
     )
 
+    function defaultFilter (name, version, data) {
+      return /^[^{]/.test(name) && /^[^0]/.test(version)
+    }
+
+    const dsCache = new class Cache extends EE {
+      constructor ({ cacheName, cacheFilter = defaultFilter }) {
+        super()
+        this.location = `./.nxt${cacheName ? `-${cacheName}` : ''}`
+        this._cache = new Map()
+        this._db = levelup(level(this.location, { valueEncoding: 'json' }), err => {
+          if (err) {
+            this.emit('error', err)
+          }
+        })
+        this._filter = cacheFilter
+        this._batch = []
+        this._registry = new FinalizationRegistry(key => {
+          const ref = this._cache.get(key)
+          if (ref !== undefined && ref.deref() === undefined) {
+            this._cache.delete(key)
+          }
+        })
+        this._interval = setInterval(() => {
+          this._flush()
+        }, 1e3)
+      }
+
+      get (key, callback) {
+        const ref = this._cache.get(key)
+        if (ref !== undefined) {
+          const deref = ref.deref()
+          if (deref !== undefined) {
+            process.nextTick(callback, null, deref)
+            return
+          }
+        }
+
+        this._db.get(key, callback)
+      }
+
+      put (key, value) {
+        this._cache.set(key, new WeakRef(value))
+        this._registry.register(value, key)
+        this._batch.push({ type: 'put', key, value })
+        if (this._batch.length > 1024) {
+          this._flush()
+        }
+      }
+
+      _flush () {
+        this._db.batch(this._batch, err => {
+          if (err) {
+            this.emit('error', err)
+          }
+        })
+        this._batch = []
+      }
+    }(dsConfig)
+
     dsConfig = {
       url: 'ws://localhost:6020/deepstream',
       maxReconnectAttempts: Infinity,
       maxReconnectInterval: 10e3,
-      cacheSize: 4096,
+      cache: dsCache,
       ...dsConfig,
-      cacheDb: dsConfig.cacheDb ?? level(cachePath, { valueEncoding: 'json' }),
       credentials: {
         username: userName,
         ...dsConfig.credentials
@@ -131,7 +188,11 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     if (dsConfig.cacheDb) {
-      logger.debug({ cache: cachePath }, 'Deepstream Caching')
+      throw new Error('deepstream.cacheDb not supported')
+    }
+
+    if (dsConfig.cache) {
+      logger.debug({ cache: dsConfig.cache.location }, 'Deepstream Caching')
     }
 
     ds = deepstream(dsConfig.url, dsConfig)
