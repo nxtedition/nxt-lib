@@ -1,6 +1,6 @@
 {
   "name": "@nxtedition/lib",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "files": [
     "rxjs/*",
     "util/*",
@@ -82,7 +82,6 @@
     "json5": "^2.2.0",
     "koa-compose": "^4.1.0",
     "level-party": "^4.0.0",
-    "levelup": "^4.4.0",
     "lodash": "^4.17.20",
     "mime": "^2.5.0",
     "moment": "^2.29.1",

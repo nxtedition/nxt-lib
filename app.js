@@ -125,11 +125,7 @@ module.exports = function (appConfig, onTerminate) {
         super()
         this.location = `./.nxt${cacheName ? `-${cacheName}` : ''}`
         this._cache = new Map()
-        this._db = levelup(level(this.location, { valueEncoding: 'json' }), err => {
-          if (err) {
-            this.emit('error', err)
-          }
-        })
+        this._db = level(this.location, { valueEncoding: 'json' })
         this._filter = cacheFilter
         this._batch = []
         this._registry = new FinalizationRegistry(key => {
