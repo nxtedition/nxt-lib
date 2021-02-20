@@ -100,7 +100,6 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const level = require('level-party')
-    const levelup = require('levelup')
     const EE = require('events')
 
     let dsConfig = { ...appConfig.deepstream, ...config.deepstream }
@@ -117,7 +116,10 @@ module.exports = function (appConfig, onTerminate) {
     )
 
     function defaultFilter (name, version, data) {
-      return /^[^{]/.test(name) && /^[^0]/.test(version)
+      return (
+        name.charAt(0) !== '{' &&
+        version.charAt(0) !== '0'
+      )
     }
 
     const dsCache = new class Cache extends EE {
