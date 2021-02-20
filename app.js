@@ -108,6 +108,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     const cacheName = config.cacheName ?? ''
+    const cachePath = `./.nxt${cacheName ? `-${cacheName}` : ''}`
 
     const userName = (
       dsConfig.credentials.username ||
@@ -122,7 +123,7 @@ module.exports = function (appConfig, onTerminate) {
       maxReconnectInterval: 10e3,
       cacheSize: 4096,
       ...dsConfig,
-      cacheDb: dsConfig.cacheDb ?? level(`./.nxt${cacheName ? `-${cacheName}` : ''}`, { valueEncoding: 'json' }),
+      cacheDb: dsConfig.cacheDb ?? level(cachePath, { valueEncoding: 'json' }),
       credentials: {
         username: userName,
         ...dsConfig.credentials
@@ -130,7 +131,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     if (dsConfig.cacheDb) {
-      logger.debug({ cache: dsConfig.cacheDb.location }, 'Deepstream Caching')
+      logger.debug({ cache: cachePath }, 'Deepstream Caching')
     }
 
     ds = deepstream(dsConfig.url, dsConfig)
