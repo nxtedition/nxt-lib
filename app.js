@@ -52,7 +52,11 @@ module.exports = function (appConfig, onTerminate) {
       }
     }
   } else {
-    config = appConfig
+    config = {
+      ...appConfig,
+      name: process.env.name || appConfig.pkg?.name,
+      version: process.env.NXT_VERSION || appConfig.pkg?.version
+    }
   }
 
   const destroyers = [onTerminate]
