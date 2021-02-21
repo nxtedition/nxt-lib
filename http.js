@@ -18,6 +18,7 @@ module.exports.request = async function request (ctx, next) {
   ctx.id = req.id = req.headers['request-id'] || xuid()
   ctx.logger = req.log = logger.child({ req })
   ctx.signal = signal
+  ctx.method = req.method
   ctx.url = requestTarget(req)
   ctx.query = ctx.url?.search
     ? querystring.parse(ctx.url.search.slice(1))
