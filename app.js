@@ -273,14 +273,14 @@ module.exports = function (appConfig, onTerminate) {
           .startWith(null),
         toobusy && Observable
           .timer(0, 1e3)
-          .map(() => toobusy.lag() > 1e3 ? `lag: ${toobusy.lag()}` : null),
+          .map(() => toobusy.lag() > 1e3 ? { level: 40, msg: `lag: ${toobusy.lag()}` } : null),
         couch && Observable
           .timer(0, 10e3)
           .exhaustMap(async () => {
             try {
               await couch.info()
             } catch (err) {
-              return 'couch: ' + err.message
+              return { level: 40, msg: 'couch: ' + err.message }
             }
           }),
         ds && Observable
@@ -292,21 +292,31 @@ module.exports = function (appConfig, onTerminate) {
                 await undici.request(`http://${host}/healthcheck`)
               }
             } catch (err) {
-              return 'ds: ' + err.message
+              return { level: 40, msg: 'ds: ' + err.message }
             }
           })
       ].filter(Boolean))
       .map(([status, lag, couch, ds]) => {
-        const warnings = [
-          [status?.warnings, status].find(Array.isArray),
+        const messages = [
           lag,
           couch,
-          ds
-        ].flat().filter(Boolean)
+          ds,
+          Array.isArray(status) ? status : null,
+          [status?.warnings, status] // Compat
+            .find(Array.isArray)
+            ?.flat()
+            ?.filter(fp.isString)
+            ?.map(warning => ({ level: 40, msg: warning }))
+        ].flat().filter(fp.isPlainObject)
+
+        const warnings = messages
+          .filter(x => x.level >= 40 && x.msg)
+          .map(x => x.msg)
 
         return {
           ...status,
-          warnings: warnings.length === 0 ? null : warnings
+          messages,
+          warnings: warnings.length === 0 ? null : warnings // Compat
         }
       })
       .retryWhen(err$ => err$.do(err => logger.error({ err }, 'monitor.status')).delay(10e3))
