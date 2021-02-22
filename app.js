@@ -282,7 +282,8 @@ module.exports = function (appConfig, onTerminate) {
             } catch (err) {
               return { level: 40, msg: 'couch: ' + err.message }
             }
-          }),
+          })
+          .distinctUntilChanged(fp.isEqual),
         ds && Observable
           .timer(0, 10e3)
           .exhaustMap(async () => {
@@ -295,18 +296,22 @@ module.exports = function (appConfig, onTerminate) {
               return { level: 40, msg: 'ds: ' + err.message }
             }
           })
+          .distinctUntilChanged(fp.isEqual)
       ].filter(Boolean))
       .map(([status, lag, couch, ds]) => {
         const messages = [
           lag,
           couch,
           ds,
-          Array.isArray(status) ? status : null,
+          [status?.messages, status] // Compat
+            .find(Array.isArray)
+            ?.flat()
+            .filter(fp.isPlainObject),
           [status?.warnings, status] // Compat
             .find(Array.isArray)
             ?.flat()
-            ?.filter(fp.isString)
-            ?.map(warning => ({ level: 40, msg: warning }))
+            .filter(fp.isString)
+            .map(warning => ({ level: 40, msg: warning }))
         ].flat().filter(fp.isPlainObject)
 
         const warnings = messages
