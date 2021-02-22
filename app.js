@@ -270,10 +270,12 @@ module.exports = function (appConfig, onTerminate) {
       .combineLatest([
         status$
           .filter(Boolean)
-          .startWith(null),
+          .startWith(null)
+          .distinctUntilChanged(fp.isEqual),
         toobusy && Observable
           .timer(0, 1e3)
-          .map(() => toobusy.lag() > 1e3 ? { level: 40, msg: `lag: ${toobusy.lag()}` } : null),
+          .map(() => toobusy.lag() > 1e3 ? { level: 40, msg: `lag: ${toobusy.lag()}` } : null)
+          .distinctUntilChanged(fp.isEqual),
         couch && Observable
           .timer(0, 10e3)
           .exhaustMap(async () => {
