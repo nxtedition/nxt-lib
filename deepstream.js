@@ -73,8 +73,9 @@ function query (ds, { view, filter, state = ds.record.PROVIDER, ...options }, st
   }
   return x$
     .filter(x => !state || x.state >= state)
-    .map(({ data }) => ({
+    .map(({ data, state }) => ({
       ...data,
+      state,
       rows: Array.isArray(data && data.rows) ? data.rows : []
     }))
 }
