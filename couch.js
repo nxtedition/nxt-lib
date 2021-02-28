@@ -365,9 +365,6 @@ module.exports = function (opts) {
   }
 
   return {
-    async request (...args) {
-      return { body: await onRequest(...args).first().toPromise() }
-    },
     async put (...args) {
       return await onPut(...args).first().toPromise()
     },
