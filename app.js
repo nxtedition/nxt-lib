@@ -65,8 +65,8 @@ module.exports = function (appConfig, onTerminate) {
 
   const serviceName = (
     config.service?.name ||
-    config.name ||
     config.logger?.name ||
+    config.name ||
     process.env.name
   ) + (instanceId && instanceId !== '0' ? `-${instanceId}` : '')
 
