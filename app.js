@@ -105,7 +105,7 @@ module.exports = function (appConfig, onTerminate) {
 
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
-    const level = require('level-party')
+    const level = require('./level-party')
     const EE = require('events')
 
     let dsConfig = { ...appConfig.deepstream, ...config.deepstream }
@@ -134,6 +134,15 @@ module.exports = function (appConfig, onTerminate) {
         this.location = `./.nxt${cacheName ? `-${cacheName}` : ''}`
         this._cache = new Map()
         this._db = level(this.location, { valueEncoding: 'json' })
+          .on('error', (err) => {
+            logger.error({ err }, 'Deepstream Cache Error.')
+          })
+          .on('connect', () => {
+            logger.debug('Deepstream Cache Connected.')
+          })
+          .on('reconnect', (err) => {
+            logger.warn({ err }, 'Deepstream Cache Reconnecting.')
+          })
         this._filter = cacheFilter
         this._batch = []
         this._registry = new FinalizationRegistry(key => {
