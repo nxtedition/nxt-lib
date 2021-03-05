@@ -11,6 +11,7 @@
     "destroy.js",
     "deepstream.js",
     "logger.js",
+    "level-party.js",
     "mime.js",
     "weakCache.js",
     "couch.js",
