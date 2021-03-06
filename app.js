@@ -14,7 +14,6 @@ module.exports = function (appConfig, onTerminate) {
   const { createLogger } = require('./logger')
 
   const cleanAppConfig = ({
-    pkg,
     status,
     stats,
     http,
@@ -38,8 +37,6 @@ module.exports = function (appConfig, onTerminate) {
         parseValues: true
       })
       .defaults({
-        name: process.env.name || appConfig.name || appConfig.pkg?.name,
-        version: process.env.NXT_VERSION || appConfig.version || appConfig.pkg?.version,
         isProduction: process.env.NODE_ENV === 'production',
         ...cleanAppConfig(appConfig),
         ...appConfig.config
@@ -53,9 +50,9 @@ module.exports = function (appConfig, onTerminate) {
     }
   } else {
     config = {
-      ...appConfig,
-      name: process.env.name || appConfig.name || appConfig.pkg?.name,
-      version: process.env.NXT_VERSION || appConfig.version || appConfig.pkg?.version
+      isProduction: process.env.NODE_ENV === 'production',
+      ...cleanAppConfig(appConfig),
+      ...appConfig
     }
   }
 
@@ -63,7 +60,7 @@ module.exports = function (appConfig, onTerminate) {
 
   const instanceId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
 
-  const serviceName = config.name + (instanceId && instanceId !== '0' ? `-${instanceId}` : '')
+  const serviceName = appConfig.name + (instanceId && instanceId !== '0' ? `-${instanceId}` : '')
 
   {
     const loggerConfig = { ...appConfig, ...config.logger }
