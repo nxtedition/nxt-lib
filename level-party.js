@@ -21,12 +21,7 @@ module.exports = function (dir, opts = {}) {
       return
     }
 
-    let connected = false
-    const socket = net
-      .connect(sockPath)
-      .on('connect', () => {
-        connected = true
-      })
+    const socket = net.connect(sockPath)
 
     // we pass socket as the ref option so we dont hang the event loop
     pipeline(socket, client.createRpcStream({ ref: socket }), socket, () => {
@@ -37,7 +32,7 @@ module.exports = function (dir, opts = {}) {
       const db = level(dir, opts, (err) => {
         if (err) {
           client.emit('reconnect', err)
-          setTimeout(tryConnect, connected ? 0 : 100)
+          setTimeout(tryConnect, 100)
           return
         }
 

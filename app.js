@@ -127,13 +127,13 @@ module.exports = function (appConfig, onTerminate) {
         this._cache = new Map()
         this._db = level(this.location, { valueEncoding: 'json' })
           .on('error', (err) => {
-            logger.error({ err }, 'Deepstream Cache Error.')
+            logger.error({ err, path: this.location }, 'Deepstream Cache Failed.')
           })
           .on('connect', () => {
-            logger.debug('Deepstream Cache Connected.')
+            logger.debug({ path: this.location }, 'Deepstream Cache Connected.')
           })
           .on('reconnect', (err) => {
-            logger.warn({ err }, 'Deepstream Cache Reconnecting.')
+            logger.warn({ err, path: this.location }, 'Deepstream Cache Reconnecting.')
           })
         this._filter = cacheFilter
         this._batch = []
@@ -205,10 +205,6 @@ module.exports = function (appConfig, onTerminate) {
 
     if (dsConfig.cacheDb) {
       throw new Error('deepstream.cacheDb not supported')
-    }
-
-    if (dsConfig.cache) {
-      logger.debug({ cache: dsConfig.cache.location }, 'Deepstream Caching')
     }
 
     ds = deepstream(dsConfig.url, dsConfig)
