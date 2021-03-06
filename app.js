@@ -99,7 +99,7 @@ module.exports = function (appConfig, onTerminate) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const leveldown = require('leveldown')
     const levelup = require('levelup')
-    const encodingDown = require('encoding-down')
+    const encodingdown = require('encoding-down')
     const EE = require('events')
 
     let dsConfig = { ...appConfig.deepstream, ...config.deepstream }
@@ -128,7 +128,7 @@ module.exports = function (appConfig, onTerminate) {
         this.location = `./.nxt-${cacheName || serviceName}`
         this._cache = new Map()
 
-        this._db = levelup(encodingDown(leveldown(this.location), { valueEncoding: 'json' }), (err) => {
+        this._db = levelup(encodingdown(leveldown(this.location), { valueEncoding: 'json' }), (err) => {
           if (err) {
             throw err
           }
