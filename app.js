@@ -128,7 +128,11 @@ module.exports = function (appConfig, onTerminate) {
         this.location = `./.nxt-${cacheName || serviceName}`
         this._cache = new Map()
 
-        this._db = levelup(encodingDown(leveldown(this.location), { valueEncoding: 'json' }))
+        this._db = levelup(encodingDown(leveldown(this.location), { valueEncoding: 'json' }), (err) => {
+          if (err) {
+            throw err
+          }
+        })
           .on('open', (err) => {
             logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
           })
