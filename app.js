@@ -129,8 +129,14 @@ module.exports = function (appConfig, onTerminate) {
         this._cache = new Map()
 
         this._db = levelup(encodingDown(leveldown(this.location), { valueEncoding: 'json' }))
+          .on('open', (err) => {
+            logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
+          })
+          .on('closed', (err) => {
+            logger.debug({ err, path: this.location }, 'Deepstream Cache Closed.')
+          })
           .on('error', (err) => {
-            logger.error({ err, path: this.location }, 'Deepstream Cache Failed.')
+            logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
           })
         this._filter = cacheFilter
         this._batch = []
