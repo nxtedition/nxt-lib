@@ -138,9 +138,11 @@ module.exports = function (appConfig, onTerminate) {
           })
           .on('closed', (err) => {
             logger.debug({ err, path: this.location }, 'Deepstream Cache Closed.')
+            this._db = null
           })
           .on('error', (err) => {
             logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
+            this._db = null
           })
         this._filter = cacheFilter
         this._batch = []
@@ -169,7 +171,11 @@ module.exports = function (appConfig, onTerminate) {
           }
         }
 
-        this._db.get(key, callback)
+        if (this._db) {
+          this._db.get(key, callback)
+        } else {
+          process.nextTick(callback, null, null)
+        }
       }
 
       set (name, version, data) {
@@ -189,11 +195,13 @@ module.exports = function (appConfig, onTerminate) {
       }
 
       _flush () {
-        this._db.batch(this._batch, err => {
-          if (err) {
-            logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
-          }
-        })
+        if (this._db) {
+          this._db.batch(this._batch, err => {
+            if (err) {
+              logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
+            }
+          })
+        }
         this._batch = []
       }
     }(dsConfig)
