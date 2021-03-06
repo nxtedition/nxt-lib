@@ -352,6 +352,8 @@ module.exports = ({ ds } = {}) => {
       value => Array.isArray(value) || fp.isPlainObject(value),
       {
         pluck: (path) => value => fp.get(path, value),
+        pick: (paths) => value => fp.pick(paths, value),
+        omit: (paths) => value => fp.omit(paths, value),
         get: (path) => value => fp.get(path, value),
         values: () => value => fp.values(value),
         keys: () => value => fp.keys(value),
