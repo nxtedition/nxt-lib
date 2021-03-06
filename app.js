@@ -63,19 +63,14 @@ module.exports = function (appConfig, onTerminate) {
 
   const instanceId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
 
-  const serviceName = (
-    config.service?.name ||
-    config.logger?.name ||
-    config.name ||
-    process.env.name
-  ) + (instanceId && instanceId !== '0' ? `-${instanceId}` : '')
+  const serviceName = config.name + (instanceId && instanceId !== '0' ? `-${instanceId}` : '')
 
   {
     const loggerConfig = { ...appConfig, ...config.logger }
 
     logger = createLogger({
       ...loggerConfig,
-      name: loggerConfig?.name || serviceName,
+      name: serviceName,
       base: loggerConfig?.base ? { ...loggerConfig.base } : {}
     }, (finalLogger) => Promise
       .all(destroyers.filter(Boolean).map(fn => fn(finalLogger)))
