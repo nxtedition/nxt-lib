@@ -55,7 +55,9 @@ module.exports = function (dir, opts = {}) {
 
           const sockets = new Set()
           const server = net.createServer((socket) => {
+            // TODO (fix): Is this needed?
             socket?.unref()
+
             sockets.add(socket)
             pipeline(socket, multileveldown.server(db), socket, (err) => {
               if (err) {
