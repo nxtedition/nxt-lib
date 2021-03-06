@@ -187,7 +187,7 @@ module.exports = function (appConfig, onTerminate) {
       _flush () {
         this._db.batch(this._batch, err => {
           if (err) {
-            this.emit('error', err)
+            logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
           }
         })
         this._batch = []
