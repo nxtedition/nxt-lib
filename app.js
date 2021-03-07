@@ -123,21 +123,28 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     const dsCache = new (class Cache extends EE {
-      constructor({ cacheDb, cacheFilter = defaultFilter }) {
+      constructor({ cacheLocation, cacheDb, cacheFilter = defaultFilter }) {
         super()
 
         if (!cacheDb) {
-          cacheDb = leveldown(`./.nxt-${serviceName}`)
+          this._db = levelup(
+            encodingdown(leveldown(cacheLocation ?? `./.nxt-${serviceName}`), {
+              valueEncoding: 'json',
+            }),
+            (err) => {
+              if (err) {
+                throw err
+              }
+            }
+          )
+        } else {
+          this._db = cacheDb
         }
 
-        this.location = cacheDb.location
+        this.location = cacheDb.location ?? cacheLocation
 
         this._cache = new Map()
-        this._db = levelup(encodingdown(cacheDb, { valueEncoding: 'json' }), (err) => {
-          if (err) {
-            throw err
-          }
-        })
+        this._db
           .on('open', (err) => {
             logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
           })
