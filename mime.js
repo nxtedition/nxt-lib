@@ -1,6 +1,6 @@
 const mime = require('mime')
 
-function lookup (name) {
+function lookup(name) {
   if (!name) {
     return null
   }
@@ -29,7 +29,7 @@ function lookup (name) {
   return mime.getType(name)
 }
 
-function extension (type) {
+function extension(type) {
   if (!type) {
     return null
   }
@@ -55,5 +55,5 @@ module.exports = {
   extension,
   getExtension: extension,
   lookup,
-  getType: lookup
+  getType: lookup,
 }

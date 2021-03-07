@@ -2,7 +2,7 @@ const { Observable, ReplaySubject } = require('rxjs')
 
 const STATS = {}
 
-module.exports = function cached (fn, options, keySelector) {
+module.exports = function cached(fn, options, keySelector) {
   const name = fn.name
   const cache = new Map()
   const array = []
@@ -14,7 +14,7 @@ module.exports = function cached (fn, options, keySelector) {
   }
 
   if (!keySelector) {
-    keySelector = options.keySelector || (key => key)
+    keySelector = options.keySelector || ((key) => key)
   }
 
   let maxAge = options.maxAge
@@ -26,7 +26,7 @@ module.exports = function cached (fn, options, keySelector) {
 
   const buffer = options.buffer ? options.buffer : 1
 
-  function prune () {
+  function prune() {
     const end = array.length
     const now = Date.now()
 
@@ -55,7 +55,7 @@ module.exports = function cached (fn, options, keySelector) {
   return function (...args) {
     const key = keySelector(...args)
 
-    return new Observable(o => {
+    return new Observable((o) => {
       let entry = cache.get(key)
 
       if (!entry) {
@@ -65,7 +65,7 @@ module.exports = function cached (fn, options, keySelector) {
           observable,
           subscription: fn(...args).subscribe(observable),
           refs: 0,
-          timestamp: null
+          timestamp: null,
         }
 
         cache.set(key, entry)

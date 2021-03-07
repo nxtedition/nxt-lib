@@ -6,7 +6,7 @@ describe('subtractRanges', function () {
   test('should return the positive ranges if nothing is subtracted', function () {
     const positive = mergeRanges([
       [10, 20],
-      [30, 40]
+      [30, 40],
     ])
 
     const negative = mergeRanges([])
@@ -21,33 +21,23 @@ describe('subtractRanges', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40],
-      [50, 60]
+      [50, 60],
     ])
 
-    const negative = mergeRanges([
-      [10, 45]
-    ])
+    const negative = mergeRanges([[10, 45]])
 
-    const expected = mergeRanges([
-      [50, 60]
-    ])
+    const expected = mergeRanges([[50, 60]])
 
     const difference = subtractRanges(positive, negative)
     assert.deepStrictEqual(difference, expected)
   })
 
   test('should be empty if fully covered', function () {
-    const positive = mergeRanges([
-      [831513792, 1024000000]
-    ])
+    const positive = mergeRanges([[831513792, 1024000000]])
 
-    const negative = mergeRanges([
-      [0, 1024000000]
-    ])
+    const negative = mergeRanges([[0, 1024000000]])
 
-    const expected = mergeRanges([
-
-    ])
+    const expected = mergeRanges([])
 
     const difference = subtractRanges(positive, negative)
     assert.deepStrictEqual(difference, expected)
@@ -57,12 +47,12 @@ describe('subtractRanges', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40],
-      [50, 60]
+      [50, 60],
     ])
 
     const negative = mergeRanges([
       [20, 30],
-      [40, 50]
+      [40, 50],
     ])
 
     const expected = positive
@@ -75,18 +65,18 @@ describe('subtractRanges', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40],
-      [50, 60]
+      [50, 60],
     ])
 
     const negative = mergeRanges([
       [15, 35],
       [35, 40],
-      [50, 55]
+      [50, 55],
     ])
 
     const expected = mergeRanges([
       [10, 15],
-      [55, 60]
+      [55, 60],
     ])
 
     const difference = subtractRanges(positive, negative)
@@ -97,7 +87,7 @@ describe('subtractRanges', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40],
-      [50, 60]
+      [50, 60],
     ])
 
     const negative = mergeRanges([
@@ -106,7 +96,7 @@ describe('subtractRanges', function () {
       [33, 34],
       [51, 52],
       [53, 54],
-      [54, 60]
+      [54, 60],
     ])
 
     const expected = mergeRanges([
@@ -116,7 +106,7 @@ describe('subtractRanges', function () {
       [32, 33],
       [34, 40],
       [50, 51],
-      [52, 53]
+      [52, 53],
     ])
 
     const difference = subtractRanges(positive, negative)
@@ -127,7 +117,7 @@ describe('subtractRanges', function () {
     const positive = mergeRanges([
       [10, 20],
       [30, 40],
-      [50, 60]
+      [50, 60],
     ])
 
     const negative = mergeRanges([
@@ -136,7 +126,7 @@ describe('subtractRanges', function () {
       [33, 34],
       [51, 52],
       [53, 54],
-      [54, 60]
+      [54, 60],
     ])
 
     const positiveCopy = positive.slice(0)
@@ -150,14 +140,18 @@ describe('subtractRanges', function () {
   })
 
   test('should subtract even when rhs is not merged or sorted', function () {
-    assert.deepStrictEqual(subtractRanges([
-      [0, 100]
-    ], [
-      [15, 40],
-      [10, 20]
-    ]), [
-      [0, 10],
-      [40, 100]
-    ])
+    assert.deepStrictEqual(
+      subtractRanges(
+        [[0, 100]],
+        [
+          [15, 40],
+          [10, 20],
+        ]
+      ),
+      [
+        [0, 10],
+        [40, 100],
+      ]
+    )
   })
 })

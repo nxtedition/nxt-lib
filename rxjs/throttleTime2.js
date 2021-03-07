@@ -1,13 +1,13 @@
 const { Observable } = require('rxjs')
 
-module.exports = Observable.prototype.throttleTime2 = function throttleTime2 (duration) {
-  return new Observable(o => {
+module.exports = Observable.prototype.throttleTime2 = function throttleTime2(duration) {
+  return new Observable((o) => {
     let interval
     let nextValue
     let hasNextValue = false
 
     const subscription = this.subscribe({
-      next: value => {
+      next: (value) => {
         if (!interval) {
           o.next(value)
           interval = setInterval(() => {
@@ -24,7 +24,7 @@ module.exports = Observable.prototype.throttleTime2 = function throttleTime2 (du
           hasNextValue = true
         }
       },
-      error: err => o.error(err),
+      error: (err) => o.error(err),
       complete: () => {
         if (interval) {
           clearInterval(interval)
@@ -35,7 +35,7 @@ module.exports = Observable.prototype.throttleTime2 = function throttleTime2 (du
           hasNextValue = false
         }
         o.complete()
-      }
+      },
     })
     return () => subscription.unsubscribe()
   })

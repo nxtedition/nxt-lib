@@ -1,7 +1,7 @@
 const { Observable } = require('rxjs')
 
-module.exports = Observable.prototype.auditMap = function auditMap (project) {
-  return new Observable(o => {
+module.exports = Observable.prototype.auditMap = function auditMap(project) {
+  return new Observable((o) => {
     let pendingValue = null
     let hasPendingValue = false
     let isComplete = false
@@ -9,11 +9,11 @@ module.exports = Observable.prototype.auditMap = function auditMap (project) {
     let innerSubscription = null
     let outerSubscription = null
 
-    function _error (err) {
+    function _error(err) {
       o.error(err)
     }
 
-    function _innerComplete () {
+    function _innerComplete() {
       innerSubscription = null
 
       if (hasPendingValue) {
@@ -26,14 +26,15 @@ module.exports = Observable.prototype.auditMap = function auditMap (project) {
       }
     }
 
-    function _innerNext (val) {
+    function _innerNext(val) {
       o.next(val)
     }
 
-    function _tryNext (value) {
+    function _tryNext(value) {
       try {
         const result = project(value)
-        const observable = typeof result.then === 'function' ? Observable.fromPromise(result) : result
+        const observable =
+          typeof result.then === 'function' ? Observable.fromPromise(result) : result
         innerSubscription = observable.subscribe(_innerNext, _error, _innerComplete)
         if (innerSubscription && innerSubscription.closed) {
           innerSubscription = null
@@ -43,7 +44,7 @@ module.exports = Observable.prototype.auditMap = function auditMap (project) {
       }
     }
 
-    function _next (value) {
+    function _next(value) {
       if (innerSubscription) {
         pendingValue = value
         hasPendingValue = true
@@ -52,7 +53,7 @@ module.exports = Observable.prototype.auditMap = function auditMap (project) {
       }
     }
 
-    function _complete () {
+    function _complete() {
       isComplete = true
       if (!innerSubscription) {
         o.complete()

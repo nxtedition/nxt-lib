@@ -2,15 +2,15 @@ const { finished } = require('stream')
 const { kDestroyed } = require('./symbols')
 const { IncomingMessage } = require('http')
 
-function isStream (body) {
+function isStream(body) {
   return !!(body && typeof body.on === 'function')
 }
 
-function isDestroyed (stream) {
+function isDestroyed(stream) {
   return !stream || !!(stream.destroyed || stream[kDestroyed])
 }
 
-function destroy (stream, err, callback) {
+function destroy(stream, err, callback) {
   if (typeof err === 'function') {
     callback = err
     err = null
@@ -26,15 +26,19 @@ function destroy (stream, err, callback) {
   }
 
   if (typeof stream.destroy === 'function') {
-    finished(stream, err => callback(err || null))
+    finished(stream, (err) => callback(err || null))
     if (err || Object.getPrototypeOf(stream).constructor !== IncomingMessage) {
       stream.destroy(err)
     }
   } else if (err) {
-    process.nextTick((stream, err) => {
-      stream.emit('error', err)
-      process.nextTick(callback, err)
-    }, stream, err)
+    process.nextTick(
+      (stream, err) => {
+        stream.emit('error', err)
+        process.nextTick(callback, err)
+      },
+      stream,
+      err
+    )
   } else {
     setImmediate(callback)
   }

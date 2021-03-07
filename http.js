@@ -8,7 +8,7 @@ const AbortController = require('abort-controller')
 
 const ERR_HEADER_EXPR = /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
 
-module.exports.request = async function request (ctx, next) {
+module.exports.request = async function request(ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
 
@@ -20,9 +20,7 @@ module.exports.request = async function request (ctx, next) {
   ctx.signal = signal
   ctx.method = req.method
   ctx.url = requestTarget(req)
-  ctx.query = ctx.url?.search
-    ? querystring.parse(ctx.url.search.slice(1))
-    : null
+  ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : null
 
   if (!ctx.url) {
     throw new createError.BadRequest()
@@ -36,30 +34,32 @@ module.exports.request = async function request (ctx, next) {
 
     try {
       await Promise.all([
-        new Promise((resolve, reject) => req
-          .on('close', resolve)
-          .on('error', reject)
-          .on('timeout', () => {
-            reject(new createError.RequestTimeout())
-          })
+        new Promise((resolve, reject) =>
+          req
+            .on('close', resolve)
+            .on('error', reject)
+            .on('timeout', () => {
+              reject(new createError.RequestTimeout())
+            })
         ),
-        new Promise((resolve, reject) => res
-          .on('close', function () {
-            // Normalize OutgoingMessage.destroyed
-            this.destroyed = true
+        new Promise((resolve, reject) =>
+          res
+            .on('close', function () {
+              // Normalize OutgoingMessage.destroyed
+              this.destroyed = true
 
-            if (this.writableEnded === false) {
-              reject(new Error('aborted'))
-            } else {
-              resolve()
-            }
-          })
-          .on('error', reject)
-          .on('timeout', () => {
-            reject(new createError.RequestTimeout())
-          })
+              if (this.writableEnded === false) {
+                reject(new Error('aborted'))
+              } else {
+                resolve()
+              }
+            })
+            .on('error', reject)
+            .on('timeout', () => {
+              reject(new createError.RequestTimeout())
+            })
         ),
-        next()
+        next(),
       ])
     } finally {
       ac.abort()
@@ -80,9 +80,7 @@ module.exports.request = async function request (ctx, next) {
       reqLogger.debug({ responseTime }, 'request completed')
     }
   } catch (err) {
-    const statusCode = res.headersSent
-      ? res.statusCode
-      : err.statusCode || 500
+    const statusCode = res.headersSent ? res.statusCode : err.statusCode || 500
 
     const responseTime = Math.round(performance.now() - startTime)
 
@@ -90,16 +88,17 @@ module.exports.request = async function request (ctx, next) {
 
     if (res.destroyed && res.writableEnded === false) {
       reqLogger.debug({ err, statusCode, responseTime }, 'request aborted')
-    } if (statusCode < 500) {
+    }
+    if (statusCode < 500) {
       reqLogger.warn({ err, statusCode, responseTime }, 'request failed')
     } else {
       reqLogger.error({ err, statusCode, responseTime }, 'request error')
     }
 
-    req.on('error', err => {
+    req.on('error', (err) => {
       reqLogger.warn({ err }, 'request error')
     })
-    res.on('error', err => {
+    res.on('error', (err) => {
       reqLogger.warn({ err }, 'request error')
     })
 
@@ -128,7 +127,7 @@ module.exports.request = async function request (ctx, next) {
   }
 }
 
-module.exports.upgrade = async function upgrade (ctx, next) {
+module.exports.upgrade = async function upgrade(ctx, next) {
   const { req, res, socket = res, logger } = ctx
 
   const ac = new AbortController()
@@ -138,9 +137,7 @@ module.exports.upgrade = async function upgrade (ctx, next) {
   ctx.logger = req.log = logger.child({ req: { id: req.id } })
   ctx.signal = signal
   ctx.url = requestTarget(req)
-  ctx.query = ctx.url?.search
-    ? querystring.parse(ctx.url.search.slice(1))
-    : null
+  ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : null
 
   if (!ctx.url) {
     throw new createError.BadRequest()
@@ -152,21 +149,23 @@ module.exports.upgrade = async function upgrade (ctx, next) {
 
     try {
       await Promise.all([
-        new Promise((resolve, reject) => req
-          .on('close', resolve)
-          .on('error', reject)
-          .on('timeout', () => {
-            reject(new createError.RequestTimeout())
-          })
+        new Promise((resolve, reject) =>
+          req
+            .on('close', resolve)
+            .on('error', reject)
+            .on('timeout', () => {
+              reject(new createError.RequestTimeout())
+            })
         ),
-        new Promise((resolve, reject) => socket
-          .on('close', resolve)
-          .on('error', reject)
-          .on('timeout', () => {
-            reject(new createError.RequestTimeout())
-          })
+        new Promise((resolve, reject) =>
+          socket
+            .on('close', resolve)
+            .on('error', reject)
+            .on('timeout', () => {
+              reject(new createError.RequestTimeout())
+            })
         ),
-        next()
+        next(),
       ])
     } finally {
       signal.abort()
@@ -182,10 +181,10 @@ module.exports.upgrade = async function upgrade (ctx, next) {
       reqLogger.error({ err, res }, 'stream error')
     }
 
-    req.on('error', err => {
+    req.on('error', (err) => {
       reqLogger.warn({ err }, 'stream error')
     })
-    socket.on('error', err => {
+    socket.on('error', (err) => {
       reqLogger.warn({ err }, 'stream error')
     })
 

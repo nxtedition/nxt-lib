@@ -1,4 +1,4 @@
-module.exports = function mergeRanges (ranges) {
+module.exports = function mergeRanges(ranges) {
   if (!Array.isArray(ranges) || !ranges.length) {
     return []
   }

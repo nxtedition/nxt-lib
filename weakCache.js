@@ -1,8 +1,8 @@
 /* globals WeakRef FinalizationRegistry */
 
-module.exports = function weakCache (valueSelector, keySelector) {
+module.exports = function weakCache(valueSelector, keySelector) {
   const cache = new Map()
-  const finalizationRegistry = new FinalizationRegistry(key => {
+  const finalizationRegistry = new FinalizationRegistry((key) => {
     const ref = cache.get(key)
     if (ref !== undefined && ref.deref() === undefined) {
       cache.delete(key)

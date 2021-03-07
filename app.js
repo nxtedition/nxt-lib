@@ -34,12 +34,12 @@ module.exports = function (appConfig, onTerminate) {
       .argv()
       .env({
         separator: '__',
-        parseValues: true
+        parseValues: true,
       })
       .defaults({
         isProduction: process.env.NODE_ENV === 'production',
         ...cleanAppConfig(appConfig),
-        ...appConfig.config
+        ...appConfig.config,
       })
       .get()
 
@@ -52,7 +52,7 @@ module.exports = function (appConfig, onTerminate) {
     config = {
       isProduction: process.env.NODE_ENV === 'production',
       ...cleanAppConfig(appConfig),
-      ...appConfig
+      ...appConfig,
     }
   }
 
@@ -65,23 +65,24 @@ module.exports = function (appConfig, onTerminate) {
   {
     const loggerConfig = { ...appConfig, ...config.logger }
 
-    logger = createLogger({
-      ...loggerConfig,
-      name: serviceName,
-      base: loggerConfig?.base ? { ...loggerConfig.base } : {}
-    }, (finalLogger) => Promise
-      .all(destroyers.filter(Boolean).map(fn => fn(finalLogger)))
-      .catch(err => {
-        if (err) {
-          finalLogger.error({ err }, 'shutdown error')
-        }
-      })
+    logger = createLogger(
+      {
+        ...loggerConfig,
+        name: serviceName,
+        base: loggerConfig?.base ? { ...loggerConfig.base } : {},
+      },
+      (finalLogger) =>
+        Promise.all(destroyers.filter(Boolean).map((fn) => fn(finalLogger))).catch((err) => {
+          if (err) {
+            finalLogger.error({ err }, 'shutdown error')
+          }
+        })
     )
   }
 
   if (appConfig.toobusy) {
     toobusy = require('toobusy-js')
-    toobusy.onLag(currentLag => {
+    toobusy.onLag((currentLag) => {
       if (currentLag > 1e3) {
         logger.error({ currentLag }, 'lag')
       } else {
@@ -91,7 +92,10 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.couchdb || appConfig.couch) {
-    const couchConfig = { ...(appConfig.couchdb || appConfig.couch), ...(config.couchdb ?? config.couch) }
+    const couchConfig = {
+      ...(appConfig.couchdb || appConfig.couch),
+      ...(config.couchdb ?? config.couch),
+    }
     couch = require('./couch')(couchConfig)
   }
 
@@ -108,22 +112,18 @@ module.exports = function (appConfig, onTerminate) {
       throw new Error('missing deepstream credentials')
     }
 
-    const userName = (
+    const userName =
       dsConfig.credentials.username ||
       dsConfig.credentials.userName ||
       dsConfig.credentials.user ||
       serviceName
-    )
 
-    function defaultFilter (name, version, data) {
-      return (
-        (!name || name.charAt(0) !== '{') &&
-        (!version || version.charAt(0) !== '0')
-      )
+    function defaultFilter(name, version, data) {
+      return (!name || name.charAt(0) !== '{') && (!version || version.charAt(0) !== '0')
     }
 
-    const dsCache = new class Cache extends EE {
-      constructor ({ cacheDb, cacheFilter = defaultFilter }) {
+    const dsCache = new (class Cache extends EE {
+      constructor({ cacheDb, cacheFilter = defaultFilter }) {
         super()
 
         if (!cacheDb) {
@@ -151,7 +151,7 @@ module.exports = function (appConfig, onTerminate) {
           })
         this._filter = cacheFilter
         this._batch = []
-        this._registry = new FinalizationRegistry(key => {
+        this._registry = new FinalizationRegistry((key) => {
           const ref = this._cache.get(key)
           if (ref !== undefined && ref.deref() === undefined) {
             this._cache.delete(key)
@@ -162,7 +162,7 @@ module.exports = function (appConfig, onTerminate) {
         }, 1e3).unref()
       }
 
-      get (name, callback) {
+      get(name, callback) {
         // TODO (perf): Check filter.
 
         const key = name
@@ -183,7 +183,7 @@ module.exports = function (appConfig, onTerminate) {
         }
       }
 
-      set (name, version, data) {
+      set(name, version, data) {
         if (this._filter && !this._filter(name, version, data)) {
           return
         }
@@ -199,9 +199,9 @@ module.exports = function (appConfig, onTerminate) {
         }
       }
 
-      _flush () {
+      _flush() {
         if (this._db) {
-          this._db.batch(this._batch, err => {
+          this._db.batch(this._batch, (err) => {
             if (err) {
               logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
             }
@@ -209,7 +209,7 @@ module.exports = function (appConfig, onTerminate) {
         }
         this._batch = []
       }
-    }(dsConfig)
+    })(dsConfig)
 
     dsConfig = {
       url: 'ws://localhost:6020/deepstream',
@@ -219,8 +219,8 @@ module.exports = function (appConfig, onTerminate) {
       ...dsConfig,
       credentials: {
         username: userName,
-        ...dsConfig.credentials
-      }
+        ...dsConfig.credentials,
+      },
     }
 
     if (dsConfig.cacheDb) {
@@ -233,20 +233,24 @@ module.exports = function (appConfig, onTerminate) {
           throw new Error('deepstream authentication failed.')
         }
       })
-      .on('connectionStateChanged', connectionState => {
-        const level = {
-          CLOSED: 'error',
-          AWAITING_CONNECTION: 'debug',
-          CHALLENGING: 'debug',
-          AWAITING_AUTHENTICATION: 'debug',
-          AUTHENTICATING: 'debug',
-          OPEN: 'info',
-          ERROR: 'error',
-          RECONNECTING: 'warn'
-        }[connectionState] || 'info'
-        logger[level]({ connectionState, username: userName }, 'Deepstream Connection State Changed.')
+      .on('connectionStateChanged', (connectionState) => {
+        const level =
+          {
+            CLOSED: 'error',
+            AWAITING_CONNECTION: 'debug',
+            CHALLENGING: 'debug',
+            AWAITING_AUTHENTICATION: 'debug',
+            AUTHENTICATING: 'debug',
+            OPEN: 'info',
+            ERROR: 'error',
+            RECONNECTING: 'warn',
+          }[connectionState] || 'info'
+        logger[level](
+          { connectionState, username: userName },
+          'Deepstream Connection State Changed.'
+        )
       })
-      .on('error', err => {
+      .on('error', (err) => {
         logger.error({ err }, 'Deepstream Error.')
       })
 
@@ -268,55 +272,54 @@ module.exports = function (appConfig, onTerminate) {
     if (appConfig.status.subscribe) {
       status$ = appConfig.status
     } else if (typeof appConfig.status === 'function') {
-      status$ = Observable
-        .defer(() => {
-          const ret = appConfig.status({ ds, couch, logger })
-          return ret?.then || ret?.subscribe ? ret : Observable.of(ret)
-        })
-        .catch(err => Observable.of({ warnings: [err.message] }))
+      status$ = Observable.defer(() => {
+        const ret = appConfig.status({ ds, couch, logger })
+        return ret?.then || ret?.subscribe ? ret : Observable.of(ret)
+      })
+        .catch((err) => Observable.of({ warnings: [err.message] }))
         .repeatWhen(() => Observable.timer(10e3))
     } else if (appConfig.status && typeof appConfig.status === 'object') {
-      status$ = Observable
-        .timer(0, 10e3)
-        .exhaustMap(async () => appConfig.status)
+      status$ = Observable.timer(0, 10e3).exhaustMap(async () => appConfig.status)
     } else {
       status$ = Observable.of({})
     }
 
-    status$ = Observable
-      .combineLatest([
-        status$
-          .filter(Boolean)
-          .startWith(null)
-          .distinctUntilChanged(fp.isEqual),
-        toobusy && Observable
-          .timer(0, 1e3)
-          .map(() => toobusy.lag() > 1e3 ? { level: 40, code: 'NXT_LAG', msg: `lag: ${toobusy.lag()}` } : null)
-          .distinctUntilChanged(fp.isEqual),
-        couch && Observable
-          .timer(0, 10e3)
-          .exhaustMap(async () => {
-            try {
-              await couch.info()
-            } catch (err) {
-              return { level: 40, code: err.code, msg: 'couch: ' + err.message }
-            }
-          })
-          .distinctUntilChanged(fp.isEqual),
-        ds && Observable
-          .timer(0, 10e3)
-          .exhaustMap(async () => {
-            try {
-              if (ds._url || ds.url) {
-                const { host } = new URL(ds._url || ds.url)
-                await undici.request(`http://${host}/healthcheck`)
+    status$ = Observable.combineLatest(
+      [
+        status$.filter(Boolean).startWith(null).distinctUntilChanged(fp.isEqual),
+        toobusy &&
+          Observable.timer(0, 1e3)
+            .map(() =>
+              toobusy.lag() > 1e3
+                ? { level: 40, code: 'NXT_LAG', msg: `lag: ${toobusy.lag()}` }
+                : null
+            )
+            .distinctUntilChanged(fp.isEqual),
+        couch &&
+          Observable.timer(0, 10e3)
+            .exhaustMap(async () => {
+              try {
+                await couch.info()
+              } catch (err) {
+                return { level: 40, code: err.code, msg: 'couch: ' + err.message }
               }
-            } catch (err) {
-              return { level: 40, code: err.code, msg: 'ds: ' + err.message }
-            }
-          })
-          .distinctUntilChanged(fp.isEqual)
-      ].filter(Boolean))
+            })
+            .distinctUntilChanged(fp.isEqual),
+        ds &&
+          Observable.timer(0, 10e3)
+            .exhaustMap(async () => {
+              try {
+                if (ds._url || ds.url) {
+                  const { host } = new URL(ds._url || ds.url)
+                  await undici.request(`http://${host}/healthcheck`)
+                }
+              } catch (err) {
+                return { level: 40, code: err.code, msg: 'ds: ' + err.message }
+              }
+            })
+            .distinctUntilChanged(fp.isEqual),
+      ].filter(Boolean)
+    )
       .map(([status, lag, couch, ds]) => {
         const messages = [
           lag,
@@ -330,20 +333,20 @@ module.exports = function (appConfig, onTerminate) {
             .find(Array.isArray)
             ?.flat()
             .filter(fp.isString)
-            .map(warning => ({ level: 40, msg: warning }))
-        ].flat().filter(fp.isPlainObject)
+            .map((warning) => ({ level: 40, msg: warning })),
+        ]
+          .flat()
+          .filter(fp.isPlainObject)
 
-        const warnings = messages
-          .filter(x => x.level >= 40 && x.msg)
-          .map(x => x.msg)
+        const warnings = messages.filter((x) => x.level >= 40 && x.msg).map((x) => x.msg)
 
         return {
           ...status,
           messages,
-          warnings: warnings.length === 0 ? null : warnings // Compat
+          warnings: warnings.length === 0 ? null : warnings, // Compat
         }
       })
-      .retryWhen(err$ => err$.do(err => logger.error({ err }, 'monitor.status')).delay(10e3))
+      .retryWhen((err$) => err$.do((err) => logger.error({ err }, 'monitor.status')).delay(10e3))
       .publishReplay(1)
       .refCount()
 
@@ -383,23 +386,19 @@ module.exports = function (appConfig, onTerminate) {
     if (appConfig.stats.subscribe) {
       stats$ = appConfig.stats
     } else if (typeof appConfig.stats === 'function') {
-      stats$ = Observable
-        .timer(0, 10e3)
-        .exhaustMap(() => {
-          const ret = appConfig.stats({ ds, couch, logger })
-          return ret?.then || ret?.subscribe ? ret : Observable.of(ret)
-        })
+      stats$ = Observable.timer(0, 10e3).exhaustMap(() => {
+        const ret = appConfig.stats({ ds, couch, logger })
+        return ret?.then || ret?.subscribe ? ret : Observable.of(ret)
+      })
     } else if (appConfig.stats && typeof appConfig.stats === 'object') {
-      stats$ = Observable
-        .timer(0, 10e3)
-        .exhaustMap(async () => appConfig.stats)
+      stats$ = Observable.timer(0, 10e3).exhaustMap(async () => appConfig.stats)
     } else {
       stats$ = Observable.of({})
     }
 
     stats$ = stats$
       .filter(Boolean)
-      .retryWhen(err$ => err$.do(err => logger.error({ err }, 'monitor.stats')).delay(10e3))
+      .retryWhen((err$) => err$.do((err) => logger.error({ err }, 'monitor.stats')).delay(10e3))
       .publishReplay(1)
       .refCount()
 
@@ -409,22 +408,23 @@ module.exports = function (appConfig, onTerminate) {
 
     logger.debug({ hostname }, 'monitor.stats')
 
-    const subscription = stats$
-      .auditTime(10e3)
-      .subscribe((stats) => {
-        if (process.env.NODE_ENV === 'production') {
-          logger.debug({
+    const subscription = stats$.auditTime(10e3).subscribe((stats) => {
+      if (process.env.NODE_ENV === 'production') {
+        logger.debug(
+          {
             ds: ds?.stats,
             couch: couch?.stats,
             lag: toobusy?.lag(),
             memory: process.memoryUsage(),
             v8: {
-              heap: v8.getHeapStatistics()
+              heap: v8.getHeapStatistics(),
             },
-            ...stats
-          }, 'STATS')
-        }
-      })
+            ...stats,
+          },
+          'STATS'
+        )
+      }
+    })
 
     destroyers.push(() => {
       if (unprovide) {
@@ -445,60 +445,66 @@ module.exports = function (appConfig, onTerminate) {
     const port = httpConfig.port
       ? httpConfig.port
       : typeof httpConfig === 'number'
-        ? httpConfig
-        : process.env.NODE_ENV === 'production'
-          ? 8000
-          : null
+      ? httpConfig
+      : process.env.NODE_ENV === 'production'
+      ? 8000
+      : null
 
     if (port != null) {
-      const requestHandler = compose([
-        request,
-        async ({ req, res }, next) => {
-          if (req.url.startsWith('/healthcheck')) {
-            if (ds._url || ds.url) {
-              try {
-                const { host } = new URL(ds._url || ds.url)
-                await undici.request(`http://${host}/healthcheck`)
-              } catch (err) {
-                logger.warn({ err }, 'deepstream healthcheck failed')
-                if (err.code === 'ENOTFOUND') {
-                  throw err
+      const requestHandler = compose(
+        [
+          request,
+          async ({ req, res }, next) => {
+            if (req.url.startsWith('/healthcheck')) {
+              if (ds._url || ds.url) {
+                try {
+                  const { host } = new URL(ds._url || ds.url)
+                  await undici.request(`http://${host}/healthcheck`)
+                } catch (err) {
+                  logger.warn({ err }, 'deepstream healthcheck failed')
+                  if (err.code === 'ENOTFOUND') {
+                    throw err
+                  }
                 }
               }
-            }
 
-            if (couch) {
-              try {
-                await couch.info()
-              } catch (err) {
-                logger.warn({ err }, 'couch healthcheck failed')
-                if (err.code === 'ENOTFOUND') {
-                  throw err
+              if (couch) {
+                try {
+                  await couch.info()
+                } catch (err) {
+                  logger.warn({ err }, 'couch healthcheck failed')
+                  if (err.code === 'ENOTFOUND') {
+                    throw err
+                  }
                 }
               }
-            }
 
-            res.statusCode = 200
-            res.end()
-          } else {
-            return next()
-          }
-        },
-        appConfig.http.request
-          ? appConfig.http.request
-          : typeof appConfig.http === 'function'
+              res.statusCode = 200
+              res.end()
+            } else {
+              return next()
+            }
+          },
+          appConfig.http.request
+            ? appConfig.http.request
+            : typeof appConfig.http === 'function'
             ? appConfig.http
             : null,
-        ({ res }) => {
-          res.statusCode = 404
-          res.end()
-        }
-      ].flat().filter(Boolean))
+          ({ res }) => {
+            res.statusCode = 404
+            res.end()
+          },
+        ]
+          .flat()
+          .filter(Boolean)
+      )
 
-      server = http
-        .createServer(typeof appConfig.http === 'object' ? appConfig.http : {}, async (req, res) => {
+      server = http.createServer(
+        typeof appConfig.http === 'object' ? appConfig.http : {},
+        async (req, res) => {
           requestHandler({ req, res, ds, couch, config: httpConfig, logger })
-        })
+        }
+      )
 
       if (httpConfig.keepAlive != null) {
         server.keepAliveTimeout = httpConfig.keepAlive
@@ -512,7 +518,7 @@ module.exports = function (appConfig, onTerminate) {
         logger.debug({ port }, `http listening on port ${port}`)
       })
 
-      destroyers.push(() => new Promise(resolve => server.close(resolve)))
+      destroyers.push(() => new Promise((resolve) => server.close(resolve)))
     }
   }
 

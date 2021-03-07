@@ -1,4 +1,4 @@
-module.exports = function compareRev (a, b) {
+module.exports = function compareRev(a, b) {
   if (!a) {
     return b ? -1 : 0
   }

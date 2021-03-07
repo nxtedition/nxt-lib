@@ -25,22 +25,22 @@ module.exports = function (opts) {
 
   const { protocol, hostname, port, pathname } = new URL(config.url || config.name)
 
-  function createClient (...args) {
+  function createClient(...args) {
     if (!undici) undici = require('undici')
     return new undici.Client(...args)
   }
 
-  function createPool (...args) {
+  function createPool(...args) {
     if (!undici) undici = require('undici')
     return new undici.Pool(...args)
   }
 
   let defaultClient = opts.client
 
-  function onChanges (options = {}) {
+  function onChanges(options = {}) {
     const params = {}
     const headers = {
-      Accept: 'application/json'
+      Accept: 'application/json',
     }
 
     let body
@@ -93,19 +93,24 @@ module.exports = function (opts) {
     params.feed = 'continuous'
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
 
-    return new Observable(o => {
+    return new Observable((o) => {
       // Continuos feed never ends even with limit.
       // Limit 0 is the same as 1.
-      const limit = params.limit != null ? (params.limit || 1) : Infinity
+      const limit = params.limit != null ? params.limit || 1 : Infinity
 
       const userClient = options.client
-      const client = userClient || createClient({
-        protocol,
-        hostname,
-        port
-      }, {
-        bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3)
-      })
+      const client =
+        userClient ||
+        createClient(
+          {
+            protocol,
+            hostname,
+            port,
+          },
+          {
+            bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
+          }
+        )
       let count = 0
       let buf = ''
       const subscription = onRequest('/_changes', {
@@ -114,33 +119,37 @@ module.exports = function (opts) {
         client,
         idempotent: true,
         method,
-        headers
-      }).subscribe(data => {
-        buf += data
-        const lines = buf.split(/(?<!\\)\n/)
-        buf = lines.pop()
-        try {
-          for (const line of lines) {
-            if (line) {
-              o.next(options.parse === false ? line : JSON.parse(line))
+        headers,
+      }).subscribe(
+        (data) => {
+          buf += data
+          const lines = buf.split(/(?<!\\)\n/)
+          buf = lines.pop()
+          try {
+            for (const line of lines) {
+              if (line) {
+                o.next(options.parse === false ? line : JSON.parse(line))
 
-              count += 1
-              if (count === limit) {
-                o.complete()
-                return
+                count += 1
+                if (count === limit) {
+                  o.complete()
+                  return
+                }
+              } else {
+                o.next(null)
               }
-            } else {
-              o.next(null)
             }
+          } catch (err) {
+            o.error(err)
           }
-        } catch (err) {
+        },
+        (err) => {
           o.error(err)
+        },
+        () => {
+          o.complete()
         }
-      }, err => {
-        o.error(err)
-      }, () => {
-        o.complete()
-      })
+      )
 
       return () => {
         subscription.unsubscribe()
@@ -151,10 +160,10 @@ module.exports = function (opts) {
     })
   }
 
-  function onPut (path, params, body, { client, idempotent = true } = {}) {
+  function onPut(path, params, body, { client, idempotent = true } = {}) {
     const headers = {
       Accept: 'application/json',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     }
 
     return onRequest(path, {
@@ -163,16 +172,16 @@ module.exports = function (opts) {
       idempotent,
       method: 'PUT',
       headers,
-      body
+      body,
     })
       .reduce((body, data) => body + data, '')
-      .map(body => JSON.parse(body))
+      .map((body) => JSON.parse(body))
   }
 
-  function onPost (path, params, body, { client, idempotent = false, parse } = {}) {
+  function onPost(path, params, body, { client, idempotent = false, parse } = {}) {
     const headers = {
       Accept: 'application/json',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     }
 
     // TODO (fix): idempotent?
@@ -182,15 +191,15 @@ module.exports = function (opts) {
       idempotent,
       method: 'POST',
       headers,
-      body
+      body,
     })
       .reduce((body, data) => body + data, '')
-      .map(body => parse === false ? body : JSON.parse(body))
+      .map((body) => (parse === false ? body : JSON.parse(body)))
   }
 
-  function onGet (path, params, { client, parse } = {}) {
+  function onGet(path, params, { client, parse } = {}) {
     const headers = {
-      Accept: 'application/json'
+      Accept: 'application/json',
     }
 
     return onRequest(path, {
@@ -198,16 +207,16 @@ module.exports = function (opts) {
       client,
       idempotent: true,
       method: 'GET',
-      headers
+      headers,
     })
       .reduce((body, data) => body + data, '')
-      .map(body => parse === false ? body : JSON.parse(body))
+      .map((body) => (parse === false ? body : JSON.parse(body)))
   }
 
-  function onInfo ({ client, parse } = {}) {
+  function onInfo({ client, parse } = {}) {
     const params = {}
     const headers = {
-      Accept: 'application/json'
+      Accept: 'application/json',
     }
 
     return onRequest('', {
@@ -215,16 +224,16 @@ module.exports = function (opts) {
       client,
       idempotent: true,
       method: 'GET',
-      headers
+      headers,
     })
       .reduce((body, data) => body + data, '')
-      .map(body => parse === false ? body : JSON.parse(body))
+      .map((body) => (parse === false ? body : JSON.parse(body)))
   }
 
-  function onAllDocs (path, options = {}) {
+  function onAllDocs(path, options = {}) {
     const params = {}
     const headers = {
-      Accept: 'application/json'
+      Accept: 'application/json',
     }
 
     let method = 'GET'
@@ -298,29 +307,25 @@ module.exports = function (opts) {
       idempotent: true,
       body,
       method,
-      headers
+      headers,
     })
       .reduce((body, data) => body + data, '')
-      .map(body => options.parse === false ? body : JSON.parse(body))
+      .map((body) => (options.parse === false ? body : JSON.parse(body)))
   }
 
-  function onRequest (path, {
-    params,
-    client,
-    idempotent,
-    body,
-    method,
-    headers
-  }) {
+  function onRequest(path, { params, client, idempotent, body, method, headers }) {
     if (!querystring) querystring = require('querystring')
     if (!urljoin) urljoin = require('url-join')
 
     if (!client) {
       if (!defaultClient) {
-        defaultClient = createPool({ protocol, hostname, port }, {
-          connections: config.connections || 8,
-          pipelining: config.pipelining || 3
-        })
+        defaultClient = createPool(
+          { protocol, hostname, port },
+          {
+            connections: config.connections || 8,
+            pipelining: config.pipelining || 3,
+          }
+        )
       }
       client = defaultClient
     }
@@ -331,33 +336,37 @@ module.exports = function (opts) {
       body = JSON.stringify(body)
     }
 
-    return new Observable(o => {
+    return new Observable((o) => {
       const signal = new EE()
-      client.stream({
-        // TODO (fix): What if pathname or params is empty?
-        path: urljoin(pathname, path, `?${querystring.stringify(params || {})}`),
-        idempotent,
-        method,
-        signal,
-        body,
-        headers
-      }, ({ statusCode }) => {
-        if (statusCode < 200 || statusCode >= 300) {
-          throw createError(statusCode, { headers })
-        }
-        return new Writable(({
-          write (chunk, encoding, callback) {
-            o.next(chunk.toString())
-            callback()
+      client.stream(
+        {
+          // TODO (fix): What if pathname or params is empty?
+          path: urljoin(pathname, path, `?${querystring.stringify(params || {})}`),
+          idempotent,
+          method,
+          signal,
+          body,
+          headers,
+        },
+        ({ statusCode }) => {
+          if (statusCode < 200 || statusCode >= 300) {
+            throw createError(statusCode, { headers })
           }
-        }))
-      }, (err) => {
-        if (err) {
-          o.error(err)
-        } else {
-          o.complete()
+          return new Writable({
+            write(chunk, encoding, callback) {
+              o.next(chunk.toString())
+              callback()
+            },
+          })
+        },
+        (err) => {
+          if (err) {
+            o.error(err)
+          } else {
+            o.complete()
+          }
         }
-      })
+      )
       return () => {
         signal.emit('abort')
       }
@@ -365,20 +374,30 @@ module.exports = function (opts) {
   }
 
   return {
-    async put (...args) {
-      return await onPut(...args).first().toPromise()
+    async put(...args) {
+      return await onPut(...args)
+        .first()
+        .toPromise()
     },
-    async post (...args) {
-      return await onPost(...args).first().toPromise()
+    async post(...args) {
+      return await onPost(...args)
+        .first()
+        .toPromise()
     },
-    async get (...args) {
-      return await onGet(...args).first().toPromise()
+    async get(...args) {
+      return await onGet(...args)
+        .first()
+        .toPromise()
     },
-    info (...args) {
-      return onInfo(...args).first().toPromise()
+    info(...args) {
+      return onInfo(...args)
+        .first()
+        .toPromise()
     },
-    allDocs (...args) {
-      return onAllDocs(...args).first().toPromise()
+    allDocs(...args) {
+      return onAllDocs(...args)
+        .first()
+        .toPromise()
     },
     onRequest,
     onAllDocs,
@@ -387,8 +406,8 @@ module.exports = function (opts) {
     onGet,
     onInfo,
     onChanges,
-    createClient (url, options) {
+    createClient(url, options) {
       return createPool(url || { protocol, hostname, port }, options)
-    }
+    },
   }
 }

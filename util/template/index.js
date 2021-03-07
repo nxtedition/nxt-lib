@@ -8,15 +8,11 @@ const JSON5 = require('json5')
 module.exports = ({ ds } = {}) => {
   const compileExpression = getExpressionCompiler({ ds })
 
-  async function resolveObjectTemplate (obj, context) {
-    return resolveObjectTemplate(obj, context)
-      .pipe(
-        rx.first()
-      )
-      .toPromise()
+  async function resolveObjectTemplate(obj, context) {
+    return resolveObjectTemplate(obj, context).pipe(rx.first()).toPromise()
   }
 
-  function onResolveObjectTemplate (obj, context) {
+  function onResolveObjectTemplate(obj, context) {
     try {
       return compileObjectTemplate(obj)(context)
     } catch (err) {
@@ -25,7 +21,7 @@ module.exports = ({ ds } = {}) => {
   }
 
   // TODO (perf): Optimize...
-  function compileArrayTemplate (arr) {
+  function compileArrayTemplate(arr) {
     if (!fp.isArray(arr)) {
       throw new Error('invalid argument')
     }
@@ -34,13 +30,13 @@ module.exports = ({ ds } = {}) => {
       return () => Observable.of([])
     }
 
-    const resolvers = arr.map(template => compileTemplate(template))
+    const resolvers = arr.map((template) => compileTemplate(template))
 
-    return context => Observable.combineLatest(resolvers.map(resolver => resolver(context)))
+    return (context) => Observable.combineLatest(resolvers.map((resolver) => resolver(context)))
   }
 
   // TODO (perf): Optimize...
-  function compileObjectTemplate (obj) {
+  function compileObjectTemplate(obj) {
     if (!fp.isPlainObject(obj)) {
       throw new Error('invalid argument')
     }
@@ -51,12 +47,11 @@ module.exports = ({ ds } = {}) => {
       return () => Observable.of({})
     }
 
-    const resolvers = Object.values(obj).map(template => compileTemplate(template))
+    const resolvers = Object.values(obj).map((template) => compileTemplate(template))
 
-    return context => Observable
-      .combineLatest(resolvers.map(resolver => resolver(context)))
-      .pipe(
-        rx.map(values => {
+    return (context) =>
+      Observable.combineLatest(resolvers.map((resolver) => resolver(context))).pipe(
+        rx.map((values) => {
           const ret = {}
           for (let n = 0; n < values.length; ++n) {
             ret[keys[n]] = values[n]
@@ -66,7 +61,7 @@ module.exports = ({ ds } = {}) => {
       )
   }
 
-  function inner (str) {
+  function inner(str) {
     const start = str.lastIndexOf('{{')
     if (start === -1) {
       return null
@@ -79,11 +74,11 @@ module.exports = ({ ds } = {}) => {
     return {
       pre: str.slice(0, start),
       body: str.slice(start + 2, end),
-      post: str.slice(end + 2)
+      post: str.slice(end + 2),
     }
   }
 
-  const compileStringTemplate = weakCache(str => {
+  const compileStringTemplate = weakCache((str) => {
     if (!fp.isString(str)) {
       throw new Error('invalid argument')
     }
@@ -102,13 +97,13 @@ module.exports = ({ ds } = {}) => {
       return expr
     }
 
-    return context => expr(context)
-      .pipe(
-        rx.switchMap(body => compileTemplate(`${pre}${stringify(body)}${post}`)(context))
+    return (context) =>
+      expr(context).pipe(
+        rx.switchMap((body) => compileTemplate(`${pre}${stringify(body)}${post}`)(context))
       )
   })
 
-  function stringify (value) {
+  function stringify(value) {
     if (value == null) {
       return ''
     } else if (fp.isArray(value) || fp.isPlainObject(value)) {
@@ -119,11 +114,11 @@ module.exports = ({ ds } = {}) => {
     return value
   }
 
-  function isTemplate (val) {
+  function isTemplate(val) {
     return typeof val === 'string' && val.indexOf('{{') !== -1
   }
 
-  function compileTemplate (template) {
+  function compileTemplate(template) {
     if (fp.isPlainObject(template)) {
       return compileObjectTemplate(template)
     } else if (fp.isArray(template)) {
@@ -135,15 +130,11 @@ module.exports = ({ ds } = {}) => {
     }
   }
 
-  async function resolveTemplate (template, context) {
-    return onResolveTemplate(template, context)
-      .pipe(
-        rx.first()
-      )
-      .toPromise()
+  async function resolveTemplate(template, context) {
+    return onResolveTemplate(template, context).pipe(rx.first()).toPromise()
   }
 
-  function onResolveTemplate (str, context) {
+  function onResolveTemplate(str, context) {
     if (fp.isString(str) && str.lastIndexOf('{{') === -1) {
       return Observable.of(str)
     }
@@ -164,6 +155,6 @@ module.exports = ({ ds } = {}) => {
     resolveObjectTemplate,
     onResolveObjectTemplate,
     compileObjectTemplate,
-    isTemplate
+    isTemplate,
   }
 }
