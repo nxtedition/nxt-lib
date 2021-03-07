@@ -141,7 +141,7 @@ module.exports = function (appConfig, onTerminate) {
           this._db = cacheDb
         }
 
-        this.location = cacheDb.location ?? cacheLocation
+        this.location = this._db.location ?? cacheLocation
 
         this._cache = new Map()
         this._db
