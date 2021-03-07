@@ -160,6 +160,16 @@ module.exports = function (appConfig, onTerminate) {
         this._interval = setInterval(() => {
           this._flush()
         }, 1e3).unref()
+
+        destroyers.push(
+          () =>
+            new Promise((resolve, reject) => {
+              if (this._db && this._db.close) {
+                this._db.close((err) => (err ? reject(err) : resolve()))
+              }
+              clearInterval(this._interval)
+            })
+        )
       }
 
       get(name, callback) {
