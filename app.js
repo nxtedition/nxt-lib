@@ -129,8 +129,7 @@ module.exports = function (appConfig, onTerminate) {
         if (!cacheDb) {
           this.location = cacheLocation ?? `./.nxt-${serviceName}`
           this._db = levelup(
-            this.location,
-            encodingdown(leveldown(), {
+            encodingdown(leveldown(this.location), {
               valueEncoding: 'json',
             }),
             (err) => {
