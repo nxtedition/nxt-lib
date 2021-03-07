@@ -223,10 +223,6 @@ module.exports = function (appConfig, onTerminate) {
       },
     }
 
-    if (dsConfig.cacheDb) {
-      throw new Error('deepstream.cacheDb not supported')
-    }
-
     ds = deepstream(dsConfig.url, dsConfig)
       .login(dsConfig.credentials, (success, authData) => {
         if (!success) {
