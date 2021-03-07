@@ -127,21 +127,25 @@ module.exports = function (appConfig, onTerminate) {
         super()
 
         if (!cacheDb) {
+          this.location = cacheLocation ?? `./.nxt-${serviceName}`
           this._db = levelup(
-            encodingdown(leveldown(cacheLocation ?? `./.nxt-${serviceName}`), {
+            this.location,
+            encodingdown(leveldown(), {
               valueEncoding: 'json',
             }),
             (err) => {
               if (err) {
+                logger.debug({ err, path: this.location }, 'Deepstream Cache Failed.')
                 throw err
               }
             }
           )
         } else {
           this._db = cacheDb
+          this.location = this._db.location ?? cacheLocation
         }
 
-        this.location = this._db.location ?? cacheLocation
+        logger.debug({ path: this.location }, 'Deepstream Cache Created.')
 
         this._cache = new Map()
         this._db
