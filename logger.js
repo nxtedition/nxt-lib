@@ -1,5 +1,6 @@
 const serializers = require('./serializers')
 const pino = require('pino')
+const { isMainTread } = require('worker_threads')
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -27,7 +28,11 @@ module.exports.createLogger = function (
       if (stream && stream.flushSync) {
         stream.flushSync()
       }
-      process.exit(1)
+      if (isMainTread === false) {
+        process.exit(1)
+      } else {
+        throw err
+      }
     } else {
       let exitSignal
       try {
@@ -66,7 +71,7 @@ module.exports.createLogger = function (
   process.on('beforeExit', () => handler(null, 'beforeExit'))
   process.on('exit', () => handler(null, 'exit'))
   process.on('uncaughtException', (err) => handler(err, 'uncaughtException'))
-  process.on('unhandledRejection', (err) => handler(err, 'unhandledRejection'))
+  process.on('unhandledRejection', (err) => handler(err, 'uncaughtException'))
   process.on('SIGINT', () => handler(null, 'SIGINT'))
   process.on('SIGQUIT', () => handler(null, 'SIGQUIT'))
   process.on('SIGTERM', () => handler(null, 'SIGTERM'))
