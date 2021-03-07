@@ -123,12 +123,17 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     const dsCache = new class Cache extends EE {
-      constructor ({ cacheName, cacheFilter = defaultFilter }) {
+      constructor ({ cacheDb, cacheFilter = defaultFilter }) {
         super()
-        this.location = `./.nxt-${cacheName || serviceName}`
-        this._cache = new Map()
 
-        this._db = levelup(encodingdown(leveldown(this.location), { valueEncoding: 'json' }), (err) => {
+        if (!cacheDb) {
+          cacheDb = leveldown(`./.nxt-${serviceName}`)
+        }
+
+        this.location = cacheDb.location
+
+        this._cache = new Map()
+        this._db = levelup(encodingdown(cacheDb, { valueEncoding: 'json' }), (err) => {
           if (err) {
             throw err
           }
