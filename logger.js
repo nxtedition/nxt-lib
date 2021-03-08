@@ -28,11 +28,7 @@ module.exports.createLogger = function (
       if (stream && stream.flushSync) {
         stream.flushSync()
       }
-      if (isMainThread === false) {
-        throw err
-      } else {
-        process.exit(1)
-      }
+      process.exit(1)
     } else {
       let exitSignal
       try {
@@ -55,7 +51,7 @@ module.exports.createLogger = function (
     stream = process.stdout
   }
 
-  if (!extreme || (stream && !stream.flushSync)) {
+  if (!extreme || (stream && !stream.flushSync) || isMainThread === false) {
     stream = stream || pino.destination()
     logger = pino({ serializers, prettyPrint, level, ...options }, stream)
     handler = (err, evt) => finalHandler(err, logger, evt)
@@ -69,12 +65,15 @@ module.exports.createLogger = function (
   }
 
   process.on('beforeExit', () => handler(null, 'beforeExit'))
-  process.on('exit', () => handler(null, 'exit'))
-  process.on('uncaughtException', (err) => handler(err, 'uncaughtException'))
-  process.on('unhandledRejection', (err) => handler(err, 'uncaughtException'))
   process.on('SIGINT', () => handler(null, 'SIGINT'))
   process.on('SIGQUIT', () => handler(null, 'SIGQUIT'))
   process.on('SIGTERM', () => handler(null, 'SIGTERM'))
+
+  if (isMainThread !== false) {
+    process.on('exit', () => handler(null, 'exit'))
+    process.on('uncaughtException', (err) => handler(err, 'uncaughtException'))
+    process.on('unhandledRejection', (err) => handler(err, 'unhandledRejection'))
+  }
 
   return logger
 }
