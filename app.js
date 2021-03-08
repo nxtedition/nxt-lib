@@ -157,6 +157,7 @@ module.exports = function (appConfig, onTerminate) {
           })
           .on('error', (err) => {
             logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
+            // TODO: What happens with pending get requests?
             this._db = null
           })
         this._filter = cacheFilter
