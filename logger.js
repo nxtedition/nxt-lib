@@ -1,6 +1,6 @@
 const serializers = require('./serializers')
 const pino = require('pino')
-const { isMainTread } = require('worker_threads')
+const { isMainThread } = require('worker_threads')
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -28,7 +28,7 @@ module.exports.createLogger = function (
       if (stream && stream.flushSync) {
         stream.flushSync()
       }
-      if (isMainTread === false) {
+      if (isMainThread === false) {
         process.exit(1)
       } else {
         throw err
