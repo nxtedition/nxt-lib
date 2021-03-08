@@ -29,9 +29,9 @@ module.exports.createLogger = function (
         stream.flushSync()
       }
       if (isMainThread === false) {
-        process.exit(1)
-      } else {
         throw err
+      } else {
+        process.exit(1)
       }
     } else {
       let exitSignal
