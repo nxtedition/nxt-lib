@@ -213,6 +213,22 @@ module.exports = function (opts) {
       .map((body) => (parse === false ? body : JSON.parse(body)))
   }
 
+  function onDelete(path, params, { client, parse } = {}) {
+    const headers = {
+      Accept: 'application/json',
+    }
+
+    return onRequest(path, {
+      params,
+      client,
+      idempotent: true,
+      method: 'DELETE',
+      headers,
+    })
+      .reduce((body, data) => body + data, '')
+      .map((body) => (parse === false ? body : JSON.parse(body)))
+  }
+
   function onInfo({ client, parse } = {}) {
     const params = {}
     const headers = {
@@ -389,6 +405,11 @@ module.exports = function (opts) {
         .first()
         .toPromise()
     },
+    async delete(...args) {
+      return await onDelete(...args)
+        .first()
+        .toPromise()
+    },
     info(...args) {
       return onInfo(...args)
         .first()
@@ -404,6 +425,7 @@ module.exports = function (opts) {
     onPut,
     onPost,
     onGet,
+    onDelete,
     onInfo,
     onChanges,
     createClient(url, options) {
