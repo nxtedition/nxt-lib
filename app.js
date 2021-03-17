@@ -284,6 +284,7 @@ module.exports = function (appConfig, onTerminate) {
     const { Observable } = require('rxjs')
     const undici = require('undici')
     const fp = require('lodash/fp')
+    const objectHash = require('object-hash')
 
     let status$
     if (appConfig.status.subscribe) {
@@ -354,6 +355,10 @@ module.exports = function (appConfig, onTerminate) {
         ]
           .flat()
           .filter(fp.isPlainObject)
+          .map((message) => ({
+            ...message,
+            id: objectHash(message),
+          }))
 
         const warnings = messages.filter((x) => x.level >= 40 && x.msg).map((x) => x.msg)
 
@@ -367,16 +372,16 @@ module.exports = function (appConfig, onTerminate) {
       .publishReplay(1)
       .refCount()
 
-    const subscription = status$
-      .pluck('warnings')
+    const loggerSubscription = status$
+      .pluck('messages')
       .startWith([])
       .pairwise()
       .subscribe(([prev, next]) => {
-        for (const message of fp.difference(next, prev)) {
-          logger.warn({ message }, 'warning added')
+        for (const message of fp.differenceBy('id', next, prev)) {
+          logger.debug(message, 'status added')
         }
-        for (const message of fp.difference(prev, next)) {
-          logger.debug({ message }, 'warning removed')
+        for (const message of fp.differenceBy('id', prev, next)) {
+          logger.debug(message, 'status removed')
         }
       })
 
@@ -390,7 +395,7 @@ module.exports = function (appConfig, onTerminate) {
       if (unprovide) {
         unprovide()
       }
-      subscription.unsubscribe()
+      loggerSubscription.unsubscribe()
     })
   }
 
