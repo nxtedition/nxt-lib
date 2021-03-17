@@ -377,11 +377,11 @@ module.exports = function (appConfig, onTerminate) {
       .startWith([])
       .pairwise()
       .subscribe(([prev, next]) => {
-        for (const message of fp.differenceBy('id', next, prev)) {
-          logger.debug(message, 'status added')
+        for (const { msg, ...message } of fp.differenceBy('id', next, prev)) {
+          logger.info({ status: msg, message }, 'status added')
         }
-        for (const message of fp.differenceBy('id', prev, next)) {
-          logger.debug(message, 'status removed')
+        for (const { msg, ...message } of fp.differenceBy('id', prev, next)) {
+          logger.info({ status: msg, message }, 'status removed')
         }
       })
 
