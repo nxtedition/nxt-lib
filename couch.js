@@ -1,6 +1,7 @@
 const { Observable } = require('rxjs')
 const { Readable } = require('stream')
 const createError = require('http-errors')
+const makeWeak = require('./weakCache')
 
 function parseHeaders(headers, obj = {}) {
   for (let i = 0; i < headers.length; i += 2) {
@@ -49,14 +50,20 @@ module.exports = function (opts) {
     config = { ...config, url: config.name }
   }
 
+  const getClient = makeWeak(
+    () =>
+      new undici.Pool({
+        connections: 0,
+        pipelining: 3,
+      })
+  )
+
   const { origin, pathname } = new URL(Array.isArray(config.url) ? config.url[0] : config.url)
 
-  const defaultClient =
-    opts.client ??
-    new undici.Pool(origin, {
-      connections: config.connections || 0,
-      pipelining: config.pipelining || 1,
-    })
+  const defaultClient = new undici.Pool(origin, {
+    connections: 0,
+    pipelining: 1,
+  })
 
   function changes({ client, ...options } = {}) {
     const params = {}
@@ -108,18 +115,20 @@ module.exports = function (opts) {
 
     // TODO (fix): Allow other modes.
     params.feed = 'continuous'
+
+    // TODO (fix): Take heartbeat from client.bodyTimeout.
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
 
     // Continuos feed never ends even with limit.
     // Limit 0 is the same as 1.
     const limit = params.limit != null ? params.limit || 1 : Infinity
 
-    client =
-      client ??
-      new undici.Client(origin, {
+    if (!client) {
+      client = new undici.Client(origin, {
         bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
         pipelining: 0,
       })
+    }
 
     const readable = new Readable({
       objectMode: true,
@@ -316,7 +325,7 @@ module.exports = function (opts) {
 
     path = path || '_all_docs'
 
-    const { client, signal, idempotent = true, ...options } = opts ?? {}
+    const { client = getClient(path), signal, idempotent = true, ...options } = opts ?? {}
 
     const params = {}
     const headers = ['Accept', 'application/json']
