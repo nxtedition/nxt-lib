@@ -1,6 +1,4 @@
 const { Observable } = require('rxjs')
-const { Writable } = require('stream')
-const EE = require('events')
 const createError = require('http-errors')
 
 const kListener = Symbol('kListener')
@@ -89,11 +87,12 @@ module.exports = function (opts) {
       pipelining: config.pipelining || 3,
     })
 
-  function onChanges(options = {}) {
-    const params = {}
-    const headers = {
-      Accept: 'application/json',
+  function onChanges({ client, ...options } = {}) {
+    if (client) {
+      throw new Error('not supported')
     }
+
+    const params = {}
 
     let body
     let method = 'GET'
@@ -138,7 +137,6 @@ module.exports = function (opts) {
     if (typeof options.doc_ids !== 'undefined') {
       method = 'POST'
       body = { doc_ids: options.doc_ids }
-      headers['Content-Type'] = 'application/json'
     }
 
     // TODO (fix): Allow other modes.
@@ -150,68 +148,60 @@ module.exports = function (opts) {
       // Limit 0 is the same as 1.
       const limit = params.limit != null ? params.limit || 1 : Infinity
 
-      const signal = new EE()
-
-      const userClient = options.client
-      const client =
-        userClient ||
-        new undici.Client(origin, {
-          bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
-        })
-      let buf = ''
-      let count = 0
+      const client = new undici.Client(origin, {
+        bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
+      })
 
       // TODO (fix): client.dispatch + backpressure with node streams instead of rxjs observable.
-      client.stream(
+      client.dispatch(
         {
           // TODO (fix): What if pathname or params is empty?
           path: urljoin(pathname, '/_changes', `?${querystring.stringify(params || {})}`),
           idempotent: true,
           method,
-          signal,
           body,
-          headers,
         },
-        ({ statusCode }) => {
-          if (statusCode < 200 || statusCode >= 300) {
-            throw createError(statusCode, { headers })
-          }
-          return new Writable({
-            write(data, encoding, callback) {
-              buf += data
-              const lines = buf.split(/(?<!\\)\n/)
-              buf = lines.pop()
-              try {
-                for (const line of lines) {
-                  if (line) {
-                    count += 1
-                    o.next(JSON.parse(line))
-                    if (count === limit) {
-                      o.complete()
-                    }
-                  } else {
-                    o.next(null)
-                  }
+        {
+          status: null,
+          data: '',
+          count: 0,
+          onConnect() {
+            // Do nothing...
+          },
+          onHeaders(statusCode, headers) {
+            this.status = statusCode
+
+            if (params.feed === 'continuous' && (statusCode < 200 || statusCode >= 300)) {
+              throw createError(statusCode, { headers })
+            }
+          },
+          onData(chunk) {
+            this.data += chunk
+            const lines = this.data.split(/(?<!\\)\n/)
+            this.data = lines.pop()
+            for (const line of lines) {
+              if (line) {
+                this.count += 1
+                o.next(JSON.parse(line))
+                if (this.count === limit) {
+                  o.complete()
                 }
-              } catch (err) {
-                callback(err)
+              } else {
+                o.next(null)
               }
-            },
-          })
-            .on('finish', () => {
-              o.complete()
-            })
-            .on('error', (err) => {
-              o.error(err)
-            })
+            }
+          },
+          onComplete() {
+            o.complete()
+          },
+          onError(err) {
+            o.error(err)
+          },
         }
       )
 
       return () => {
-        signal.emit('abort')
-        if (client !== userClient) {
-          client.destroy()
-        }
+        client.destroy()
       }
     })
   }
@@ -250,6 +240,7 @@ module.exports = function (opts) {
             resolve,
             reject,
             status: null,
+            abort: null,
             data: '',
             onConnect(abort) {
               this.abort = abort
