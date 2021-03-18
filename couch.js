@@ -145,11 +145,11 @@ module.exports = function (opts) {
     params.feed = 'continuous'
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
 
-    // Continuos feed never ends even with limit.
-    // Limit 0 is the same as 1.
-    const limit = params.limit != null ? params.limit || 1 : Infinity
-
     return new Observable((o) => {
+      // Continuos feed never ends even with limit.
+      // Limit 0 is the same as 1.
+      const limit = params.limit != null ? params.limit || 1 : Infinity
+
       const signal = new EE()
 
       const userClient = options.client
@@ -159,6 +159,7 @@ module.exports = function (opts) {
           bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
         })
       let buf = ''
+      let count = 0
 
       // TODO (fix): client.dispatch + backpressure with node streams instead of rxjs observable.
       client.stream(
@@ -183,9 +184,13 @@ module.exports = function (opts) {
               try {
                 for (const line of lines) {
                   if (line) {
-                    callback(null, options.parse === false ? line : JSON.parse(line))
+                    count += 1
+                    o.next(options.parse === false ? line : JSON.parse(line))
+                    if (count === limit) {
+                      o.complete()
+                    }
                   } else {
-                    callback()
+                    o.next(null)
                   }
                 }
               } catch (err) {
@@ -208,14 +213,7 @@ module.exports = function (opts) {
           client.destroy()
         }
       }
-    }).publish((x$) => (limit ? x$.take(limit) : x$))
-  }
-
-  function makeError(status, data) {
-    const err = new Error(data?.error ?? status)
-    err.data = data
-    err.statusCode = err.status = status
-    throw err
+    })
   }
 
   function request(
@@ -293,19 +291,19 @@ module.exports = function (opts) {
       params.batch = options.batch
     }
 
-    const { data, status } = await request(path, {
+    const res = await request(path, {
       client,
       idempotent: true,
       body,
-      method: 'GET',
+      method: 'POST',
       signal,
     })
 
-    if (status !== 201) {
-      throw makeError(status, data)
+    if (res.status !== 201) {
+      throw createError(res.status, { headers: res.headers })
     }
 
-    return data
+    return res.data
   }
 
   async function allDocs(path, { client, signal, ...options } = {}) {
@@ -377,7 +375,7 @@ module.exports = function (opts) {
       headers.push('Content-Type', 'application/json')
     }
 
-    const { data, status } = await request(path, {
+    const res = await request(path, {
       params,
       client,
       idempotent: true,
@@ -387,15 +385,15 @@ module.exports = function (opts) {
       signal,
     })
 
-    if (status !== 200) {
-      throw makeError(status, data)
+    if (res.status !== 200) {
+      throw createError(res.status, { headers: res.headers })
     }
 
-    return data
+    return res.data
   }
 
   async function put(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const { data, status } = await request(path, {
+    const res = await request(path, {
       params,
       client,
       idempotent,
@@ -404,14 +402,16 @@ module.exports = function (opts) {
       headers,
       signal,
     })
-    if (status < 200 || status >= 300) {
-      throw makeError(status, data)
+
+    if (res.status < 200 || res.status >= 300) {
+      throw createError(res.status, { headers: res.headers })
     }
-    return data
+
+    return res.data
   }
 
   async function post(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const { data, status } = await request(path, {
+    const res = await request(path, {
       params,
       client,
       idempotent,
@@ -420,14 +420,16 @@ module.exports = function (opts) {
       headers,
       signal,
     })
-    if (status < 200 || status >= 300) {
-      throw makeError(status, data)
+
+    if (res.status < 200 || res.status >= 300) {
+      throw createError(res.status, { headers: res.headers })
     }
-    return data
+
+    return res.data
   }
 
   async function get(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const { data, status } = await request(path, {
+    const res = await request(path, {
       params,
       client,
       idempotent,
@@ -436,14 +438,16 @@ module.exports = function (opts) {
       headers,
       signal,
     })
-    if (status < 200 || status >= 300) {
-      throw makeError(status, data)
+
+    if (res.status < 200 || res.status >= 300) {
+      throw createError(res.status, { headers: res.headers })
     }
-    return data
+
+    return res.data
   }
 
   async function _delete(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const { data, status } = await request(path, {
+    const res = await request(path, {
       params,
       client,
       idempotent,
@@ -452,14 +456,16 @@ module.exports = function (opts) {
       headers,
       signal,
     })
-    if (status < 200 || status >= 300) {
-      throw makeError(status, data)
+
+    if (res.status < 200 || res.status >= 300) {
+      throw createError(res.status, { headers: res.headers })
     }
-    return data
+
+    return res.data
   }
 
   async function info(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const { data, status } = await request('', {
+    const res = await request('', {
       params,
       client,
       idempotent,
@@ -468,10 +474,12 @@ module.exports = function (opts) {
       headers,
       signal,
     })
-    if (status < 200 || status >= 300) {
-      throw makeError(status, data)
+
+    if (res.status < 200 || res.status >= 300) {
+      throw createError(res.status, { headers: res.headers })
     }
-    return data
+
+    return res.data
   }
 
   return {
