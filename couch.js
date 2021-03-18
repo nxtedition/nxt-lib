@@ -19,6 +19,10 @@ function parseHeaders(headers, obj = {}) {
   return obj
 }
 
+function makeError(res) {
+  return createError(res.status, { headers: res.headers, ...res.data })
+}
+
 module.exports = function (opts) {
   const querystring = require('querystring')
   const urljoin = require('url-join')
@@ -298,7 +302,7 @@ module.exports = function (opts) {
     })
 
     if (res.status !== 201) {
-      throw createError(res.status, { headers: res.headers })
+      throw makeError(res)
     }
 
     return res.data
@@ -388,7 +392,7 @@ module.exports = function (opts) {
     })
 
     if (res.status !== 200) {
-      throw createError(res.status, { headers: res.headers })
+      throw makeError(res)
     }
 
     return res.data
@@ -406,7 +410,7 @@ module.exports = function (opts) {
     })
 
     if (res.status < 200 || res.status >= 300) {
-      throw createError(res.status, { headers: res.headers })
+      throw makeError(res)
     }
 
     return res.data
@@ -424,7 +428,7 @@ module.exports = function (opts) {
     })
 
     if (res.status < 200 || res.status >= 300) {
-      throw createError(res.status, { headers: res.headers })
+      throw makeError(res)
     }
 
     return res.data
@@ -442,7 +446,7 @@ module.exports = function (opts) {
     })
 
     if (res.status < 200 || res.status >= 300) {
-      throw createError(res.status, { headers: res.headers })
+      throw makeError(res)
     }
 
     return res.data
@@ -460,7 +464,7 @@ module.exports = function (opts) {
     })
 
     if (res.status < 200 || res.status >= 300) {
-      throw createError(res.status, { headers: res.headers })
+      throw makeError(res)
     }
 
     return res.data
@@ -478,7 +482,7 @@ module.exports = function (opts) {
     })
 
     if (res.status < 200 || res.status >= 300) {
-      throw createError(res.status, { headers: res.headers })
+      throw makeError(res)
     }
 
     return res.data
