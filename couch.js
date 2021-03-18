@@ -185,7 +185,7 @@ module.exports = function (opts) {
                 for (const line of lines) {
                   if (line) {
                     count += 1
-                    o.next(options.parse === false ? line : JSON.parse(line))
+                    o.next(JSON.parse(line))
                     if (count === limit) {
                       o.complete()
                     }
