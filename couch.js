@@ -242,7 +242,7 @@ module.exports = function (opts) {
           path: urljoin(pathname, path || '', `?${querystring.stringify(params || {})}`),
           idempotent,
           method,
-          body: !body ? null : typeof body === 'string' ? body : JSON.stringify(body),
+          body: typeof body === 'object' && body ? JSON.stringify(body) : body,
           headers,
         },
         addSignal(
