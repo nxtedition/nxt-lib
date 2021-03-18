@@ -308,11 +308,14 @@ module.exports = function (opts) {
     return res.data
   }
 
-  function allDocs(options) {
-    return query('_all_docs', options)
-  }
+  async function allDocs(path, opts) {
+    if (path && typeof path === 'object') {
+      opts = path
+      path = '_all_docs'
+    }
 
-  async function query(path, { client, signal, idempotent = true, ...options } = {}) {
+    const { client, signal, idempotent = true, ...options } = opts ?? {}
+
     const params = {}
     const headers = ['Accept', 'application/json']
 
@@ -492,7 +495,6 @@ module.exports = function (opts) {
     request,
     bulkDocs,
     allDocs,
-    query,
     put,
     post,
     get,
