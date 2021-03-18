@@ -284,7 +284,7 @@ module.exports = function (opts) {
     )
   }
 
-  async function bulkDocs(path, body, { client, signal, ...options } = {}) {
+  async function bulkDocs(path, body, { client, signal, idempotent = true, ...options } = {}) {
     const params = {}
 
     if (options.batch) {
@@ -293,7 +293,7 @@ module.exports = function (opts) {
 
     const res = await request(path, {
       client,
-      idempotent: true,
+      idempotent,
       body,
       method: 'POST',
       signal,
@@ -306,7 +306,7 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function allDocs(path, { client, signal, ...options } = {}) {
+  async function allDocs(path, { client, signal, idempotent = true, ...options } = {}) {
     const params = {}
     const headers = ['Accept', 'application/json']
 
@@ -378,7 +378,7 @@ module.exports = function (opts) {
     const res = await request(path, {
       params,
       client,
-      idempotent: true,
+      idempotent,
       body,
       method,
       headers,
