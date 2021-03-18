@@ -1,5 +1,5 @@
 const { Observable } = require('rxjs')
-const { Writable } = require('stream')
+const { Writable, PassThrough } = require('stream')
 const EE = require('events')
 const createError = require('http-errors')
 
@@ -155,7 +155,7 @@ module.exports = function (opts) {
     })
   }
 
-  function onPut(path, params, body, { client, idempotent = true } = {}) {
+  function onPut(path, params, body, { client, signal, idempotent = true } = {}) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -164,6 +164,7 @@ module.exports = function (opts) {
     return onRequest(path, {
       params,
       client,
+      signal,
       idempotent,
       method: 'PUT',
       headers,
@@ -173,7 +174,7 @@ module.exports = function (opts) {
       .map((body) => JSON.parse(body))
   }
 
-  function onPost(path, params, body, { client, idempotent = false, parse } = {}) {
+  function onPost(path, params, body, { client, signal, idempotent = false, parse } = {}) {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -183,6 +184,7 @@ module.exports = function (opts) {
     return onRequest(path, {
       params,
       client,
+      signal,
       idempotent,
       method: 'POST',
       headers,
@@ -192,7 +194,7 @@ module.exports = function (opts) {
       .map((body) => (parse === false ? body : JSON.parse(body)))
   }
 
-  function onGet(path, params, { client, parse } = {}) {
+  function onGet(path, params, { client, signal, parse } = {}) {
     const headers = {
       Accept: 'application/json',
     }
@@ -200,6 +202,7 @@ module.exports = function (opts) {
     return onRequest(path, {
       params,
       client,
+      signal,
       idempotent: true,
       method: 'GET',
       headers,
@@ -208,7 +211,7 @@ module.exports = function (opts) {
       .map((body) => (parse === false ? body : JSON.parse(body)))
   }
 
-  function onDelete(path, params, { client, parse } = {}) {
+  function onDelete(path, params, { client, signal, parse } = {}) {
     const headers = {
       Accept: 'application/json',
     }
@@ -216,6 +219,7 @@ module.exports = function (opts) {
     return onRequest(path, {
       params,
       client,
+      signal,
       idempotent: true,
       method: 'DELETE',
       headers,
@@ -224,7 +228,7 @@ module.exports = function (opts) {
       .map((body) => (parse === false ? body : JSON.parse(body)))
   }
 
-  function onInfo({ client, parse } = {}) {
+  function onInfo({ client, parse, signal } = {}) {
     const params = {}
     const headers = {
       Accept: 'application/json',
@@ -233,6 +237,7 @@ module.exports = function (opts) {
     return onRequest('', {
       params,
       client,
+      signal,
       idempotent: true,
       method: 'GET',
       headers,
@@ -315,6 +320,7 @@ module.exports = function (opts) {
     return onRequest(path, {
       params,
       client: options.client,
+      signal: options.signal,
       idempotent: true,
       body,
       method,
@@ -324,7 +330,7 @@ module.exports = function (opts) {
       .map((body) => (options.parse === false ? body : JSON.parse(body)))
   }
 
-  function onRequest(path, { params, client, idempotent, body, method, headers }) {
+  function onRequest(path, { params, client, idempotent, body, method, headers, signal }) {
     if (!querystring) querystring = require('querystring')
     if (!urljoin) urljoin = require('url-join')
 
@@ -345,14 +351,24 @@ module.exports = function (opts) {
     }
 
     return new Observable((o) => {
-      const signal = new EE()
+      function abort() {
+        innerSignal.emit('abort')
+      }
+
+      if (signal?.addEventListener) {
+        signal.addEventListener('abort', abort)
+      } else if (signal?.addListener) {
+        signal.addListener('abort', abort)
+      }
+
+      const innerSignal = new EE()
       client.stream(
         {
           // TODO (fix): What if pathname or params is empty?
           path: urljoin(pathname, path, `?${querystring.stringify(params || {})}`),
           idempotent,
           method,
-          signal,
+          signal: innerSignal,
           body,
           headers,
         },
@@ -375,8 +391,15 @@ module.exports = function (opts) {
           }
         }
       )
+
       return () => {
-        signal.emit('abort')
+        if (signal?.removeEventListener) {
+          signal.removeEventListener('abort', abort)
+        } else if (signal?.removeListener) {
+          signal.removeListener('abort', abort)
+        }
+
+        abort()
       }
     })
   }
@@ -402,24 +425,34 @@ module.exports = function (opts) {
         .first()
         .toPromise()
     },
-    info(...args) {
-      return onInfo(...args)
+    async info(...args) {
+      return await onInfo(...args)
         .first()
         .toPromise()
     },
-    allDocs(...args) {
-      return onAllDocs(...args)
+    async allDocs(...args) {
+      return await onAllDocs(...args)
         .first()
         .toPromise()
     },
-    onRequest,
-    onAllDocs,
-    onPut,
-    onPost,
-    onGet,
-    onDelete,
-    onInfo,
-    onChanges,
+    changes(...args) {
+      // TODO (fix): Backpressure...
+
+      const pt = new PassThrough()
+
+      const subscription = onChanges(...args).subscribe(
+        (val) => pt.write(val),
+        (err) => pt.destroy(err),
+        () => pt.end()
+      )
+
+      pt._destroy = () => {
+        subscription.unsubscribe()
+      }
+
+      return pt
+    },
+    onChanges, // TODO (fix): Deprecate...
     createClient(url, options) {
       return createPool(url || origin, options)
     },
