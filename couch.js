@@ -23,7 +23,7 @@ module.exports = function (opts) {
     config = { url: config }
   }
 
-  const { protocol, hostname, port, pathname } = new URL(config.url || config.name)
+  const { origin, pathname } = new URL(config.url || config.name)
 
   function createPool(...args) {
     if (!undici) undici = require('undici')
@@ -96,17 +96,10 @@ module.exports = function (opts) {
       const userClient = options.client
       const client =
         userClient ||
-        createPool(
-          {
-            protocol,
-            hostname,
-            port,
-          },
-          {
-            connections: 1,
-            bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
-          }
-        )
+        createPool(origin, {
+          connections: 1,
+          bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
+        })
       let count = 0
       let buf = ''
       const subscription = onRequest('/_changes', {
@@ -331,13 +324,10 @@ module.exports = function (opts) {
 
     if (!client) {
       if (!defaultClient) {
-        defaultClient = createPool(
-          { protocol, hostname, port },
-          {
-            connections: config.connections || 8,
-            pipelining: config.pipelining || 3,
-          }
-        )
+        defaultClient = createPool(origin, {
+          connections: config.connections || 8,
+          pipelining: config.pipelining || 3,
+        })
       }
       client = defaultClient
     }
@@ -425,7 +415,7 @@ module.exports = function (opts) {
     onInfo,
     onChanges,
     createClient(url, options) {
-      return createPool(url || { protocol, hostname, port }, options)
+      return createPool(url || origin, options)
     },
   }
 }
