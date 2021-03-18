@@ -239,7 +239,7 @@ module.exports = function (opts) {
       client.dispatch(
         {
           // TODO (fix): What if pathname or params is empty?
-          path: urljoin(pathname, path, `?${querystring.stringify(params || {})}`),
+          path: urljoin(pathname, path || '', `?${querystring.stringify(params || {})}`),
           idempotent,
           method,
           body: !body ? null : typeof body === 'string' ? body : JSON.stringify(body),
