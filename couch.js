@@ -465,7 +465,7 @@ module.exports = function (opts) {
   }
 
   async function info(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const res = await request('', {
+    const res = await request(path, {
       params,
       client,
       idempotent,
