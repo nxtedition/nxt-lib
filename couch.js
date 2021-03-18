@@ -2,55 +2,21 @@ const { Observable } = require('rxjs')
 const { Readable } = require('stream')
 const createError = require('http-errors')
 
-const kListener = Symbol('kListener')
-const kSignal = Symbol('kSignal')
-
-function abort(self) {
-  self.abort()
-}
-
-function addSignal(self, signal) {
-  self[kSignal] = null
-  self[kListener] = null
-
-  if (!signal) {
-    return self
+function parseHeaders(headers, obj = {}) {
+  for (let i = 0; i < headers.length; i += 2) {
+    const key = headers[i].toLowerCase()
+    let val = obj[key]
+    if (!val) {
+      obj[key] = headers[i + 1]
+    } else {
+      if (!Array.isArray(val)) {
+        val = [val]
+        obj[key] = val
+      }
+      val.push(headers[i + 1])
+    }
   }
-
-  if (signal.aborted) {
-    abort(self)
-    return self
-  }
-
-  self[kSignal] = signal
-  self[kListener] = () => {
-    abort(self)
-  }
-
-  if ('addEventListener' in self[kSignal]) {
-    self[kSignal].addEventListener('abort', self[kListener])
-  } else {
-    self[kSignal].addListener('abort', self[kListener])
-  }
-
-  return self
-}
-
-function removeSignal(self) {
-  if (!self[kSignal]) {
-    return self
-  }
-
-  if ('removeEventListener' in self[kSignal]) {
-    self[kSignal].removeEventListener('abort', self[kListener])
-  } else {
-    self[kSignal].removeListener('abort', self[kListener])
-  }
-
-  self[kSignal] = null
-  self[kListener] = null
-
-  return self
+  return obj
 }
 
 module.exports = function (opts) {
@@ -155,9 +121,6 @@ module.exports = function (opts) {
     const readable = new Readable({
       objectMode: true,
       read() {},
-      destroy(err, callback) {
-        client.destroy(err, callback)
-      },
     })
 
     // TODO (fix): client.dispatch + backpressure with node streams instead of rxjs observable.
@@ -172,14 +135,21 @@ module.exports = function (opts) {
       {
         readable,
         status: null,
+        headers: null,
         data: '',
         count: 0,
-        onConnect() {
+        onConnect(abort) {
+          if (this.readable.destroyed) {
+            abort()
+          } else {
+            this.readable._destroy = abort
+          }
           // Do nothing...
         },
         onHeaders(statusCode, headers, resume) {
           this.readable._read = resume
           this.status = statusCode
+          this.headers = parseHeaders(headers)
 
           if (params.feed === 'continuous' && (statusCode < 200 || statusCode >= 300)) {
             throw createError(statusCode, { headers })
@@ -194,9 +164,9 @@ module.exports = function (opts) {
           for (const line of lines) {
             if (line) {
               this.count += 1
-              running = running && readable.push(JSON.parse(line))
+              running = running && this.readable.push(JSON.parse(line))
               if (this.count === limit) {
-                readable.push(null)
+                this.readable.push(null)
               }
             }
           }
@@ -204,10 +174,10 @@ module.exports = function (opts) {
           return running
         },
         onComplete() {
-          readable.push(null)
+          this.readable.push(null)
         },
         onError(err) {
-          readable.destroy(err)
+          this.readable.destroy(err)
         },
       }
     )
@@ -257,42 +227,65 @@ module.exports = function (opts) {
           body: typeof body === 'object' && body ? JSON.stringify(body) : body,
           headers,
         },
-        addSignal(
-          {
-            resolve,
-            reject,
-            status: null,
-            abort: null,
-            data: '',
-            onConnect(abort) {
-              this.abort = abort
-            },
-            onHeaders(statusCode) {
-              this.status = statusCode
-            },
-            onData(chunk) {
-              this.data += chunk
-            },
-            onComplete() {
-              removeSignal(this)
+        {
+          resolve,
+          reject,
+          signal,
+          status: null,
+          headers: null,
+          abort: null,
+          data: '',
+          onConnect(abort) {
+            if (!this.signal) {
+              return
+            }
 
-              try {
-                this.resolve({
-                  data: this.data ? JSON.parse(this.data) : this.data,
-                  status: this.status,
-                })
-              } catch (err) {
-                this.reject(err)
-              }
-            },
-            onError(err) {
-              removeSignal(this)
+            if (this.signal.aborted) {
+              abort()
+              return
+            }
 
-              this.reject(err)
-            },
+            this.abort = abort
+            if ('addEventListener' in this.signal) {
+              this.signal.addEventListener('abort', abort)
+            } else {
+              this.signal.addListener('abort', abort)
+            }
           },
-          signal
-        )
+          onHeaders(statusCode, headers) {
+            this.status = statusCode
+            this.headers = parseHeaders(headers)
+          },
+          onData(chunk) {
+            this.data += chunk
+          },
+          onComplete() {
+            if (this.signal) {
+              if ('removeEventListener' in this.signal) {
+                this.signal.removeEventListener('abort', this.abort)
+              } else {
+                this.signal.removeListener('abort', this.abort)
+              }
+            }
+
+            this.resolve({
+              data: this.data ? JSON.parse(this.data) : this.data,
+              status: this.status,
+              headers: this.headers,
+            })
+          },
+          onError(err) {
+            if (this.signal) {
+              if ('removeEventListener' in this.signal) {
+                this.signal.removeEventListener('abort', this.abort)
+              } else {
+                this.signal.removeListener('abort', this.abort)
+              }
+            }
+
+            this.reject(err)
+          },
+        }
       )
     )
   }
