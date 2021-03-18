@@ -122,7 +122,6 @@ module.exports = function (opts) {
       read() {},
     })
 
-    // TODO (fix): client.dispatch + backpressure with node streams instead of rxjs observable.
     client.dispatch(
       {
         // TODO (fix): What if pathname or params is empty?
