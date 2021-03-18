@@ -1,13 +1,64 @@
 const { Observable } = require('rxjs')
-const { Writable, PassThrough } = require('stream')
+const { Writable } = require('stream')
 const EE = require('events')
 const createError = require('http-errors')
 
-let urljoin
-let querystring
-let undici
+const kListener = Symbol('kListener')
+const kSignal = Symbol('kSignal')
+
+function abort(self) {
+  self.abort()
+}
+
+function addSignal(self, signal) {
+  self[kSignal] = null
+  self[kListener] = null
+
+  if (!signal) {
+    return self
+  }
+
+  if (signal.aborted) {
+    abort(self)
+    return self
+  }
+
+  self[kSignal] = signal
+  self[kListener] = () => {
+    abort(self)
+  }
+
+  if ('addEventListener' in self[kSignal]) {
+    self[kSignal].addEventListener('abort', self[kListener])
+  } else {
+    self[kSignal].addListener('abort', self[kListener])
+  }
+
+  return self
+}
+
+function removeSignal(self) {
+  if (!self[kSignal]) {
+    return self
+  }
+
+  if ('removeEventListener' in self[kSignal]) {
+    self[kSignal].removeEventListener('abort', self[kListener])
+  } else {
+    self[kSignal].removeListener('abort', self[kListener])
+  }
+
+  self[kSignal] = null
+  self[kListener] = null
+
+  return self
+}
 
 module.exports = function (opts) {
+  const querystring = require('querystring')
+  const urljoin = require('url-join')
+  const undici = require('undici')
+
   let config
   if (typeof opts === 'string') {
     config = opts
@@ -31,12 +82,12 @@ module.exports = function (opts) {
 
   const { origin, pathname } = new URL(Array.isArray(config.url) ? config.url[0] : config.url)
 
-  function createPool(...args) {
-    if (!undici) undici = require('undici')
-    return new undici.Pool(...args)
-  }
-
-  let defaultClient = opts.client
+  const defaultClient =
+    opts.client ??
+    new undici.Pool(origin, {
+      connections: config.connections || 8,
+      pipelining: config.pipelining || 3,
+    })
 
   function onChanges(options = {}) {
     const params = {}
@@ -94,163 +145,172 @@ module.exports = function (opts) {
     params.feed = 'continuous'
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
 
+    // Continuos feed never ends even with limit.
+    // Limit 0 is the same as 1.
+    const limit = params.limit != null ? params.limit || 1 : Infinity
+
     return new Observable((o) => {
-      // Continuos feed never ends even with limit.
-      // Limit 0 is the same as 1.
-      const limit = params.limit != null ? params.limit || 1 : Infinity
+      const signal = new EE()
 
       const userClient = options.client
       const client =
         userClient ||
-        createPool(origin, {
-          connections: 1,
+        new undici.Client(origin, {
           bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
         })
-      let count = 0
       let buf = ''
-      const subscription = onRequest('/_changes', {
-        params,
-        body,
-        client,
-        idempotent: true,
-        method,
-        headers,
-      }).subscribe(
-        (data) => {
-          buf += data
-          const lines = buf.split(/(?<!\\)\n/)
-          buf = lines.pop()
-          try {
-            for (const line of lines) {
-              if (line) {
-                o.next(options.parse === false ? line : JSON.parse(line))
 
-                count += 1
-                if (count === limit) {
-                  o.complete()
-                  return
-                }
-              } else {
-                o.next(null)
-              }
-            }
-          } catch (err) {
-            o.error(err)
+      // TODO (fix): client.dispatch + backpressure with node streams instead of rxjs observable.
+      client.stream(
+        {
+          // TODO (fix): What if pathname or params is empty?
+          path: urljoin(pathname, '/_changes', `?${querystring.stringify(params || {})}`),
+          idempotent: true,
+          method,
+          signal,
+          body,
+          headers,
+        },
+        ({ statusCode }) => {
+          if (statusCode < 200 || statusCode >= 300) {
+            throw createError(statusCode, { headers })
           }
-        },
-        (err) => {
-          o.error(err)
-        },
-        () => {
-          o.complete()
+          return new Writable({
+            write(data, encoding, callback) {
+              buf += data
+              const lines = buf.split(/(?<!\\)\n/)
+              buf = lines.pop()
+              try {
+                for (const line of lines) {
+                  if (line) {
+                    callback(null, options.parse === false ? line : JSON.parse(line))
+                  } else {
+                    callback()
+                  }
+                }
+              } catch (err) {
+                callback(err)
+              }
+            },
+          })
+            .on('finish', () => {
+              o.complete()
+            })
+            .on('error', (err) => {
+              o.error(err)
+            })
         }
       )
 
       return () => {
-        subscription.unsubscribe()
+        signal.emit('abort')
         if (client !== userClient) {
           client.destroy()
         }
       }
-    })
+    }).publish((x$) => (limit ? x$.take(limit) : x$))
   }
 
-  function onPut(path, params, body, { client, signal, idempotent = true } = {}) {
-    const headers = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
+  function makeError(status, data) {
+    const err = new Error(data?.error ?? status)
+    err.data = data
+    err.statusCode = err.status = status
+    throw err
+  }
+
+  function request(
+    path,
+    { params, client = defaultClient, idempotent, body, method, headers, signal }
+  ) {
+    if (Array.isArray(headers)) {
+      // Do nothing...
+    } else if (headers) {
+      const entries = Object.entries(headers)
+      headers = []
+      for (const [key, val] of entries) {
+        headers.push(key, val)
+      }
+    } else {
+      headers = ['Accept', 'application/json']
+      if (body) {
+        headers.push('Content-Type', 'application/json')
+      }
     }
 
-    return onRequest(path, {
-      params,
-      client,
-      signal,
-      idempotent,
-      method: 'PUT',
-      headers,
-      body,
-    })
-      .reduce((body, data) => body + data, '')
-      .map((body) => JSON.parse(body))
+    return new Promise((resolve, reject) =>
+      client.dispatch(
+        {
+          // TODO (fix): What if pathname or params is empty?
+          path: urljoin(pathname, path, `?${querystring.stringify(params || {})}`),
+          idempotent,
+          method,
+          body: !body ? null : typeof body === 'string' ? body : JSON.stringify(body),
+          headers,
+        },
+        addSignal(
+          {
+            resolve,
+            reject,
+            status: null,
+            data: '',
+            onConnect(abort) {
+              this.abort = abort
+            },
+            onHeaders(statusCode) {
+              this.status = statusCode
+            },
+            onData(chunk) {
+              this.data += chunk
+            },
+            onComplete() {
+              removeSignal(this)
+
+              try {
+                this.resolve({
+                  data: this.data ? JSON.parse(this.data) : this.data,
+                  status: this.status,
+                })
+              } catch (err) {
+                this.reject(err)
+              }
+            },
+            onError(err) {
+              removeSignal(this)
+
+              this.reject(err)
+            },
+          },
+          signal
+        )
+      )
+    )
   }
 
-  function onPost(path, params, body, { client, signal, idempotent = false, parse } = {}) {
-    const headers = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    }
-
-    // TODO (fix): idempotent?
-    return onRequest(path, {
-      params,
-      client,
-      signal,
-      idempotent,
-      method: 'POST',
-      headers,
-      body,
-    })
-      .reduce((body, data) => body + data, '')
-      .map((body) => (parse === false ? body : JSON.parse(body)))
-  }
-
-  function onGet(path, params, { client, signal, parse } = {}) {
-    const headers = {
-      Accept: 'application/json',
-    }
-
-    return onRequest(path, {
-      params,
-      client,
-      signal,
-      idempotent: true,
-      method: 'GET',
-      headers,
-    })
-      .reduce((body, data) => body + data, '')
-      .map((body) => (parse === false ? body : JSON.parse(body)))
-  }
-
-  function onDelete(path, params, { client, signal, parse } = {}) {
-    const headers = {
-      Accept: 'application/json',
-    }
-
-    return onRequest(path, {
-      params,
-      client,
-      signal,
-      idempotent: true,
-      method: 'DELETE',
-      headers,
-    })
-      .reduce((body, data) => body + data, '')
-      .map((body) => (parse === false ? body : JSON.parse(body)))
-  }
-
-  function onInfo({ client, parse, signal } = {}) {
+  async function bulkDocs(path, body, { client, signal, ...options }) {
     const params = {}
-    const headers = {
-      Accept: 'application/json',
+
+    if (options.batch) {
+      params.batch = options.batch
     }
 
-    return onRequest('', {
-      params,
+    const { data, status } = await request(path, {
       client,
-      signal,
       idempotent: true,
+      body,
       method: 'GET',
-      headers,
+      signal,
     })
-      .reduce((body, data) => body + data, '')
-      .map((body) => (parse === false ? body : JSON.parse(body)))
+
+    if (status !== 201) {
+      throw makeError(status, data)
+    }
+
+    return data
   }
 
-  function onAllDocs(path, options = {}) {
+  async function allDocs(path, { client, signal, ...options } = {}) {
     const params = {}
-    const headers = {
-      Accept: 'application/json',
-    }
+    const headers = ['Accept', 'application/json']
 
     let method = 'GET'
     let body
@@ -314,147 +374,118 @@ module.exports = function (opts) {
     if (typeof options.keys !== 'undefined') {
       method = 'POST'
       body = { keys: options.keys }
-      headers['Content-Type'] = 'application/json'
+      headers.push('Content-Type', 'application/json')
     }
 
-    return onRequest(path, {
+    const { data, status } = await request(path, {
       params,
-      client: options.client,
-      signal: options.signal,
+      client,
       idempotent: true,
       body,
       method,
       headers,
+      signal,
     })
-      .reduce((body, data) => body + data, '')
-      .map((body) => (options.parse === false ? body : JSON.parse(body)))
+
+    if (status !== 200) {
+      throw makeError(status, data)
+    }
+
+    return data
   }
 
-  function onRequest(path, { params, client, idempotent, body, method, headers, signal }) {
-    if (!querystring) querystring = require('querystring')
-    if (!urljoin) urljoin = require('url-join')
-
-    if (!client) {
-      if (!defaultClient) {
-        defaultClient = createPool(origin, {
-          connections: config.connections || 8,
-          pipelining: config.pipelining || 3,
-        })
-      }
-      client = defaultClient
-    }
-
-    if (!body) {
-      body = null
-    } else if (typeof body !== 'string') {
-      body = JSON.stringify(body)
-    }
-
-    return new Observable((o) => {
-      function abort() {
-        innerSignal.emit('abort')
-      }
-
-      if (signal?.addEventListener) {
-        signal.addEventListener('abort', abort)
-      } else if (signal?.addListener) {
-        signal.addListener('abort', abort)
-      }
-
-      const innerSignal = new EE()
-      client.stream(
-        {
-          // TODO (fix): What if pathname or params is empty?
-          path: urljoin(pathname, path, `?${querystring.stringify(params || {})}`),
-          idempotent,
-          method,
-          signal: innerSignal,
-          body,
-          headers,
-        },
-        ({ statusCode }) => {
-          if (statusCode < 200 || statusCode >= 300) {
-            throw createError(statusCode, { headers })
-          }
-          return new Writable({
-            write(chunk, encoding, callback) {
-              o.next(chunk.toString())
-              callback()
-            },
-          })
-        },
-        (err) => {
-          if (err) {
-            o.error(err)
-          } else {
-            o.complete()
-          }
-        }
-      )
-
-      return () => {
-        if (signal?.removeEventListener) {
-          signal.removeEventListener('abort', abort)
-        } else if (signal?.removeListener) {
-          signal.removeListener('abort', abort)
-        }
-
-        abort()
-      }
+  async function put(path, params, body, { client, signal, idempotent = true, headers } = {}) {
+    const { data, status } = await request(path, {
+      params,
+      client,
+      idempotent,
+      body,
+      method: 'PUT',
+      headers,
+      signal,
     })
+    if (status < 200 || status >= 300) {
+      throw makeError(status, data)
+    }
+    return data
+  }
+
+  async function post(path, params, body, { client, signal, idempotent = true, headers } = {}) {
+    const { data, status } = await request(path, {
+      params,
+      client,
+      idempotent,
+      body,
+      method: 'POST',
+      headers,
+      signal,
+    })
+    if (status < 200 || status >= 300) {
+      throw makeError(status, data)
+    }
+    return data
+  }
+
+  async function get(path, params, body, { client, signal, idempotent = true, headers } = {}) {
+    const { data, status } = await request(path, {
+      params,
+      client,
+      idempotent,
+      body,
+      method: 'GET',
+      headers,
+      signal,
+    })
+    if (status < 200 || status >= 300) {
+      throw makeError(status, data)
+    }
+    return data
+  }
+
+  async function _delete(path, params, body, { client, signal, idempotent = true, headers } = {}) {
+    const { data, status } = await request(path, {
+      params,
+      client,
+      idempotent,
+      body,
+      method: 'DELETE',
+      headers,
+      signal,
+    })
+    if (status < 200 || status >= 300) {
+      throw makeError(status, data)
+    }
+    return data
+  }
+
+  async function info(path, params, body, { client, signal, idempotent = true, headers } = {}) {
+    const { data, status } = await request('', {
+      params,
+      client,
+      idempotent,
+      body,
+      method: 'GET',
+      headers,
+      signal,
+    })
+    if (status < 200 || status >= 300) {
+      throw makeError(status, data)
+    }
+    return data
   }
 
   return {
-    async put(...args) {
-      return await onPut(...args)
-        .first()
-        .toPromise()
-    },
-    async post(...args) {
-      return await onPost(...args)
-        .first()
-        .toPromise()
-    },
-    async get(...args) {
-      return await onGet(...args)
-        .first()
-        .toPromise()
-    },
-    async delete(...args) {
-      return await onDelete(...args)
-        .first()
-        .toPromise()
-    },
-    async info(...args) {
-      return await onInfo(...args)
-        .first()
-        .toPromise()
-    },
-    async allDocs(...args) {
-      return await onAllDocs(...args)
-        .first()
-        .toPromise()
-    },
-    changes(...args) {
-      // TODO (fix): Backpressure...
-
-      const pt = new PassThrough()
-
-      const subscription = onChanges(...args).subscribe(
-        (val) => pt.write(val),
-        (err) => pt.destroy(err),
-        () => pt.end()
-      )
-
-      pt._destroy = () => {
-        subscription.unsubscribe()
-      }
-
-      return pt
-    },
+    request,
+    bulkDocs,
+    allDocs,
+    put,
+    post,
+    get,
+    delete: _delete,
+    info,
     onChanges, // TODO (fix): Deprecate...
     createClient(url, options) {
-      return createPool(url || origin, options)
+      return new undici.Pool(url || origin, options)
     },
   }
 }
