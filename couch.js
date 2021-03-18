@@ -55,10 +55,6 @@ module.exports = function (opts) {
     })
 
   function changes({ client, ...options } = {}) {
-    if (client) {
-      throw new Error('not supported')
-    }
-
     const params = {}
 
     let body
@@ -114,9 +110,12 @@ module.exports = function (opts) {
     // Limit 0 is the same as 1.
     const limit = params.limit != null ? params.limit || 1 : Infinity
 
-    client = new undici.Client(origin, {
-      bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
-    })
+    client =
+      client ??
+      new undici.Client(origin, {
+        bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
+        pipelining: 0,
+      })
 
     const readable = new Readable({
       objectMode: true,
