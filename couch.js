@@ -284,13 +284,7 @@ module.exports = function (opts) {
     )
   }
 
-  async function bulkDocs(path, body, { client, signal, idempotent = true, ...options } = {}) {
-    const params = {}
-
-    if (options.batch) {
-      params.batch = options.batch
-    }
-
+  async function bulkDocs(path, body, { client, signal, idempotent = true } = {}) {
     const res = await request(path, {
       client,
       idempotent,
