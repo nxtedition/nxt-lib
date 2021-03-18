@@ -311,8 +311,10 @@ module.exports = function (opts) {
   async function allDocs(path, opts) {
     if (path && typeof path === 'object') {
       opts = path
-      path = '_all_docs'
+      path = null
     }
+
+    path = path || '_all_docs'
 
     const { client, signal, idempotent = true, ...options } = opts ?? {}
 
