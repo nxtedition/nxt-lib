@@ -50,15 +50,15 @@ module.exports = function (opts) {
     config = { ...config, url: config.name }
   }
 
+  const { origin, pathname } = new URL(Array.isArray(config.url) ? config.url[0] : config.url)
+
   const getClient = makeWeak(
     () =>
-      new undici.Pool({
+      new undici.Pool(origin, {
         connections: 0,
         pipelining: 3,
       })
   )
-
-  const { origin, pathname } = new URL(Array.isArray(config.url) ? config.url[0] : config.url)
 
   const defaultClient = new undici.Pool(origin, {
     connections: 0,
@@ -513,9 +513,5 @@ module.exports = function (opts) {
     info,
     changes,
     onChanges, // TODO: deprecate
-    createClient(url, options) {
-      // TODO: deprecate
-      return new undici.Pool(url || origin, options)
-    },
   }
 }
