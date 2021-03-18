@@ -290,8 +290,8 @@ module.exports = function (opts) {
     )
   }
 
-  async function bulkDocs(path, body, { client, signal, idempotent = true } = {}) {
-    const res = await request(path || '_bulk_docs', {
+  async function bulkDocs(body, { client, signal, idempotent = true } = {}) {
+    const res = await request('_bulk_docs', {
       client,
       idempotent,
       body,
@@ -306,7 +306,11 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function allDocs(path, { client, signal, idempotent = true, ...options } = {}) {
+  function allDocs(options) {
+    return query('_all_docs', options)
+  }
+
+  async function query(path, { client, signal, idempotent = true, ...options } = {}) {
     const params = {}
     const headers = ['Accept', 'application/json']
 
@@ -486,6 +490,7 @@ module.exports = function (opts) {
     request,
     bulkDocs,
     allDocs,
+    query,
     put,
     post,
     get,
