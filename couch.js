@@ -25,11 +25,6 @@ module.exports = function (opts) {
 
   const { protocol, hostname, port, pathname } = new URL(config.url || config.name)
 
-  function createClient(...args) {
-    if (!undici) undici = require('undici')
-    return new undici.Client(...args)
-  }
-
   function createPool(...args) {
     if (!undici) undici = require('undici')
     return new undici.Pool(...args)
@@ -101,13 +96,14 @@ module.exports = function (opts) {
       const userClient = options.client
       const client =
         userClient ||
-        createClient(
+        createPool(
           {
             protocol,
             hostname,
             port,
           },
           {
+            connections: 1,
             bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
           }
         )
