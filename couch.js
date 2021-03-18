@@ -54,8 +54,8 @@ module.exports = function (opts) {
   const defaultClient =
     opts.client ??
     new undici.Pool(origin, {
-      connections: config.connections || 8,
-      pipelining: config.pipelining || 3,
+      connections: config.connections || 0,
+      pipelining: config.pipelining || 1,
     })
 
   function changes({ client, ...options } = {}) {
