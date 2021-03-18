@@ -10,10 +10,12 @@ let undici
 module.exports = function (opts) {
   let config
   if (typeof opts === 'string') {
-    config = { url: opts }
-  } else if (opts.url) {
     config = opts
-  } else if (opts.config) {
+  } else if (opts?.url) {
+    config = opts
+  } else if (opts?.couchdb || opts?.couch) {
+    config = opts.couchdb || opts.couch
+  } else if (opts?.config) {
     config = opts.config.couchdb || opts.config.couch || opts.config
   } else {
     throw new Error('invalid options')
@@ -23,7 +25,11 @@ module.exports = function (opts) {
     config = { url: config }
   }
 
-  const { origin, pathname } = new URL(config.url || config.name)
+  if (!config.url && config.name) {
+    config = { ...config, url: config.name }
+  }
+
+  const { origin, pathname } = new URL(config.url)
 
   function createPool(...args) {
     if (!undici) undici = require('undici')
