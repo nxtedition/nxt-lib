@@ -29,7 +29,7 @@ module.exports = function (opts) {
     config = { ...config, url: config.name }
   }
 
-  const { origin, pathname } = new URL(config.url)
+  const { origin, pathname } = new URL(Array.isArray(config.url) ? config.url[0] : config.url)
 
   function createPool(...args) {
     if (!undici) undici = require('undici')
