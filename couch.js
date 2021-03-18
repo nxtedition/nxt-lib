@@ -165,7 +165,8 @@ module.exports = function (opts) {
           this.status = statusCode
           this.headers = parseHeaders(headers)
 
-          if (params.feed === 'continuous' && (statusCode < 200 || statusCode >= 300)) {
+          if (statusCode < 200 || statusCode >= 300) {
+            // TODO (fix): Read error data.
             throw createError(statusCode, { headers })
           }
         },
