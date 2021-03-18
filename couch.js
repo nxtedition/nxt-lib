@@ -1,4 +1,5 @@
 const { Observable } = require('rxjs')
+const { Readable } = require('stream')
 const createError = require('http-errors')
 
 const kListener = Symbol('kListener')
@@ -87,7 +88,7 @@ module.exports = function (opts) {
       pipelining: config.pipelining || 3,
     })
 
-  function onChanges({ client, ...options } = {}) {
+  function changes({ client, ...options } = {}) {
     if (client) {
       throw new Error('not supported')
     }
@@ -143,65 +144,86 @@ module.exports = function (opts) {
     params.feed = 'continuous'
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
 
-    return new Observable((o) => {
-      // Continuos feed never ends even with limit.
-      // Limit 0 is the same as 1.
-      const limit = params.limit != null ? params.limit || 1 : Infinity
+    // Continuos feed never ends even with limit.
+    // Limit 0 is the same as 1.
+    const limit = params.limit != null ? params.limit || 1 : Infinity
 
-      const client = new undici.Client(origin, {
-        bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
-      })
+    client = new undici.Client(origin, {
+      bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
+    })
 
-      // TODO (fix): client.dispatch + backpressure with node streams instead of rxjs observable.
-      client.dispatch(
-        {
-          // TODO (fix): What if pathname or params is empty?
-          path: urljoin(pathname, '/_changes', `?${querystring.stringify(params || {})}`),
-          idempotent: true,
-          method,
-          body,
+    const readable = new Readable({
+      objectMode: true,
+      read() {},
+      destroy(err, callback) {
+        client.destroy(err, callback)
+      },
+    })
+
+    // TODO (fix): client.dispatch + backpressure with node streams instead of rxjs observable.
+    client.dispatch(
+      {
+        // TODO (fix): What if pathname or params is empty?
+        path: urljoin(pathname, '/_changes', `?${querystring.stringify(params || {})}`),
+        idempotent: false,
+        method,
+        body,
+      },
+      {
+        readable,
+        status: null,
+        data: '',
+        count: 0,
+        onConnect() {
+          // Do nothing...
         },
-        {
-          status: null,
-          data: '',
-          count: 0,
-          onConnect() {
-            // Do nothing...
-          },
-          onHeaders(statusCode, headers) {
-            this.status = statusCode
+        onHeaders(statusCode, headers, resume) {
+          this.readable._read = resume
+          this.status = statusCode
 
-            if (params.feed === 'continuous' && (statusCode < 200 || statusCode >= 300)) {
-              throw createError(statusCode, { headers })
-            }
-          },
-          onData(chunk) {
-            this.data += chunk
-            const lines = this.data.split(/(?<!\\)\n/)
-            this.data = lines.pop()
-            for (const line of lines) {
-              if (line) {
-                this.count += 1
-                o.next(JSON.parse(line))
-                if (this.count === limit) {
-                  o.complete()
-                }
-              } else {
-                o.next(null)
+          if (params.feed === 'continuous' && (statusCode < 200 || statusCode >= 300)) {
+            throw createError(statusCode, { headers })
+          }
+        },
+        onData(chunk) {
+          this.data += chunk
+          const lines = this.data.split(/(?<!\\)\n/)
+          this.data = lines.pop()
+
+          let running = true
+          for (const line of lines) {
+            if (line) {
+              this.count += 1
+              running = running && readable.push(JSON.parse(line))
+              if (this.count === limit) {
+                readable.push(null)
               }
             }
-          },
-          onComplete() {
-            o.complete()
-          },
-          onError(err) {
-            o.error(err)
-          },
-        }
-      )
+          }
+
+          return running
+        },
+        onComplete() {
+          readable.push(null)
+        },
+        onError(err) {
+          readable.destroy(err)
+        },
+      }
+    )
+
+    return readable
+  }
+
+  function onChanges(options) {
+    return new Observable((o) => {
+      const stream = changes(options)
+        .on('data', (data) => o.next(data))
+        .on('error', (err) => o.error(err))
+        .on('end', () => o.complete())
 
       return () => {
-        client.destroy()
+        stream.destroy()
       }
     })
   }
@@ -276,7 +298,7 @@ module.exports = function (opts) {
   }
 
   async function bulkDocs(path, body, { client, signal, idempotent = true } = {}) {
-    const res = await request(path, {
+    const res = await request(path || '_bulk_docs', {
       client,
       idempotent,
       body,
@@ -360,7 +382,7 @@ module.exports = function (opts) {
       headers.push('Content-Type', 'application/json')
     }
 
-    const res = await request(path, {
+    const res = await request(path || '_all_docs', {
       params,
       client,
       idempotent,
@@ -476,8 +498,10 @@ module.exports = function (opts) {
     get,
     delete: _delete,
     info,
-    onChanges, // TODO (fix): Deprecate...
+    changes,
+    onChanges, // TODO: deprecate
     createClient(url, options) {
+      // TODO: deprecate
       return new undici.Pool(url || origin, options)
     },
   }
