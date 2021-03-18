@@ -470,8 +470,8 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function info(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const res = await request(path, {
+  async function info(params, body, { client, signal, idempotent = true, headers } = {}) {
+    const res = await request(null, {
       params,
       client,
       idempotent,
