@@ -286,7 +286,7 @@ module.exports = function (opts) {
     )
   }
 
-  async function bulkDocs(path, body, { client, signal, ...options }) {
+  async function bulkDocs(path, body, { client, signal, ...options } = {}) {
     const params = {}
 
     if (options.batch) {
