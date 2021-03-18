@@ -153,12 +153,15 @@ module.exports = function (opts) {
           if (this.readable.destroyed) {
             abort()
           } else {
-            this.readable._destroy = abort
+            this.readable._destroy = (err, callback) => {
+              abort()
+              callback(err)
+            }
           }
           // Do nothing...
         },
         onHeaders(statusCode, headers, resume) {
-          this.readable._read = resume
+          this.readable._read = () => resume()
           this.status = statusCode
           this.headers = parseHeaders(headers)
 
