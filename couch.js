@@ -135,10 +135,19 @@ module.exports = function (opts) {
       read() {},
     })
 
+    if (pathname === '/') {
+      throw new Error('invalid pathname')
+    }
+
+    let path = pathname + '/_changes'
+
+    if (params) {
+      path += `?${querystring.stringify(params)}`
+    }
+
     client.dispatch(
       {
-        // TODO (fix): What if pathname or params is empty?
-        path: urljoin(pathname, '/_changes', `?${querystring.stringify(params || {})}`),
+        path,
         idempotent: false,
         method,
         body,
@@ -213,8 +222,11 @@ module.exports = function (opts) {
     })
   }
 
+  const ACCEPT_HEADERS = ['Accept', 'application/json']
+  const ACCEPT_CONTENT_TYPE_HEADERS = [...ACCEPT_HEADERS, 'Content-Type', 'application/json']
+
   function request(
-    path,
+    url,
     { params, client = defaultClient, idempotent, body, method, headers, signal }
   ) {
     if (Array.isArray(headers)) {
@@ -226,17 +238,23 @@ module.exports = function (opts) {
         headers.push(key, val)
       }
     } else {
-      headers = ['Accept', 'application/json']
-      if (body) {
-        headers.push('Content-Type', 'application/json')
-      }
+      headers = body ? ACCEPT_CONTENT_TYPE_HEADERS : ACCEPT_HEADERS
+    }
+
+    let path = pathname
+
+    if (url) {
+      path = urljoin(path, url)
+    }
+
+    if (params) {
+      path += `?${querystring.stringify(params)}`
     }
 
     return new Promise((resolve, reject) =>
       client.dispatch(
         {
-          // TODO (fix): What if pathname or params is empty?
-          path: urljoin(pathname, path || '', `?${querystring.stringify(params || {})}`),
+          path,
           idempotent,
           method,
           body: typeof body === 'object' && body ? JSON.stringify(body) : body,
