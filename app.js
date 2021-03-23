@@ -263,7 +263,7 @@ module.exports = function (appConfig, onTerminate) {
             RECONNECTING: 'warn',
           }[connectionState] || 'info'
         logger[level](
-          { connectionState, username: userName },
+          { connectionState, username: userName, url: dsConfig.url },
           'Deepstream Connection State Changed.'
         )
       })
