@@ -168,7 +168,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
         next(),
       ])
     } finally {
-      signal.abort()
+      ac.abort()
     }
 
     reqLogger.debug('stream completed')
