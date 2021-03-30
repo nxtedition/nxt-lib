@@ -84,8 +84,7 @@ module.exports.request = async function request(ctx, next) {
 
     if (res.destroyed && res.writableEnded === false) {
       reqLogger.debug({ err, statusCode, responseTime }, 'request aborted')
-    }
-    if (statusCode < 500) {
+    } else if (statusCode < 500) {
       reqLogger.warn({ err, statusCode, responseTime }, 'request failed')
     } else {
       reqLogger.error({ err, statusCode, responseTime }, 'request error')
