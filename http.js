@@ -32,38 +32,34 @@ module.exports.request = async function request(ctx, next) {
   try {
     reqLogger.debug('request started')
 
-    try {
-      await Promise.all([
-        new Promise((resolve, reject) =>
-          req
-            .on('close', resolve)
-            .on('error', reject)
-            .on('timeout', () => {
-              reject(new createError.RequestTimeout())
-            })
-        ),
-        new Promise((resolve, reject) =>
-          res
-            .on('close', function () {
-              // Normalize OutgoingMessage.destroyed
-              this.destroyed = true
+    await Promise.all([
+      new Promise((resolve, reject) =>
+        req
+          .on('close', resolve)
+          .on('error', reject)
+          .on('timeout', () => {
+            reject(new createError.RequestTimeout())
+          })
+      ),
+      new Promise((resolve, reject) =>
+        res
+          .on('close', function () {
+            // Normalize OutgoingMessage.destroyed
+            this.destroyed = true
 
-              if (this.writableEnded === false) {
-                reject(new Error('aborted'))
-              } else {
-                resolve()
-              }
-            })
-            .on('error', reject)
-            .on('timeout', () => {
-              reject(new createError.RequestTimeout())
-            })
-        ),
-        next(),
-      ])
-    } finally {
-      ac.abort()
-    }
+            if (this.writableEnded === false) {
+              reject(new Error('aborted'))
+            } else {
+              resolve()
+            }
+          })
+          .on('error', reject)
+          .on('timeout', () => {
+            reject(new createError.RequestTimeout())
+          })
+      ),
+      next(),
+    ])
 
     assert(res.writableEnded)
     assert(res.statusCode)
@@ -124,6 +120,8 @@ module.exports.request = async function request(ctx, next) {
     } else {
       res.destroy(err)
     }
+  } finally {
+    ac.abort()
   }
 }
 
@@ -147,29 +145,25 @@ module.exports.upgrade = async function upgrade(ctx, next) {
   try {
     reqLogger.debug('stream started')
 
-    try {
-      await Promise.all([
-        new Promise((resolve, reject) =>
-          req
-            .on('close', resolve)
-            .on('error', reject)
-            .on('timeout', () => {
-              reject(new createError.RequestTimeout())
-            })
-        ),
-        new Promise((resolve, reject) =>
-          socket
-            .on('close', resolve)
-            .on('error', reject)
-            .on('timeout', () => {
-              reject(new createError.RequestTimeout())
-            })
-        ),
-        next(),
-      ])
-    } finally {
-      ac.abort()
-    }
+    await Promise.all([
+      new Promise((resolve, reject) =>
+        req
+          .on('close', resolve)
+          .on('error', reject)
+          .on('timeout', () => {
+            reject(new createError.RequestTimeout())
+          })
+      ),
+      new Promise((resolve, reject) =>
+        socket
+          .on('close', resolve)
+          .on('error', reject)
+          .on('timeout', () => {
+            reject(new createError.RequestTimeout())
+          })
+      ),
+      next(),
+    ])
 
     reqLogger.debug('stream completed')
   } catch (err) {
@@ -189,5 +183,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
     })
 
     socket.destroy(err)
+  } finally {
+    ac.abort()
   }
 }
