@@ -120,7 +120,7 @@ module.exports.request = async function request(ctx, next) {
       res.destroy(err)
     }
   } finally {
-    ac.abort()
+    queueMicrotask(() => ac.abort())
   }
 }
 
@@ -183,6 +183,6 @@ module.exports.upgrade = async function upgrade(ctx, next) {
 
     socket.destroy(err)
   } finally {
-    ac.abort()
+    queueMicrotask(() => ac.abort())
   }
 }
