@@ -83,11 +83,20 @@ module.exports.request = async function request(ctx, next) {
     reqLogger = reqLogger.child({ res })
 
     if (res.destroyed && res.writableEnded === false) {
-      reqLogger.debug({ err, statusCode, responseTime }, 'request aborted')
+      reqLogger.debug(
+        { err: err ?? createError(statusCode), statusCode, responseTime },
+        'request aborted'
+      )
     } else if (statusCode < 500) {
-      reqLogger.warn({ err, statusCode, responseTime }, 'request failed')
+      reqLogger.warn(
+        { err: err ?? createError(statusCode), statusCode, responseTime },
+        'request failed'
+      )
     } else {
-      reqLogger.error({ err, statusCode, responseTime }, 'request error')
+      reqLogger.error(
+        { err: err ?? createError(statusCode), statusCode, responseTime },
+        'request error'
+      )
     }
 
     req.on('error', (err) => {
