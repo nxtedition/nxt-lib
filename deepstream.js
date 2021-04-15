@@ -154,9 +154,8 @@ function rpcObserve(ds, rpcName, data) {
         if (error) {
           throw error
         }
-        return data
+        return data || {}
       })
-      .filter(Boolean)
   })
 }
 
