@@ -1,3 +1,5 @@
+const seen = Symbol('circular-ref-tag')
+
 module.exports = {
   err: (err) => serializeError(err),
   res: (res) =>
@@ -63,37 +65,44 @@ function serializeError(err) {
     return
   }
 
-  let obj
   if (typeof err === 'string') {
-    obj = {
+    err = {
       message: err,
     }
-  } else if (typeof err === 'object') {
-    obj = {
-      type: err.constructor.name,
-      message: err.message,
-      stack: err.stack,
-      data: err.data != null ? JSON.stringify(err.data, undefined, 2) : undefined,
+  } else if (Array.isArray(err)) {
+    err = {
+      errors: err,
     }
-
-    for (const key in err) {
-      const val = err[key]
-      if (obj[key] === undefined && typeof val !== 'object') {
-        obj[key] = val
-      }
-    }
-  } else {
-    obj = {
+  } else if (typeof err !== 'object') {
+    err = {
       message: 'invalid error',
     }
   }
 
-  if (obj.cause) {
-    obj.cause = serializeError(err)
+  /* eslint-disable no-prototype-builtins */
+  if (err.hasOwnProperty(seen)) {
+    return
+  }
+
+  err[seen] = undefined // tag to prevent re-looking at this
+
+  const obj = {
+    type: err.constructor?.toString() === '[object Function]' ? err.constructor.name : err.name,
+    message: err.message,
+    stack: err.stack,
+    data: err.data != null ? JSON.stringify(err.data, undefined, 2) : undefined,
   }
 
   if (Array.isArray(obj.errors)) {
-    obj.errors = obj.errors.map((err) => serializeError(err))
+    obj.errors = obj.errors.map((err) => serializeError(err)).filter(Boolean)
+  }
+
+  for (const key in err) {
+    if (obj[key] !== undefined) {
+      continue
+    }
+
+    obj[key] = err[key] instanceof Error ? serializeError(err[key]) : err[key]
   }
 
   return obj
