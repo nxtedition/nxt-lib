@@ -1,36 +1,5 @@
 module.exports = {
-  err: (err) => {
-    if (!err) {
-      return
-    }
-
-    let obj
-    if (typeof err === 'string') {
-      obj = {
-        message: err,
-      }
-    } else if (typeof err === 'object') {
-      obj = {
-        type: err.constructor.name,
-        message: err.message,
-        stack: err.stack,
-        data: err.data != null ? JSON.stringify(err.data, undefined, 2) : undefined,
-      }
-
-      for (const key in err) {
-        const val = err[key]
-        if (obj[key] === undefined && typeof val !== 'object') {
-          obj[key] = val
-        }
-      }
-    } else {
-      obj = {
-        message: 'invalid error',
-      }
-    }
-
-    return obj
-  },
+  err: (err) => serializeError(err),
   res: (res) =>
     res && {
       id:
@@ -87,4 +56,45 @@ module.exports = {
       bytesWritten: ureq.bytesWritten,
       headers: ureq.headers,
     },
+}
+
+function serializeError(err) {
+  if (!err) {
+    return
+  }
+
+  let obj
+  if (typeof err === 'string') {
+    obj = {
+      message: err,
+    }
+  } else if (typeof err === 'object') {
+    obj = {
+      type: err.constructor.name,
+      message: err.message,
+      stack: err.stack,
+      data: err.data != null ? JSON.stringify(err.data, undefined, 2) : undefined,
+    }
+
+    for (const key in err) {
+      const val = err[key]
+      if (obj[key] === undefined && typeof val !== 'object') {
+        obj[key] = val
+      }
+    }
+  } else {
+    obj = {
+      message: 'invalid error',
+    }
+  }
+
+  if (obj.cause) {
+    obj.cause = serializeError(err)
+  }
+
+  if (Array.isArray(obj.errors)) {
+    obj.errors = obj.errors.map((err) => serializeError(err))
+  }
+
+  return obj
 }
