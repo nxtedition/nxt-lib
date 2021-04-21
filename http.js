@@ -16,7 +16,7 @@ module.exports.request = async function request(ctx, next) {
   const signal = ac.signal
 
   ctx.id = req.id = req.headers['request-id'] || xuid()
-  ctx.logger = req.log = logger.child({ req })
+  ctx.logger = req.log = logger.child({ req: { id: req.id, method: req.method, url: req.url } })
   ctx.signal = signal
   ctx.method = req.method
   ctx.url = requestTarget(req)
@@ -140,7 +140,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
   const signal = ac.signal
 
   ctx.id = req.id = req.headers['request-id'] || xuid()
-  ctx.logger = req.log = logger.child({ req: { id: req.id } })
+  ctx.logger = req.log = logger.child({ req: { id: req.id, method: req.method, url: req.url } })
   ctx.signal = signal
   ctx.url = requestTarget(req)
   ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : null
