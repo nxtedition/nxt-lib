@@ -1,6 +1,9 @@
 const fsp = require('fs/promises')
+const crypto = require('crypto')
 
 module.exports.readGenerator = async function* (filePath, { start = 0, end } = {}) {
+  // TODO (fix): More arg validation.
+
   const fd = await fsp.open(filePath)
   try {
     let pos = start
@@ -34,4 +37,21 @@ module.exports.readGenerator = async function* (filePath, { start = 0, end } = {
   } finally {
     await fd.close()
   }
+}
+
+module.export = async function hashFile(filePath, { signal, algorithm = 'md5' } = {}) {
+  // TODO (fix): More arg validation.
+
+  if (signal?.aborted) {
+    throw new Error('aborted')
+  }
+
+  const hasher = crypto.createHash(algorithm)
+  for await (const buf of module.exports.readGenerator(filePath)) {
+    if (signal?.aborted) {
+      throw new Error('aborted')
+    }
+    hasher.update(buf)
+  }
+  return hasher.digest()
 }
