@@ -1,19 +1,10 @@
 const fsp = require('fs/promises')
-const { AbortError } = require('./errors')
 
-module.exports.readGenerator = async function* (filePath, { start = 0, end, signal } = {}) {
-  if (signal?.aborted) {
-    throw new AbortError()
-  }
-
+module.exports.readGenerator = async function* (filePath, { start = 0, end } = {}) {
   const fd = await fsp.open(filePath)
   try {
     let pos = start
     while (true) {
-      if (signal?.aborted) {
-        throw new AbortError()
-      }
-
       if (end && pos >= end) {
         break
       }
