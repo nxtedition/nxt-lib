@@ -1,5 +1,6 @@
 const fsp = require('fs/promises')
 const crypto = require('crypto')
+const { AbortError } = require('./errors')
 
 async function* readGenerator(filePath, { start = 0, end } = {}) {
   // TODO (fix): More arg validation.
@@ -43,13 +44,13 @@ async function hashFile(filePath, { signal, algorithm = 'md5' } = {}) {
   // TODO (fix): More arg validation.
 
   if (signal?.aborted) {
-    throw new Error('aborted')
+    throw new AbortError()
   }
 
   const hasher = crypto.createHash(algorithm)
   for await (const buf of readGenerator(filePath)) {
     if (signal?.aborted) {
-      throw new Error('aborted')
+      throw new AbortError()
     }
     hasher.update(buf)
   }
