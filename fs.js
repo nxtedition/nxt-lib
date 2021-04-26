@@ -39,7 +39,7 @@ module.exports.readGenerator = async function* (filePath, { start = 0, end } = {
   }
 }
 
-module.export = async function hashFile(filePath, { signal, algorithm = 'md5' } = {}) {
+module.exports.hashFile = async function (filePath, { signal, algorithm = 'md5' } = {}) {
   // TODO (fix): More arg validation.
 
   if (signal?.aborted) {
