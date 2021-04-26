@@ -1,7 +1,7 @@
 const fsp = require('fs/promises')
 const crypto = require('crypto')
 
-module.exports.readGenerator = async function* (filePath, { start = 0, end } = {}) {
+async function* readGenerator(filePath, { start = 0, end } = {}) {
   // TODO (fix): More arg validation.
 
   const fd = await fsp.open(filePath)
@@ -9,10 +9,10 @@ module.exports.readGenerator = async function* (filePath, { start = 0, end } = {
     let pos = start
     while (true) {
       if (end && pos >= end) {
-        break
+        return
       }
 
-      const { buffer, bytesRead } = await this.read({
+      const { buffer, bytesRead } = await fd.read({
         buffer: Buffer.allocUnsafe(end ? Math.min(end - pos, 65536) : 65536),
         position: pos,
       })
@@ -39,7 +39,7 @@ module.exports.readGenerator = async function* (filePath, { start = 0, end } = {
   }
 }
 
-module.exports.hashFile = async function (filePath, { signal, algorithm = 'md5' } = {}) {
+async function hashFile(filePath, { signal, algorithm = 'md5' } = {}) {
   // TODO (fix): More arg validation.
 
   if (signal?.aborted) {
@@ -47,11 +47,16 @@ module.exports.hashFile = async function (filePath, { signal, algorithm = 'md5' 
   }
 
   const hasher = crypto.createHash(algorithm)
-  for await (const buf of module.exports.readGenerator(filePath)) {
+  for await (const buf of readGenerator(filePath)) {
     if (signal?.aborted) {
       throw new Error('aborted')
     }
     hasher.update(buf)
   }
   return hasher.digest()
+}
+
+module.exports = {
+  readGenerator,
+  hashFile,
 }
