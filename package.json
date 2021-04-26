@@ -17,7 +17,9 @@
     "mime.js",
     "weakCache.js",
     "couch.js",
-    "app.js"
+    "app.js",
+    "errors.js",
+    "fs.js"
   ],
   "scripts": {
     "postinstall": "husky install",
