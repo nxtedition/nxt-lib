@@ -1,5 +1,5 @@
 const fsp = require('fs/promises')
-const { AbortError } = require('errors')
+const { AbortError } = require('./errors')
 
 module.exports.readGenerator = async function* (filePath, { start = 0, end, signal } = {}) {
   if (signal?.aborted) {
