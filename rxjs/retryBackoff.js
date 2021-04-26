@@ -6,6 +6,7 @@ module.exports = Observable.prototype.retryBackoff = function retryBackoff(confi
     maxAttempts = Infinity,
     maxInterval = Infinity,
     shouldRetry = () => true,
+    resetOnSuccess = true,
     backoffDelay = (attempt, initialInterval) => Math.pow(2, attempt) * initialInterval,
     tap,
   } = typeof config === 'number' ? { initialInterval: config } : config
@@ -19,7 +20,9 @@ module.exports = Observable.prototype.retryBackoff = function retryBackoff(confi
       timeout = null
       subscription = this.subscribe(
         (val) => {
-          attempt = 0
+          if (resetOnSuccess) {
+            attempt = 0
+          }
           o.next(val)
         },
         (err) => {
