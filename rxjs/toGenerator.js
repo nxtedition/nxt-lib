@@ -35,10 +35,11 @@ module.exports = Observable.prototype.toGenerator = function () {
         } else if (complete) {
           return
         } else {
+          /* eslint-disable */
           await new Promise((_resolve) => {
-            // eslint-disable-line
             resolve = _resolve
           })
+          /* eslint-enable */
           resolve = nop
         }
       }
