@@ -4744,10 +4744,10 @@ unbox-primitive@^1.0.0:
     has-symbols "^1.0.2"
     which-boxed-primitive "^1.0.2"
 
-undici@^4.0.0-alpha.3:
-  version "4.0.0-alpha.3"
-  resolved "https://registry.yarnpkg.com/undici/-/undici-4.0.0-alpha.3.tgz#0a821848d095ed84949c0e421e22b3930bcca47c"
-  integrity sha512-X3bY0gxAfxxwwqc4JUtSz/xXmadVdIahgg2IgADL7bfHCKZeOD6tRUUGI7eOoEn6Q9M0gOwh84KBTW2yde/Riw==
+undici@^4.0.0-alpha.5:
+  version "4.0.0-alpha.5"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-4.0.0-alpha.5.tgz#c2839a0c77e809a0b8040a589a0a3b4db7451f13"
+  integrity sha512-5KEvUmg7UuWfzPVwkdT1lzQs6SDeF/UYUVr6psoX5RNamy5v3rusZVH7Lb+B8cpwR216sdAaCXlbGgdh7jFIHQ==
 
 union-value@^1.0.0:
   version "1.0.1"
