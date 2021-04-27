@@ -217,10 +217,7 @@ module.exports = ({ ds } = {}) => {
             value
               ? ds.record.observe2(`${value}:asset.rawTypes`).pipe(
                   rx.map(({ state, data }) => ({
-                    state: Math.min(
-                      state,
-                      fp.isFinite(data.state) ? data.state : ds.record.PROVIDER
-                    ),
+                    state,
                     data: fp.includes(type, data.value),
                   })),
                   rx.filter(({ state, data }) => data || state >= ds.record.PROVIDER),
