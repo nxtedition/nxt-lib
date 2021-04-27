@@ -36,6 +36,7 @@ module.exports = Observable.prototype.toGenerator = function () {
           return
         } else {
           await new Promise((_resolve) => {
+            // eslint-disable-line
             resolve = _resolve
           })
           resolve = nop

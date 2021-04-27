@@ -4,4 +4,5 @@ module.exports = {
   throttleTime2: require('./throttleTime2'),
   retryBackoff: require('./retryBackoff'),
   toGenerator: require('./toGenerator'),
+  withAbortSignal: require('./withAbortSignal'),
 }
