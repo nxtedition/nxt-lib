@@ -23,15 +23,15 @@ module.exports.request = async function request(ctx, next) {
   ctx.url = requestTarget(req)
   ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : null
 
-  if (!ctx.url) {
-    throw new createError.BadRequest()
-  }
-
   res.setHeader('request-id', req.id)
 
   let reqLogger = logger.child({ req })
   try {
     reqLogger.debug('request started')
+
+    if (!ctx.url) {
+      throw new createError.BadRequest()
+    }
 
     await Promise.all([
       new Promise((resolve, reject) =>
@@ -146,13 +146,13 @@ module.exports.upgrade = async function upgrade(ctx, next) {
   ctx.url = requestTarget(req)
   ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : null
 
-  if (!ctx.url) {
-    throw new createError.BadRequest()
-  }
-
   const reqLogger = logger.child({ req })
   try {
     reqLogger.debug('stream started')
+
+    if (!ctx.url) {
+      throw new createError.BadRequest()
+    }
 
     await Promise.all([
       new Promise((resolve, reject) =>
