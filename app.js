@@ -8,9 +8,6 @@ module.exports = function (appConfig, onTerminate) {
   let config
   let logger
 
-  require('rxjs-compat')
-  require('./rxjs')
-
   const { createLogger } = require('./logger')
 
   const cleanAppConfig = ({
