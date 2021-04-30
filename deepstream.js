@@ -128,14 +128,17 @@ function rpcProvide(ds, rpcName, callback, options) {
           ret$ = Observable.of(ret$)
         }
 
-        return ret$.map((ret) =>
-          !ret
-            ? null
-            : ret
-                .map((data) => ({ data }))
-                .concat(Observable.of({ error: null }))
-                .catch((err) => Observable.of({ error: err.message }))
-                .scan((xs, x) => ({ ...xs, ...x }))
+        return ret$.pipe(
+          rx.map((ret) =>
+            !ret
+              ? null
+              : ret.pipe(
+                  rx.map((data) => ({ data })),
+                  rx.endWith({ error: null }),
+                  rx.catch((err) => Observable.of({ error: err.message })),
+                  rx.scan((xs, x) => ({ ...xs, ...x }))
+                )
+          )
         )
       } catch (err) {
         return Observable.of({ error: err.message })
@@ -148,26 +151,29 @@ function rpcProvide(ds, rpcName, callback, options) {
 function rpcObserve(ds, rpcName, data) {
   return Observable.defer(() => {
     const rpcId = xuid()
-    return observe(ds, `${rpcId}:${rpcName}`, data, ds.record.PROVIDER)
-      .pipe(rx.takeWhile(({ error }) => error === undefined, true))
-      .map(({ data, error }) => {
+    return observe(ds, `${rpcId}:${rpcName}`, data, ds.record.PROVIDER).pipe(
+      rx.takeWhile(({ error }) => error === undefined, true),
+      rx.map(({ data, error }) => {
         if (error) {
           throw error
         }
         return data || {}
       })
+    )
   })
 }
 
 function rpcMake(ds, rpcName, data, options) {
   const subject = new ReplaySubject(1)
   rpcObserve(ds, rpcName, data)
-    .timeout(
-      Number.isFinite(options)
-        ? options
-        : Number.isFinite(options && options.timeout)
-        ? options.timeout
-        : 10e3
+    .pipe(
+      rx.timeout(
+        Number.isFinite(options)
+          ? options
+          : Number.isFinite(options && options.timeout)
+          ? options.timeout
+          : 10e3
+      )
     )
     .subscribe(subject)
   return subject
