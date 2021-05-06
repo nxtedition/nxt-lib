@@ -105,5 +105,7 @@ function serializeError(err) {
     obj[key] = err[key] instanceof Error ? serializeError(err[key]) : err[key]
   }
 
+  delete err[seen]
+
   return obj
 }
