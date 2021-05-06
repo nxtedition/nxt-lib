@@ -278,7 +278,8 @@ module.exports = function (appConfig, onTerminate) {
 
   if (appConfig.status) {
     const os = require('os')
-    const { Observable } = require('rxjs')
+    const rxjs = require('rxjs')
+    const rx = require('rxjs/operators')
     const undici = require('undici')
     const fp = require('lodash/fp')
     const objectHash = require('object-hash')
@@ -287,92 +288,102 @@ module.exports = function (appConfig, onTerminate) {
     if (appConfig.status.subscribe) {
       status$ = appConfig.status
     } else if (typeof appConfig.status === 'function') {
-      status$ = Observable.defer(() => {
-        const ret = appConfig.status({ ds, couch, logger })
-        return ret?.then || ret?.subscribe ? ret : Observable.of(ret)
-      })
-        .catch((err) => Observable.of({ warnings: [err.message] }))
-        .repeatWhen(() => Observable.timer(10e3))
+      status$ = rxjs
+        .defer(() => {
+          const ret = appConfig.status({ ds, couch, logger })
+          return ret?.then || ret?.subscribe ? ret : rxjs.of(ret)
+        })
+        .catch((err) => rxjs.of({ warnings: [err.message] }))
+        .repeatWhen(() => rxjs.timer(10e3))
     } else if (appConfig.status && typeof appConfig.status === 'object') {
-      status$ = Observable.timer(0, 10e3).exhaustMap(async () => appConfig.status)
+      status$ = rxjs.timer(0, 10e3).pipe(rx.exhaustMap(() => appConfig.status))
     } else {
-      status$ = Observable.of({})
+      status$ = rxjs.of({})
     }
 
-    status$ = Observable.combineLatest(
-      [
-        status$.filter(Boolean).startWith(null).distinctUntilChanged(fp.isEqual),
-        toobusy &&
-          Observable.timer(0, 1e3)
-            .map(() =>
-              toobusy.lag() > 1e3
-                ? { level: 40, code: 'NXT_LAG', msg: `lag: ${toobusy.lag()}` }
-                : null
-            )
-            .distinctUntilChanged(fp.isEqual),
-        couch &&
-          Observable.timer(0, 10e3)
-            .exhaustMap(async () => {
-              try {
-                await couch.info()
-              } catch (err) {
-                return { level: 40, code: err.code, msg: 'couch: ' + err.message }
-              }
-            })
-            .distinctUntilChanged(fp.isEqual),
-        ds &&
-          Observable.timer(0, 10e3)
-            .exhaustMap(async () => {
-              try {
-                if (ds._url || ds.url) {
-                  const { host } = new URL(ds._url || ds.url)
-                  await undici.request(`http://${host}/healthcheck`)
+    status$ = rxjs
+      .combineLatest(
+        [
+          status$.pipe(rx.filter(Boolean), rx.startWith(null), rx.distinctUntilChanged(fp.isEqual)),
+          toobusy &&
+            rxjs.timer(0, 1e3).pipe(
+              rx.map(() =>
+                toobusy.lag() > 1e3
+                  ? { level: 40, code: 'NXT_LAG', msg: `lag: ${toobusy.lag()}` }
+                  : null
+              ),
+              rx.distinctUntilChanged(fp.isEqual)
+            ),
+          couch &&
+            rxjs.timer(0, 10e3).pipe(
+              rx.exhaustMap(async () => {
+                try {
+                  await couch.info()
+                } catch (err) {
+                  return { level: 40, code: err.code, msg: 'couch: ' + err.message }
                 }
-              } catch (err) {
-                return { level: 40, code: err.code, msg: 'ds: ' + err.message }
-              }
-            })
-            .distinctUntilChanged(fp.isEqual),
-      ].filter(Boolean)
-    )
-      .map(([status, lag, couch, ds]) => {
-        const messages = [
-          lag,
-          couch,
-          ds,
-          [status?.messages, status] // Compat
-            .find(Array.isArray)
-            ?.flat()
-            .filter(fp.isPlainObject),
-          [status?.warnings, status] // Compat
-            .find(Array.isArray)
-            ?.flat()
-            .filter(fp.isString)
-            .map((warning) => ({ level: 40, msg: warning })),
-        ]
-          .flat()
-          .filter(fp.isPlainObject)
-          .map((message) => ({
-            ...message,
-            id: message.id || objectHash(message),
-          }))
+              }),
+              rx.distinctUntilChanged(fp.isEqual)
+            ),
+          ds &&
+            rxjs.timer(0, 10e3).pipe(
+              rx.exhaustMap(async () => {
+                try {
+                  if (ds._url || ds.url) {
+                    const { host } = new URL(ds._url || ds.url)
+                    await undici.request(`http://${host}/healthcheck`)
+                  }
+                } catch (err) {
+                  return { level: 40, code: err.code, msg: 'ds: ' + err.message }
+                }
+              }),
+              rx.distinctUntilChanged(fp.isEqual)
+            ),
+        ].filter(Boolean)
+      )
+      .pipe(
+        rx.map(([status, lag, couch, ds]) => {
+          const messages = [
+            lag,
+            couch,
+            ds,
+            [status?.messages, status] // Compat
+              .find(Array.isArray)
+              ?.flat()
+              .filter(fp.isPlainObject),
+            [status?.warnings, status] // Compat
+              .find(Array.isArray)
+              ?.flat()
+              .filter(fp.isString)
+              .map((warning) => ({ level: 40, msg: warning })),
+          ]
+            .flat()
+            .filter(fp.isPlainObject)
+            .map((message) => ({
+              ...message,
+              id: message.id || objectHash(message),
+            }))
 
-        const warnings = messages.filter((x) => x.level >= 40 && x.msg).map((x) => x.msg)
+          const warnings = messages.filter((x) => x.level >= 40 && x.msg).map((x) => x.msg)
 
-        return {
-          ...status,
-          messages,
-          warnings: warnings.length === 0 ? null : warnings, // Compat
-        }
-      })
-      .retryWhen((err$) => err$.do((err) => logger.error({ err }, 'monitor.status')).delay(10e3))
-      .publishReplay(1)
-      .refCount()
+          return {
+            ...status,
+            messages,
+            warnings: warnings.length === 0 ? null : warnings, // Compat
+          }
+        }),
+        rx.retryWhen((err$) =>
+          err$.pipe(
+            rx.tap((err) => logger.error({ err }, 'monitor.status')),
+            rx.delay(10e3)
+          )
+        ),
+        rx.publishReplay(1),
+        rx.refCount()
+      )
 
     const loggerSubscription = status$
-      .pluck('messages')
-      .startWith([])
-      .pairwise()
+      .pipe(rx.pluck('messages'), rx.startWith([]), rx.pairwise())
       .subscribe(([prev, next]) => {
         for (const { msg, ...message } of fp.differenceBy('id', next, prev)) {
           logger.info({ status: msg, message }, 'status added')
@@ -399,27 +410,36 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.stats) {
     const v8 = require('v8')
     const os = require('os')
-    const { Observable } = require('rxjs')
+    const rxjs = require('rxjs')
+    const rx = require('rxjs/operators')
 
     let stats$
     if (appConfig.stats.subscribe) {
       stats$ = appConfig.stats
     } else if (typeof appConfig.stats === 'function') {
-      stats$ = Observable.timer(0, 10e3).exhaustMap(() => {
-        const ret = appConfig.stats({ ds, couch, logger })
-        return ret?.then || ret?.subscribe ? ret : Observable.of(ret)
-      })
+      stats$ = rxjs.timer(0, 10e3).pipe(
+        rx.exhaustMap(() => {
+          const ret = appConfig.stats({ ds, couch, logger })
+          return ret?.then || ret?.subscribe ? ret : rxjs.of(ret)
+        })
+      )
     } else if (appConfig.stats && typeof appConfig.stats === 'object') {
-      stats$ = Observable.timer(0, 10e3).exhaustMap(async () => appConfig.stats)
+      stats$ = rxjs.timer(0, 10e3).pipe(rx.exhaustMap(() => appConfig.stats))
     } else {
-      stats$ = Observable.of({})
+      stats$ = rxjs.of({})
     }
 
-    stats$ = stats$
-      .filter(Boolean)
-      .retryWhen((err$) => err$.do((err) => logger.error({ err }, 'monitor.stats')).delay(10e3))
-      .publishReplay(1)
-      .refCount()
+    stats$ = stats$.pipe(
+      rx.filter(Boolean),
+      rx.retryWhen((err$) =>
+        err$.pipe(
+          rx.tap((err) => logger.error({ err }, 'monitor.stats')),
+          rx.delay(10e3)
+        )
+      ),
+      rx.publishReplay(1),
+      rx.refCount()
+    )
 
     const hostname = process.env.NODE_ENV === 'production' ? os.hostname() : serviceName
 
@@ -427,7 +447,7 @@ module.exports = function (appConfig, onTerminate) {
 
     logger.debug({ hostname }, 'monitor.stats')
 
-    const subscription = stats$.auditTime(10e3).subscribe((stats) => {
+    const subscription = stats$.pipe(rx.auditTime(10e3)).subscribe((stats) => {
       if (process.env.NODE_ENV === 'production') {
         logger.debug(
           {
