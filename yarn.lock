@@ -4691,10 +4691,10 @@ unbox-primitive@^1.0.0:
     has-symbols "^1.0.2"
     which-boxed-primitive "^1.0.2"
 
-undici@^4.0.0-rc.3:
-  version "4.0.0-rc.3"
-  resolved "https://registry.yarnpkg.com/undici/-/undici-4.0.0-rc.3.tgz#567eca6daf8e5d163c318660f56311194455d2e8"
-  integrity sha512-pMRKr5mOTwmgmQPI2tVbcM1FHnKc5hiJP8lC1v3ks+BFd10oTxcakTnEqxbxspl+ZpD+5kc3PoAp5uw3p/M3Ng==
+undici@^4.0.0-rc.4:
+  version "4.0.0-rc.4"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-4.0.0-rc.4.tgz#c7dff7dc24a00e288635f7e3daf4aa0b47cf6ca9"
+  integrity sha512-vYr2ySnTM9RMW0QhKUims0/60ErroZZkC1E4sAzQXzR8j0DIXvKCWdI2FV7oC7JT4lNrB7sbDxeqIzElslMIgw==
 
 union-value@^1.0.0:
   version "1.0.1"
