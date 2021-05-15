@@ -135,7 +135,7 @@ function rpcProvide(ds, rpcName, callback, options) {
               : ret.pipe(
                   rx.map((data) => ({ data })),
                   rx.endWith({ error: null }),
-                  rx.catch((err) => Observable.of({ error: err.message })),
+                  rx.catchError((err) => Observable.of({ error: err.message })),
                   rx.scan((xs, x) => ({ ...xs, ...x }))
                 )
           )
