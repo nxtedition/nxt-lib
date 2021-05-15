@@ -1,4 +1,3 @@
-const xuid = require('xuid')
 const createError = require('http-errors')
 const { performance } = require('perf_hooks')
 const requestTarget = require('request-target')
@@ -9,6 +8,19 @@ const { AbortError } = require('./errors')
 
 const ERR_HEADER_EXPR = /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
 
+// https://github.com/fastify/fastify/blob/main/lib/reqIdGenFactory.js
+// 2,147,483,647 (2^31 − 1) stands for max SMI value (an internal optimization of V8).
+// With this upper bound, if you'll be generating 1k ids/sec, you're going to hit it in ~25 days.
+// This is very likely to happen in real-world applications, hence the limit is enforced.
+// Growing beyond this value will make the id generation slower and cause a deopt.
+// In the worst cases, it will become a float, losing accuracy.
+const maxInt = 2147483647
+let nextReqId = Math.floor(Math.random() * 2147483647)
+function genReqId(req) {
+  nextReqId = (nextReqId + 1) & maxInt
+  return `req-${nextReqId.toString(36)}`
+}
+
 module.exports.request = async function request(ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
@@ -16,7 +28,7 @@ module.exports.request = async function request(ctx, next) {
   const ac = new AbortController()
   const signal = ac.signal
 
-  ctx.id = req.id = req.headers['request-id'] || xuid()
+  ctx.id = req.id = req.headers['request-id'] || genReqId()
   ctx.logger = req.log = logger.child({ req: { id: req.id, method: req.method, url: req.url } })
   ctx.signal = signal
   ctx.method = req.method
@@ -140,7 +152,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
   const ac = new AbortController()
   const signal = ac.signal
 
-  ctx.id = req.id = req.headers['request-id'] || xuid()
+  ctx.id = req.id = req.headers['request-id'] || genReqId()
   ctx.logger = req.log = logger.child({ req: { id: req.id, method: req.method, url: req.url } })
   ctx.signal = signal
   ctx.url = requestTarget(req)
