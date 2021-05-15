@@ -256,6 +256,7 @@ module.exports = function (opts) {
       client.dispatch(
         {
           path,
+          origin,
           idempotent,
           method,
           body: typeof body === 'object' && body ? JSON.stringify(body) : body,
