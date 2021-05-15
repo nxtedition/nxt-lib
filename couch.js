@@ -52,18 +52,19 @@ module.exports = function (opts) {
 
   const { origin, pathname } = new URL(Array.isArray(config.url) ? config.url[0] : config.url)
 
-  const getClient = makeWeak(
-    () =>
-      new undici.Pool(origin, {
-        connections: 0,
-        pipelining: 3,
-      })
-  )
+  const getClient =
+    config.getClient ??
+    makeWeak(
+      (key, options) =>
+        new undici.Pool(origin, {
+          connections: 0,
+          pipelining: 1, // TODO (perf): Allow pipelining?
+          keepAliveTimeout: 30e3, // TODO (fix): What is correct keep alive timeout?
+          ...options,
+        })
+    )
 
-  const defaultClient = new undici.Pool(origin, {
-    connections: 0,
-    pipelining: 1,
-  })
+  const defaultClient = getClient({ pipelining: 1 })
 
   function changes({ client, ...options } = {}) {
     const params = {}
