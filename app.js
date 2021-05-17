@@ -339,14 +339,29 @@ module.exports = function (appConfig, onTerminate) {
               }),
               rx.distinctUntilChanged(fp.isEqual)
             ),
+          ds &&
+            new rxjs.Observable((o) => {
+              const _next = (state) => {
+                o.next({
+                  level: state !== 'OPEN' ? 50 : 30,
+                  code: `NXT_DEEPSTREAM_${state}`,
+                  msg: `ds: ${state}`,
+                })
+              }
+              ds.on('connectionStateChanged', _next)
+              return () => {
+                ds.off('connectionStateChanged', _next)
+              }
+            }),
         ].filter(Boolean)
       )
       .pipe(
-        rx.map(([status, lag, couch, ds]) => {
+        rx.map(([status, lag, couch, ds, dsConnected]) => {
           const messages = [
             lag,
             couch,
             ds,
+            dsConnected,
             [status?.messages, status] // Compat
               .find(Array.isArray)
               ?.flat()
