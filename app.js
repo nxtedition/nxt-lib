@@ -435,6 +435,7 @@ module.exports = function (appConfig, onTerminate) {
     const os = require('os')
     const rxjs = require('rxjs')
     const rx = require('rxjs/operators')
+    const { eventLoopUtilization } = require('perf_hooks').performance
 
     let stats$
     if (appConfig.stats.subscribe) {
@@ -470,21 +471,23 @@ module.exports = function (appConfig, onTerminate) {
 
     logger.debug({ hostname }, 'monitor.stats')
 
+    let elu1 = eventLoopUtilization?.()
     const subscription = stats$.pipe(rx.auditTime(10e3)).subscribe((stats) => {
       if (process.env.NODE_ENV === 'production') {
+        const elu2 = eventLoopUtilization?.()
         logger.debug(
           {
             ds: ds?.stats,
             couch: couch?.stats,
             lag: toobusy?.lag(),
             memory: process.memoryUsage(),
-            v8: {
-              heap: v8.getHeapStatistics(),
-            },
+            utilization: eventLoopUtilization?.(elu1, elu2),
+            heap: v8.getHeapStatistics(),
             ...stats,
           },
           'STATS'
         )
+        elu1 = elu2
       }
     })
 
