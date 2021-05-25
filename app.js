@@ -481,7 +481,7 @@ module.exports = function (appConfig, onTerminate) {
             couch: couch?.stats,
             lag: toobusy?.lag(),
             memory: process.memoryUsage(),
-            utilization: eventLoopUtilization?.(elu1, elu2),
+            utilization: eventLoopUtilization?.(elu2, elu1),
             heap: v8.getHeapStatistics(),
             ...stats,
           },
