@@ -304,7 +304,16 @@ module.exports = function (appConfig, onTerminate) {
     status$ = rxjs
       .combineLatest(
         [
-          status$.pipe(rx.filter(Boolean), rx.startWith(null), rx.distinctUntilChanged(fp.isEqual)),
+          status$.pipe(
+            rx.filter(Boolean),
+            rx.startWith(null),
+            rx.distinctUntilChanged(fp.isEqual),
+            rx.catchError((err) => {
+              logger.error({ err }, 'monitor.status')
+              return rxjs.of({ level: 50, code: err.code, msg: err.message })
+            }),
+            rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
+          ),
           toobusy &&
             rxjs.timer(0, 1e3).pipe(
               rx.map(() =>
@@ -387,12 +396,11 @@ module.exports = function (appConfig, onTerminate) {
             warnings: warnings.length === 0 ? null : warnings, // Compat
           }
         }),
-        rx.retryWhen((err$) =>
-          err$.pipe(
-            rx.tap((err) => logger.error({ err }, 'monitor.status')),
-            rx.delay(10e3)
-          )
-        ),
+        rx.catchError((err) => {
+          logger.error({ err }, 'monitor.status')
+          return rxjs.of({ level: 50, code: err.code, msg: err.message })
+        }),
+        rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
         rx.publishReplay(1),
         rx.refCount()
       )
