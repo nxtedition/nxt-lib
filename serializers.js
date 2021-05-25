@@ -9,7 +9,7 @@ module.exports = {
         res.req?.id ||
         (typeof res.getHeader === 'function' && res.getHeader('request-id')) ||
         (res.headers && typeof res.headers === 'object' && res.headers['request-id']) ||
-        (res.req.headers && typeof res.req.headers === 'object' && res.req.headers['request-id']),
+        (res.req?.headers && typeof res.req.headers === 'object' && res.req.headers['request-id']),
       stats: res.stats,
       statusCode: res.statusCode || res.status,
       bytesWritten: res.bytesWritten,
