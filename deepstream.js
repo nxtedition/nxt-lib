@@ -28,15 +28,15 @@ function provide(ds, domain, callback, options) {
     callback = cached(callback, options, (id, options, key) => key)
   }
 
-  let idExpr = '^([^{}]+:|{.*}:)?'
+  let idExpr = '^(?:([^{}])+:|{.*}:)?'
   if (options.id === true) {
     idExpr = '([^{}]+:)'
   } else if (options.id === false) {
-    idExpr = '({.*}:)?'
+    idExpr = '(?:{.*}:)?'
   }
 
   return ds.record.provide(
-    `^${idExpr}${domain.replace('.', '\\.')}(\\?.*)?$`,
+    `^${idExpr}${domain.replace('.', '\\.')}(?:\\?.*)?$`,
     (key) => {
       const [id, options] = parseKey(key)
       return callback(id, options, key)
