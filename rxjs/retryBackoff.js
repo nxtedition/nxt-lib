@@ -1,6 +1,6 @@
-const { Observable } = require('rxjs')
+const rxjs = require('rxjs')
 
-module.exports = Observable.prototype.retryBackoff = function retryBackoff(config) {
+module.exports = rxjs.Observable.prototype.retryBackoff = function retryBackoff(config) {
   const {
     initialInterval,
     maxAttempts = Infinity,
@@ -11,7 +11,7 @@ module.exports = Observable.prototype.retryBackoff = function retryBackoff(confi
     tap,
   } = typeof config === 'number' ? { initialInterval: config } : config
 
-  return new Observable((o) => {
+  return new rxjs.Observable((o) => {
     let attempt = 0
     let timeout = null
     let subscription = null

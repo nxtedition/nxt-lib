@@ -1,9 +1,10 @@
-const { Observable } = require('rxjs')
+const rxjs = require('rxjs')
+const rx = require('rxjs/operators')
 
-module.exports = Observable.prototype.combineMap = function (resolver) {
-  return this.switchMap((xs) =>
-    Array.isArray(xs) && xs.length > 0
-      ? Observable.combineLatest(xs.map(resolver))
-      : Observable.of([])
+module.exports = rxjs.Observable.prototype.combineMap = function (resolver) {
+  return this.pipe(
+    rx.switchMap((xs) =>
+      Array.isArray(xs) && xs.length > 0 ? rxjs.combineLatest(xs.map(resolver)) : rxjs.of([])
+    )
   )
 }

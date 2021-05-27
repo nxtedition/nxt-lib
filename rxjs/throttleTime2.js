@@ -1,7 +1,7 @@
-const { Observable } = require('rxjs')
+const rxjs = require('rxjs')
 
-module.exports = Observable.prototype.throttleTime2 = function throttleTime2(duration) {
-  return new Observable((o) => {
+module.exports = rxjs.Observable.prototype.throttleTime2 = function throttleTime2(duration) {
+  return new rxjs.Observable((o) => {
     let interval
     let nextValue
     let hasNextValue = false

@@ -1,8 +1,8 @@
-const { Observable } = require('rxjs')
+const rxjs = require('rxjs')
 
 function nop() {}
 
-module.exports = Observable.prototype.toGenerator = function () {
+module.exports = rxjs.Observable.prototype.toGenerator = function () {
   const observable = this
   return async function* () {
     const buffer = []

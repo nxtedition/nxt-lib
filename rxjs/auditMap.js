@@ -1,7 +1,7 @@
-const { Observable } = require('rxjs')
+const rxjs = require('rxjs')
 
-module.exports = Observable.prototype.auditMap = function auditMap(project) {
-  return new Observable((o) => {
+module.exports = rxjs.Observable.prototype.auditMap = function auditMap(project) {
+  return new rxjs.Observable((o) => {
     let pendingValue = null
     let hasPendingValue = false
     let isComplete = false
@@ -33,8 +33,7 @@ module.exports = Observable.prototype.auditMap = function auditMap(project) {
     function _tryNext(value) {
       try {
         const result = project(value)
-        const observable =
-          typeof result.then === 'function' ? Observable.fromPromise(result) : result
+        const observable = typeof result.then === 'function' ? rxjs.from(result) : result
         innerSubscription = observable.subscribe(_innerNext, _error, _innerComplete)
         if (innerSubscription && innerSubscription.closed) {
           innerSubscription = null
