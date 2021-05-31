@@ -401,6 +401,7 @@ module.exports = function (appConfig, onTerminate) {
           return rxjs.of({ level: 50, code: err.code, msg: err.message })
         }),
         rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
+        rx.startWith({}),
         rx.publishReplay(1),
         rx.refCount()
       )
@@ -465,6 +466,7 @@ module.exports = function (appConfig, onTerminate) {
           rx.delay(10e3)
         )
       ),
+      rx.startWith({}),
       rx.publishReplay(1),
       rx.refCount()
     )
