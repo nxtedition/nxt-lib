@@ -420,8 +420,10 @@ module.exports = function (appConfig, onTerminate) {
 
     logger.debug({ hostname }, 'monitor.status')
 
-    const unprovide = nxt?.record.provide(`^(.+):monitor.status$`, (key) =>
-      key === `${hostname}:monitor.status` ? status$ : null
+    const unprovide = nxt?.record.provide(
+      'monitor.status',
+      (id) => (id === hostname ? status$ : null),
+      { id: true }
     )
 
     destroyers.push(() => {
@@ -469,8 +471,10 @@ module.exports = function (appConfig, onTerminate) {
 
     const hostname = process.env.NODE_ENV === 'production' ? os.hostname() : serviceName
 
-    const unprovide = nxt?.record.provide(`^(.+):monitor.stats$`, (key) =>
-      key === `${hostname}:monitor.stats` ? stats$ : null
+    const unprovide = nxt?.record.provide(
+      'monitor.stats',
+      (id) => (id === hostname ? stats$ : null),
+      { id: true }
     )
 
     logger.debug({ hostname }, 'monitor.stats')
