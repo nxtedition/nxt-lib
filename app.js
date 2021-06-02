@@ -417,7 +417,8 @@ module.exports = function (appConfig, onTerminate) {
         }
       })
 
-    const hostname = process.env.NODE_ENV === 'production' ? os.hostname() : serviceName
+    const containerId = appConfig.containerId ?? os.hostname()
+    const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
 
     logger.debug({ hostname }, 'monitor.status')
 
@@ -471,7 +472,8 @@ module.exports = function (appConfig, onTerminate) {
       rx.refCount()
     )
 
-    const hostname = process.env.NODE_ENV === 'production' ? os.hostname() : serviceName
+    const containerId = appConfig.containerId ?? os.hostname()
+    const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
 
     const unprovide = nxt?.record.provide(
       'monitor.stats',
