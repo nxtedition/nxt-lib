@@ -73,13 +73,14 @@ function query(ds, { view, filter, state = ds.record.PROVIDER, ...options }, sta
   } else {
     x$ = ds.record.observe2(`query?${querystring.stringify(options)}`)
   }
-  return x$
-    .filter((x) => !state || x.state >= state)
-    .map(({ data, state }) => ({
+  return x$.pipe(
+    rx.filter((x) => !state || x.state >= state),
+    rx.map(({ data, state }) => ({
       ...data,
       state,
       rows: Array.isArray(data && data.rows) ? data.rows : [],
     }))
+  )
 }
 
 function stringifyFn(fn) {
