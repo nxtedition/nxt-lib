@@ -1,7 +1,7 @@
 const rxjs = require('rxjs')
 const { AbortError } = require('../errors')
 
-module.exports = rxjs.Observable.prototype.withAbortSignal = function (signal) {
+function withAbortSignal(signal) {
   return new rxjs.Observable((o) => {
     if (signal.aborted) {
       o.error(new AbortError())
@@ -16,3 +16,7 @@ module.exports = rxjs.Observable.prototype.withAbortSignal = function (signal) {
     }
   })
 }
+
+rxjs.Observable.prototype.withAbortSignal = withAbortSignal
+
+module.exports = (signal) => (o) => withAbortSignal.call(o, signal)
