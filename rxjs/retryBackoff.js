@@ -1,6 +1,6 @@
 const rxjs = require('rxjs')
 
-module.exports = rxjs.Observable.prototype.retryBackoff = function retryBackoff(config) {
+function retryBackoff(config) {
   const {
     initialInterval,
     maxAttempts = Infinity,
@@ -57,3 +57,7 @@ module.exports = rxjs.Observable.prototype.retryBackoff = function retryBackoff(
     }
   })
 }
+
+rxjs.Observable.prototype.retryBackoff = retryBackoff
+
+module.exports = (config) => (o) => retryBackoff.call(o, config)

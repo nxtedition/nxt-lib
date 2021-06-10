@@ -2,7 +2,7 @@ const rxjs = require('rxjs')
 
 function nop() {}
 
-module.exports = rxjs.Observable.prototype.toGenerator = function () {
+function toGenerator() {
   const observable = this
   return async function* () {
     const buffer = []
@@ -48,3 +48,7 @@ module.exports = rxjs.Observable.prototype.toGenerator = function () {
     }
   }
 }
+
+rxjs.Observable.prototype.toGenerator = toGenerator
+
+module.exports = (o) => toGenerator.call(o)

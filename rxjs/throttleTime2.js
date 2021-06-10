@@ -1,6 +1,6 @@
 const rxjs = require('rxjs')
 
-module.exports = rxjs.Observable.prototype.throttleTime2 = function throttleTime2(duration) {
+function throttleTime2(duration) {
   return new rxjs.Observable((o) => {
     let interval
     let nextValue
@@ -40,3 +40,7 @@ module.exports = rxjs.Observable.prototype.throttleTime2 = function throttleTime
     return () => subscription.unsubscribe()
   })
 }
+
+rxjs.Observable.prototype.throttleTime2 = throttleTime2
+
+module.exports = (duration) => (o) => throttleTime2.call(o, duration)
