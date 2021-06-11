@@ -19,7 +19,8 @@
     "couch.js",
     "app.js",
     "errors.js",
-    "fs.js"
+    "fs.js",
+    "utilization.js"
   ],
   "scripts": {
     "postinstall": "husky install",
