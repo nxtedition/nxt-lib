@@ -60,6 +60,7 @@ module.exports = function (opts) {
           connections: 0,
           pipelining: 1, // TODO (perf): Allow pipelining?
           keepAliveTimeout: 30e3, // TODO (fix): What is correct keep alive timeout?
+          ...config.undici,
           ...options,
         })
     )
