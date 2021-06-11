@@ -1,13 +1,6 @@
 const rxjs = require('rxjs')
 const rx = require('rxjs/operators')
-
-class AbortError extends Error {
-  constructor() {
-    super('The operation was aborted')
-    this.code = 'ABORT_ERR'
-    this.name = 'AbortError'
-  }
-}
+const { AbortError } = require('../errors')
 
 function firstValueFrom(config) {
   const hasConfig = config && typeof config === 'object'
