@@ -5,4 +5,5 @@ module.exports = {
   retryBackoff: require('./retryBackoff'),
   toGenerator: require('./toGenerator'),
   withAbortSignal: require('./withAbortSignal'),
+  firstValueFrom: require('./firstValueFrom'),
 }
