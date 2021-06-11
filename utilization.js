@@ -15,7 +15,7 @@ function now() {
 // Based on: https://github.com/fastify/under-pressure/blob/master/index.js
 module.exports = function (opts, onStats) {
   const resolution = 10
-  const sampleInterval = getSampleInterval(opts.sampleInterval, resolution)
+  const sampleInterval = getSampleInterval(opts && opts.sampleInterval, resolution)
 
   let heapUsed = 0
   let rssBytes = 0
