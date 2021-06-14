@@ -9,7 +9,7 @@ function firstValueFrom(config) {
   let x$ = this
 
   if (signal) {
-    x$ = signal.aborted ? rxjs.EMPTY : x$.pipe(rx.takeUntil(rxjs.fromEvent('abort', signal)))
+    x$ = signal.aborted ? rxjs.EMPTY : x$.pipe(rx.takeUntil(rxjs.fromEvent(signal, 'abort')))
     x$ = x$.pipe(rx.throwIfEmpty(() => new AbortError()))
   }
 
