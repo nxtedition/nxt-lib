@@ -113,6 +113,13 @@ module.exports.request = async function request(ctx, next) {
       )
     }
 
+    req.on('error', (err) => {
+      reqLogger.warn({ err }, 'request error')
+    })
+    res.on('error', (err) => {
+      reqLogger.warn({ err }, 'request error')
+    })
+
     if (!res.headersSent) {
       for (const name of res.getHeaderNames()) {
         res.removeHeader(name)
