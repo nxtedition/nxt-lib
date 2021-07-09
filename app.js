@@ -539,7 +539,7 @@ module.exports = function (appConfig, onTerminate) {
                   await undici.request(`http://${host}/healthcheck`)
                 } catch (err) {
                   logger.warn({ err }, 'deepstream healthcheck failed')
-                  if (err.code === 'ENOTFOUND') {
+                  if (err.code === 'ENOTFOUND' || err.code === 'EHOSTUNREACH') {
                     throw err
                   }
                 }
@@ -550,7 +550,7 @@ module.exports = function (appConfig, onTerminate) {
                   await couch.info()
                 } catch (err) {
                   logger.warn({ err }, 'couch healthcheck failed')
-                  if (err.code === 'ENOTFOUND') {
+                  if (err.code === 'ENOTFOUND' || err.code === 'EHOSTUNREACH') {
                     throw err
                   }
                 }
