@@ -159,6 +159,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
   ctx.url = requestTarget(req)
   ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : null
 
+  let aborted = false
   const reqLogger = logger.child({ req })
   try {
     reqLogger.debug('stream started')
@@ -166,6 +167,13 @@ module.exports.upgrade = async function upgrade(ctx, next) {
     if (!ctx.url) {
       throw new createError.BadRequest()
     }
+
+    socket.on('error', (err) => {
+      // NOTE: Special case where the client becomes unreachable.
+      if (err.message.startsWith('read ')) {
+        aborted = true
+      }
+    })
 
     await Promise.all([
       new Promise((resolve, reject) =>
@@ -191,7 +199,9 @@ module.exports.upgrade = async function upgrade(ctx, next) {
   } catch (err) {
     const statusCode = err.statusCode || 500
 
-    if (statusCode < 500) {
+    if (aborted) {
+      reqLogger.debug({ err, res }, 'stream aborted')
+    } else if (statusCode < 500) {
       reqLogger.warn({ err, res }, 'stream failed')
     } else {
       reqLogger.error({ err, res }, 'stream error')
