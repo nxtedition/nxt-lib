@@ -2,7 +2,7 @@ const querystring = require('querystring')
 const objectHash = require('object-hash')
 const cached = require('./util/cached')
 const xuid = require('xuid')
-const { Observable, ReplaySubject } = require('rxjs')
+const rxjs = require('rxjs')
 const rx = require('rxjs/operators')
 
 function provide(ds, domain, callback, options) {
@@ -126,7 +126,7 @@ function rpcProvide(ds, rpcName, callback, options) {
         let ret$ = callback(options, id)
 
         if (!options || !options.recursive) {
-          ret$ = Observable.of(ret$)
+          ret$ = rxjs.of(ret$)
         }
 
         return ret$.pipe(
@@ -136,13 +136,13 @@ function rpcProvide(ds, rpcName, callback, options) {
               : ret.pipe(
                   rx.map((data) => ({ data })),
                   rx.endWith({ error: null }),
-                  rx.catchError((err) => Observable.of({ error: err.message })),
+                  rx.catchError((err) => rxjs.of({ error: err.message })),
                   rx.scan((xs, x) => ({ ...xs, ...x }))
                 )
           )
         )
       } catch (err) {
-        return Observable.of({ error: err.message })
+        return rxjs.of({ error: err.message })
       }
     },
     { id: true, recursive: true }
@@ -150,7 +150,7 @@ function rpcProvide(ds, rpcName, callback, options) {
 }
 
 function rpcObserve(ds, rpcName, data) {
-  return Observable.defer(() => {
+  return rxjs.defer(() => {
     const rpcId = xuid()
     return observe(ds, `${rpcId}:${rpcName}`, data, ds.record.PROVIDER).pipe(
       rx.takeWhile(({ error }) => error === undefined, true),
@@ -165,7 +165,7 @@ function rpcObserve(ds, rpcName, data) {
 }
 
 function rpcMake(ds, rpcName, data, options) {
-  const subject = new ReplaySubject(1)
+  const subject = new rxjs.ReplaySubject(1)
   rpcObserve(ds, rpcName, data)
     .pipe(
       rx.timeout(
