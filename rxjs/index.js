@@ -6,4 +6,5 @@ module.exports = {
   toGenerator: require('./toGenerator'),
   withAbortSignal: require('./withAbortSignal'),
   firstValueFrom: require('./firstValueFrom'),
+  lastValueFrom: require('./lastValueFrom'),
 }
