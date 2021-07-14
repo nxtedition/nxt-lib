@@ -164,19 +164,9 @@ function rpcObserve(ds, rpcName, data) {
   })
 }
 
-function rpcMake(ds, rpcName, data, options) {
+function rpcMake(ds, rpcName, data) {
   const subject = new rxjs.ReplaySubject(1)
-  rpcObserve(ds, rpcName, data)
-    .pipe(
-      rx.timeout(
-        Number.isFinite(options)
-          ? options
-          : Number.isFinite(options && options.timeout)
-          ? options.timeout
-          : 10e3
-      )
-    )
-    .subscribe(subject)
+  rpcObserve(ds, rpcName, data).subscribe(subject)
   return subject
 }
 
