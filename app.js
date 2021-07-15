@@ -513,7 +513,7 @@ module.exports = function (appConfig, onTerminate) {
 
   if (appConfig.http) {
     const http = require('http')
-    const undici = require('undici')
+    // const undici = require('undici')
     const compose = require('koa-compose')
     const { request } = require('./http')
 
@@ -533,28 +533,28 @@ module.exports = function (appConfig, onTerminate) {
           request,
           async ({ req, res }, next) => {
             if (req.url.startsWith('/healthcheck')) {
-              if (ds._url || ds.url) {
-                try {
-                  const { host } = new URL(ds._url || ds.url)
-                  await undici.request(`http://${host}/healthcheck`)
-                } catch (err) {
-                  logger.warn({ err }, 'deepstream healthcheck failed')
-                  if (err.code === 'ENOTFOUND' || err.code === 'EHOSTUNREACH') {
-                    throw err
-                  }
-                }
-              }
+              // if (ds._url || ds.url) {
+              //   try {
+              //     const { host } = new URL(ds._url || ds.url)
+              //     await undici.request(`http://${host}/healthcheck`)
+              //   } catch (err) {
+              //     logger.warn({ err }, 'deepstream healthcheck failed')
+              //     if (err.code === 'ENOTFOUND' || err.code === 'EHOSTUNREACH') {
+              //       throw err
+              //     }
+              //   }
+              // }
 
-              if (couch) {
-                try {
-                  await couch.info()
-                } catch (err) {
-                  logger.warn({ err }, 'couch healthcheck failed')
-                  if (err.code === 'ENOTFOUND' || err.code === 'EHOSTUNREACH') {
-                    throw err
-                  }
-                }
-              }
+              // if (couch) {
+              //   try {
+              //     await couch.info()
+              //   } catch (err) {
+              //     logger.warn({ err }, 'couch healthcheck failed')
+              //     if (err.code === 'ENOTFOUND' || err.code === 'EHOSTUNREACH') {
+              //       throw err
+              //     }
+              //   }
+              // }
 
               res.statusCode = 200
               res.end()
