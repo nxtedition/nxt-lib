@@ -37,28 +37,37 @@ module.exports = {
         (typeof ures.headers === 'object' && ures.headers) ||
         (typeof ures.getHeaders === 'function' ? ures.getHeaders() : ures.headers),
     },
-  ureq: (ureq) =>
-    ureq && {
+  ureq: (ureq) => {
+    if (!ureq) {
+      return
+    }
+
+    const url = ureq.url?.href
+      ? ureq.url?.href
+      : typeof ureq.url === 'string'
+      ? ureq.url
+      : ureq.origin
+      ? `${ureq.origin}${ureq.path || ''}`
+      : ureq.hostname
+      ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${
+          ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]
+        }${ureq.path || ''}`
+      : undefined
+
+    return {
       id:
         ureq.id || (ureq.headers && typeof ureq.headers === 'object' && ureq.headers['request-id']),
       method: ureq.method,
-      origin: ureq.origin,
-      path: ureq.path,
-      hostname: ureq.hostname,
-      protocol: ureq.protocol,
-      url:
-        typeof ureq.url === 'string'
-          ? ureq.url
-          : ureq.origin
-          ? `${ureq.origin}${ureq.path || ''}`
-          : ureq.hostname
-          ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${
-              ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]
-            }${ureq.path || ''}`
-          : undefined,
+      url,
+      path: url?.path,
+      origin: url?.origin,
+      hostname: url?.hostname,
+      protocol: url?.protocol,
+      port: url?.port,
       bytesWritten: ureq.bytesWritten,
       headers: ureq.headers,
-    },
+    }
+  },
 }
 
 function serializeError(err) {
