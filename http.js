@@ -6,8 +6,7 @@ const assert = require('assert')
 const AbortController = require('abort-controller')
 const { AbortError } = require('./errors')
 
-const ERR_HEADER_EXPR =
-  /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
+const ERR_HEADER_EXPR = /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
 
 // https://github.com/fastify/fastify/blob/main/lib/reqIdGenFactory.js
 // 2,147,483,647 (2^31 − 1) stands for max SMI value (an internal optimization of V8).
@@ -96,7 +95,7 @@ module.exports.request = async function request(ctx, next) {
 
     reqLogger = reqLogger.child({ res })
 
-    if (res.destroyed && res.writableEnded === false) {
+    if (req.aborted) {
       reqLogger.debug(
         { err: err ?? createError(statusCode), statusCode, responseTime },
         'request aborted'
