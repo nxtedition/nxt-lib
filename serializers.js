@@ -42,8 +42,8 @@ module.exports = {
       return
     }
 
-    const url = ureq.url?.href
-      ? ureq.url?.href
+    let url = ureq.url?.href
+      ? ureq.url
       : typeof ureq.url === 'string'
       ? ureq.url
       : ureq.origin
@@ -53,6 +53,10 @@ module.exports = {
           ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]
         }${ureq.path || ''}`
       : undefined
+
+    if (!(url instanceof URL)) {
+      url = new URL(url)
+    }
 
     return {
       id:
