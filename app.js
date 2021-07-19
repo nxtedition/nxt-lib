@@ -119,115 +119,117 @@ module.exports = function (appConfig, onTerminate) {
       return (!name || name.charAt(0) !== '{') && (!version || version.charAt(0) !== '0')
     }
 
-    const dsCache = new (class Cache extends EE {
-      constructor({ cacheLocation, cacheDb, cacheFilter = defaultFilter }) {
-        super()
+    const dsCache =
+      dsConfig.cache === undefined &&
+      new (class Cache extends EE {
+        constructor({ cacheLocation, cacheDb, cacheFilter = defaultFilter }) {
+          super()
 
-        if (!cacheDb) {
-          this.location = cacheLocation ?? `./.nxt-${serviceName}`
-          this._db = levelup(
-            encodingdown(leveldown(this.location), {
-              valueEncoding: 'json',
-            }),
-            (err) => {
-              if (err) {
-                logger.debug({ err, path: this.location }, 'Deepstream Cache Failed.')
-                throw err
+          if (!cacheDb) {
+            this.location = cacheLocation ?? `./.nxt-${serviceName}`
+            this._db = levelup(
+              encodingdown(leveldown(this.location), {
+                valueEncoding: 'json',
+              }),
+              (err) => {
+                if (err) {
+                  logger.debug({ err, path: this.location }, 'Deepstream Cache Failed.')
+                  throw err
+                }
               }
+            )
+          } else {
+            this._db = cacheDb
+            this.location = this._db.location ?? cacheLocation
+          }
+
+          logger.debug({ path: this.location }, 'Deepstream Cache Created.')
+
+          this._cache = new Map()
+          this._db
+            .on('open', (err) => {
+              logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
+            })
+            .on('closed', (err) => {
+              logger.debug({ err, path: this.location }, 'Deepstream Cache Closed.')
+              this._db = null
+            })
+            .on('error', (err) => {
+              logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
+              // TODO: What happens with pending get requests?
+              this._db = null
+            })
+          this._filter = cacheFilter
+          this._batch = []
+          this._registry = new FinalizationRegistry((key) => {
+            const ref = this._cache.get(key)
+            if (ref !== undefined && ref.deref() === undefined) {
+              this._cache.delete(key)
             }
+          })
+          this._interval = setInterval(() => {
+            this._flush()
+          }, 1e3).unref()
+
+          destroyers.push(
+            () =>
+              new Promise((resolve, reject) => {
+                if (this._db && this._db.close) {
+                  this._db.close((err) => (err ? reject(err) : resolve()))
+                }
+                clearInterval(this._interval)
+              })
           )
-        } else {
-          this._db = cacheDb
-          this.location = this._db.location ?? cacheLocation
         }
 
-        logger.debug({ path: this.location }, 'Deepstream Cache Created.')
+        get(name, callback) {
+          // TODO (perf): Check filter.
 
-        this._cache = new Map()
-        this._db
-          .on('open', (err) => {
-            logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
-          })
-          .on('closed', (err) => {
-            logger.debug({ err, path: this.location }, 'Deepstream Cache Closed.')
-            this._db = null
-          })
-          .on('error', (err) => {
-            logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
-            // TODO: What happens with pending get requests?
-            this._db = null
-          })
-        this._filter = cacheFilter
-        this._batch = []
-        this._registry = new FinalizationRegistry((key) => {
+          const key = name
+
           const ref = this._cache.get(key)
-          if (ref !== undefined && ref.deref() === undefined) {
-            this._cache.delete(key)
+          if (ref !== undefined) {
+            const deref = ref.deref()
+            if (deref !== undefined) {
+              process.nextTick(callback, null, deref)
+              return
+            }
           }
-        })
-        this._interval = setInterval(() => {
-          this._flush()
-        }, 1e3).unref()
 
-        destroyers.push(
-          () =>
-            new Promise((resolve, reject) => {
-              if (this._db && this._db.close) {
-                this._db.close((err) => (err ? reject(err) : resolve()))
-              }
-              clearInterval(this._interval)
-            })
-        )
-      }
+          if (this._db) {
+            this._db.get(key, callback)
+          } else {
+            process.nextTick(callback, null, null)
+          }
+        }
 
-      get(name, callback) {
-        // TODO (perf): Check filter.
-
-        const key = name
-
-        const ref = this._cache.get(key)
-        if (ref !== undefined) {
-          const deref = ref.deref()
-          if (deref !== undefined) {
-            process.nextTick(callback, null, deref)
+        set(name, version, data) {
+          if (this._filter && !this._filter(name, version, data)) {
             return
           }
+
+          const key = name
+          const value = [version, data]
+
+          this._cache.set(key, new WeakRef(value))
+          this._registry.register(value, key)
+          this._batch.push({ type: 'put', key, value })
+          if (this._batch.length > 1024) {
+            this._flush()
+          }
         }
 
-        if (this._db) {
-          this._db.get(key, callback)
-        } else {
-          process.nextTick(callback, null, null)
+        _flush() {
+          if (this._db) {
+            this._db.batch(this._batch, (err) => {
+              if (err) {
+                logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
+              }
+            })
+          }
+          this._batch = []
         }
-      }
-
-      set(name, version, data) {
-        if (this._filter && !this._filter(name, version, data)) {
-          return
-        }
-
-        const key = name
-        const value = [version, data]
-
-        this._cache.set(key, new WeakRef(value))
-        this._registry.register(value, key)
-        this._batch.push({ type: 'put', key, value })
-        if (this._batch.length > 1024) {
-          this._flush()
-        }
-      }
-
-      _flush() {
-        if (this._db) {
-          this._db.batch(this._batch, (err) => {
-            if (err) {
-              logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
-            }
-          })
-        }
-        this._batch = []
-      }
-    })(dsConfig)
+      })(dsConfig)
 
     dsConfig = {
       url: 'ws://localhost:6020/deepstream',
