@@ -15,7 +15,7 @@ module.exports = function mergeRanges(ranges) {
   for (let n = 1; n < ranges.length; ++n) {
     const range = ranges[n]
 
-    if (range[1] <= range[0]) {
+    if (!range || range.length === 0 || range[1] <= range[0]) {
       continue
     }
 

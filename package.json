@@ -23,7 +23,7 @@
     "utilization.js"
   ],
   "scripts": {
-    "postinstall": "husky install",
+    "prepare": "husky install",
     "prepublishOnly": "pinst --disable",
     "postpublish": "pinst --enable",
     "test": "jest --bail --watchAll"
