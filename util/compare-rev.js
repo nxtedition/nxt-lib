@@ -11,8 +11,8 @@ module.exports = function compareRev(a, b) {
     return 0
   }
 
-  const av = a.charAt(0) === 'I' ? Infinity : parseInt(a)
-  const bv = b.charAt(0) === 'I' ? Infinity : parseInt(b)
+  const av = a[0] === 'I' ? Infinity : parseInt(a)
+  const bv = b[0] === 'I' ? Infinity : parseInt(b)
 
   if (av !== bv) {
     return av < bv ? -1 : 1
