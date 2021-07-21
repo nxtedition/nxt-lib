@@ -527,6 +527,42 @@ module.exports = function (opts) {
     return res.data
   }
 
+  async function upsert(path, diffFun) {
+    while (true) {
+      let doc
+      try {
+        doc = await get(path)
+      } catch (err) {
+        if (err.status !== 404) {
+          throw err
+        }
+        doc = {
+          _id: path.split('/').pop(),
+        }
+      }
+
+      const docId = doc._id
+      const docRev = doc._rev
+
+      const newDoc = diffFun(doc)
+
+      if (!newDoc) {
+        return { updated: false, rev: docRev, id: docId }
+      }
+
+      newDoc._id = docId
+      newDoc._rev = docRev
+
+      try {
+        return await put(path, null, newDoc)
+      } catch (err) {
+        if (err.status !== 409) {
+          throw err
+        }
+      }
+    }
+  }
+
   return {
     request,
     bulkDocs,
@@ -534,6 +570,7 @@ module.exports = function (opts) {
     put,
     post,
     get,
+    upsert,
     delete: _delete,
     info,
     changes,
