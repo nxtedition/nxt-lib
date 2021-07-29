@@ -5,20 +5,15 @@ module.exports = function mergeRanges(ranges) {
 
   const stack = []
 
-  ranges = [...ranges].sort((a, b) => {
-    return a[0] - b[0]
-  })
+  ranges = ranges
+    .filter((range) => range && range.length > 0 && range[1] > range[0])
+    .sort((a, b) => a[0] - b[0])
 
   // Add first range to stack
   stack.push(ranges[0])
 
   for (let n = 1; n < ranges.length; ++n) {
     const range = ranges[n]
-
-    if (!range || range.length === 0 || range[1] <= range[0]) {
-      continue
-    }
-
     const top = stack[stack.length - 1]
 
     if (top[1] < range[0]) {
