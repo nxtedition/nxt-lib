@@ -1,5 +1,5 @@
 module.exports = function mergeRanges(ranges) {
-  if (!Array.isArray(ranges) || !ranges.length) {
+  if (!Array.isArray(ranges)) {
     return []
   }
 
@@ -8,6 +8,10 @@ module.exports = function mergeRanges(ranges) {
   ranges = ranges
     .filter((range) => range && range.length > 0 && range[1] > range[0])
     .sort((a, b) => a[0] - b[0])
+
+  if (!ranges.length) {
+    return []
+  }
 
   // Add first range to stack
   stack.push(ranges[0])
