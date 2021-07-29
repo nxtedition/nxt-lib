@@ -115,8 +115,17 @@ module.exports = function (opts) {
       body = { doc_ids: options.doc_ids }
     }
 
+    if (typeof options.feed !== 'undefined') {
+      params.feed = options.feed ?? 'normal'
+    } else {
+      params.feed = 'continuous'
+    }
+
+    if (/normal|longpoll|continuous/.test(params.feed)) {
+      throw new Error('invalid feed option')
+    }
+
     // TODO (fix): Allow other modes.
-    params.feed = 'continuous'
 
     // TODO (fix): Take heartbeat from client.bodyTimeout.
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
@@ -126,7 +135,7 @@ module.exports = function (opts) {
     const limit = params.limit != null ? params.limit || 1 : Infinity
 
     if (!client) {
-      client = new undici.Client(origin, {
+      client = params.feed === 'normal' ? defaultClient : new undici.Client(origin, {
         bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
         pipelining: 0,
       })
@@ -184,24 +193,41 @@ module.exports = function (opts) {
         },
         onData(chunk) {
           this.data += chunk
-          const lines = this.data.split(/(?<!\\)\n/)
-          this.data = lines.pop()
 
-          let running = true
-          for (const line of lines) {
-            if (line) {
-              this.count += 1
-              running = running && this.readable.push(JSON.parse(line))
-              if (this.count === limit) {
-                this.readable.push(null)
+          if (params.feed === 'continuous') {
+            const lines = this.data.split(/(?<!\\)\n/)
+            this.data = lines.pop()
+
+            let running = true
+            for (const line of lines) {
+              if (line) {
+                this.count += 1
+                running = running && this.readable.push(JSON.parse(line))
+                if (this.count === limit) {
+                  this.readable.push(null)
+                }
               }
             }
-          }
 
-          return running
+            return running
+          } else {
+            return true
+          }
         },
         onComplete() {
-          this.readable.push(null)
+          if (params.feed === 'continuous') {
+            this.readable.push(null)
+          } else {
+            try {
+              const { results } = JSON.parse(this.data)
+              for (const result of results) {
+                this.readable.push(result)
+              }
+              this.readable.push(null)
+            } catch (err) {
+              this.readable.destroy(err)
+            }
+          }
         },
         onError(err) {
           this.readable.destroy(err)
