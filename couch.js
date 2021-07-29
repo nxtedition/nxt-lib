@@ -134,6 +134,7 @@ module.exports = function (opts) {
 
     const readable = new Readable({
       objectMode: true,
+      signal: options.signal,
       read() {},
     })
 
