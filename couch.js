@@ -121,7 +121,7 @@ module.exports = function (opts) {
       params.feed = 'continuous'
     }
 
-    if (/normal|longpoll|continuous/.test(params.feed)) {
+    if (!/normal|longpoll|continuous/.test(params.feed)) {
       throw new Error('invalid feed option')
     }
 
@@ -135,10 +135,13 @@ module.exports = function (opts) {
     const limit = params.limit != null ? params.limit || 1 : Infinity
 
     if (!client) {
-      client = params.feed === 'normal' ? defaultClient : new undici.Client(origin, {
-        bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
-        pipelining: 0,
-      })
+      client =
+        params.feed === 'normal'
+          ? defaultClient
+          : new undici.Client(origin, {
+              bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
+              pipelining: 0,
+            })
     }
 
     const readable = new Readable({
