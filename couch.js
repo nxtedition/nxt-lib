@@ -1,5 +1,4 @@
 const { Observable } = require('rxjs')
-const { Readable } = require('stream')
 const createError = require('http-errors')
 const makeWeak = require('./weakCache')
 
@@ -67,7 +66,7 @@ module.exports = function (opts) {
 
   const defaultClient = getClient({ pipelining: 1 })
 
-  function changes({ client, ...options } = {}) {
+  async function* changes({ client, ...options } = {}) {
     const params = {}
 
     let body
@@ -117,6 +116,7 @@ module.exports = function (opts) {
 
     // TODO (fix): Take heartbeat from client.bodyTimeout.
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
+    params.feed = options.live == null || options.live ? 'longpoll' : 'poll'
 
     if (!client) {
       client =
@@ -132,45 +132,36 @@ module.exports = function (opts) {
       throw new Error('invalid pathname')
     }
 
+    let remaining = params.limit || Infinity
 
-    return Readable.from(async function * () {
-      let remaining = params.limit || Infinity
+    while (true) {
+      params.limit = Math.min(remaining, options.batchSize ?? 256)
+      const res = await client.request({
+        path: pathname + '/_changes' + `?${querystring.stringify(params)}`,
+        idempotent: true,
+        method,
+        body,
+      })
 
-      params.feed = options.live == null || options.live ? 'longpoll' : 'poll'
-
-      while (true) {
-        params.limit = Math.min(remaining, 256)
-        const res = await client.request({
-          path: pathname + '/_changes' + `?${querystring.stringify(params)}`,
-          idempotent: true,
-          method,
-          body
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw createError(res.statusCode, {
+          headers: res.headers,
+          data: await res.body.text(),
         })
-
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          throw createError(res.statusCode, {
-            headers: res.headers,
-            data: await res.body.text()
-          })
-        }
-
-        const {
-          last_seq: seq,
-          pending,
-          results
-        } = await res.body.json()
-
-        remaining -= results.length
-
-        params.since = seq
-
-        yield * results
-
-        if (pending === 0) {
-          return
-        }
       }
-    })
+
+      const { last_seq: seq, pending, results } = await res.body.json()
+
+      remaining -= results.length
+
+      params.since = seq
+
+      yield* results
+
+      if (pending === 0) {
+        return
+      }
+    }
   }
 
   function onChanges(options) {
