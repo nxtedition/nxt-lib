@@ -84,19 +84,6 @@ module.exports = function (opts) {
       params.include_docs = true
     }
 
-    if (typeof options.limit !== 'undefined') {
-      params.limit = options.limit
-    }
-
-    if (typeof options.heartbeat !== 'undefined') {
-      params.heartbeat = options.heartbeat
-    }
-
-    if (typeof options.timeout !== 'undefined') {
-      // TODO (fix): Investigate what this is?
-      params.timeout = options.timeout
-    }
-
     if (typeof options.since !== 'undefined') {
       params.since = options.since || 0
     }
@@ -114,22 +101,24 @@ module.exports = function (opts) {
       body = { doc_ids: options.doc_ids }
     }
 
-    const live = options.live == null || !!options.live
-
-    // TODO (fix): Take heartbeat from client.bodyTimeout.
-    params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 10e3
-    params.feed = live ? 'longpoll' : 'poll'
-
     if (pathname === '/') {
       throw new Error('invalid pathname')
     }
 
-    let remaining = params.limit || Infinity
+    const live = options.live == null || !!options.live
+    let remaining = parseInt(options.limit) || Infinity
 
     while (true) {
-      params.limit = Math.min(remaining, options.batchSize ?? 256)
       const res = await client.request({
-        path: pathname + '/_changes' + `?${querystring.stringify(params)}`,
+        path:
+          pathname +
+          '/_changes' +
+          `?${new URLSearchParams({
+            ...params,
+            heartbeat: Number.isFinite(params.heartbeat) ? params.heartbeat : 10e3,
+            limit: Math.min(remaining, options.batchSize ?? 256),
+            feed: live ? 'longpoll' : 'poll',
+          })}`,
         idempotent: true,
         method,
         body,
