@@ -115,24 +115,8 @@ module.exports = function (opts) {
       body = { doc_ids: options.doc_ids }
     }
 
-    if (typeof options.feed !== 'undefined') {
-      params.feed = options.feed ?? 'normal'
-    } else {
-      params.feed = 'continuous'
-    }
-
-    if (!/normal|longpoll|continuous/.test(params.feed)) {
-      throw new Error('invalid feed option')
-    }
-
-    // TODO (fix): Allow other modes.
-
     // TODO (fix): Take heartbeat from client.bodyTimeout.
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
-
-    // Continuos feed never ends even with limit.
-    // Limit 0 is the same as 1.
-    const limit = params.limit != null ? params.limit || 1 : Infinity
 
     if (!client) {
       client =
@@ -144,101 +128,49 @@ module.exports = function (opts) {
             })
     }
 
-    const readable = new Readable({
-      objectMode: true,
-      signal: options.signal,
-      read() {},
-    })
-
     if (pathname === '/') {
       throw new Error('invalid pathname')
     }
 
-    let path = pathname + '/_changes'
 
-    if (params) {
-      path += `?${querystring.stringify(params)}`
-    }
+    return Readable.from(async function * () {
+      let remaining = params.limit || Infinity
 
-    client.dispatch(
-      {
-        path,
-        idempotent: false,
-        method,
-        body,
-      },
-      {
-        readable,
-        status: null,
-        headers: null,
-        data: '',
-        count: 0,
-        onConnect(abort) {
-          if (this.readable.destroyed) {
-            abort()
-          } else {
-            this.readable._destroy = (err, callback) => {
-              abort()
-              callback(err)
-            }
-          }
-          // Do nothing...
-        },
-        onHeaders(statusCode, headers, resume) {
-          this.readable._read = () => resume()
-          this.status = statusCode
-          this.headers = parseHeaders(headers)
+      params.feed = options.live == null || options.live ? 'longpoll' : 'poll'
 
-          if (statusCode < 200 || statusCode >= 300) {
-            // TODO (fix): Read error data.
-            throw createError(statusCode, { headers })
-          }
-        },
-        onData(chunk) {
-          this.data += chunk
+      while (true) {
+        params.limit = Math.min(remaining, 256)
+        const res = await client.request({
+          path: pathname + '/_changes' + `?${querystring.stringify(params)}`,
+          idempotent: true,
+          method,
+          body
+        })
 
-          if (params.feed === 'continuous') {
-            const lines = this.data.split(/(?<!\\)\n/)
-            this.data = lines.pop()
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          throw createError(res.statusCode, {
+            headers: res.headers,
+            data: await res.body.text()
+          })
+        }
 
-            let running = true
-            for (const line of lines) {
-              if (line) {
-                this.count += 1
-                running = running && this.readable.push(JSON.parse(line))
-                if (this.count === limit) {
-                  this.readable.push(null)
-                }
-              }
-            }
+        const {
+          last_seq: seq,
+          pending,
+          results
+        } = await res.body.json()
 
-            return running
-          } else {
-            return true
-          }
-        },
-        onComplete() {
-          if (params.feed === 'continuous') {
-            this.readable.push(null)
-          } else {
-            try {
-              const { results } = JSON.parse(this.data)
-              for (const result of results) {
-                this.readable.push(result)
-              }
-              this.readable.push(null)
-            } catch (err) {
-              this.readable.destroy(err)
-            }
-          }
-        },
-        onError(err) {
-          this.readable.destroy(err)
-        },
+        remaining -= results.length
+
+        params.since = seq
+
+        yield * results
+
+        if (pending === 0) {
+          return
+        }
       }
-    )
-
-    return readable
+    })
   }
 
   function onChanges(options) {
