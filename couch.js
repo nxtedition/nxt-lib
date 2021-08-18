@@ -114,9 +114,11 @@ module.exports = function (opts) {
       body = { doc_ids: options.doc_ids }
     }
 
+    const live = options.live == null || !!options.live
+
     // TODO (fix): Take heartbeat from client.bodyTimeout.
-    params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
-    params.feed = options.live == null || options.live ? 'longpoll' : 'poll'
+    params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 10e3
+    params.feed = live ? 'longpoll' : 'poll'
 
     if (pathname === '/') {
       throw new Error('invalid pathname')
@@ -148,7 +150,7 @@ module.exports = function (opts) {
 
       yield* results
 
-      if (pending === 0) {
+      if (!live && pending === 0) {
         return
       }
     }
