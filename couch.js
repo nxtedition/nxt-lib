@@ -138,7 +138,7 @@ module.exports = function (opts) {
           })
         }
 
-        const { last_seq: seq, pending, results } = await res.body.json()
+        const { last_seq: seq, results } = await res.body.json()
 
         remaining -= results.length
 
@@ -146,7 +146,7 @@ module.exports = function (opts) {
 
         yield* results
 
-        if (!live && pending === 0) {
+        if (!live && results.length === 0) {
           return
         }
       }
