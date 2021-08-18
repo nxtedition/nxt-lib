@@ -66,7 +66,7 @@ module.exports = function (opts) {
 
   const defaultClient = getClient({ pipelining: 1 })
 
-  async function* changes({ client, ...options } = {}) {
+  async function* changes({ client = defaultClient, ...options } = {}) {
     const params = {}
 
     let body
@@ -117,16 +117,6 @@ module.exports = function (opts) {
     // TODO (fix): Take heartbeat from client.bodyTimeout.
     params.heartbeat = Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3
     params.feed = options.live == null || options.live ? 'longpoll' : 'poll'
-
-    if (!client) {
-      client =
-        params.feed === 'normal'
-          ? defaultClient
-          : new undici.Client(origin, {
-              bodyTimeout: 2 * (Number.isFinite(params.heartbeat) ? params.heartbeat : 30e3),
-              pipelining: 0,
-            })
-    }
 
     if (pathname === '/') {
       throw new Error('invalid pathname')
