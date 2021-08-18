@@ -108,40 +108,50 @@ module.exports = function (opts) {
     const live = options.live == null || !!options.live
     let remaining = parseInt(options.limit) || Infinity
 
-    while (true) {
-      const res = await client.request({
-        path:
-          pathname +
-          '/_changes' +
-          `?${new URLSearchParams({
-            ...params,
-            heartbeat: Number.isFinite(params.heartbeat) ? params.heartbeat : 10e3,
-            limit: Math.min(remaining, options.batchSize ?? (params.include_docs ? 256 : 1024)),
-            feed: live ? 'longpoll' : 'poll',
-          })}`,
-        idempotent: true,
-        method,
-        body,
-      })
+    const ac = new AbortController()
+    try {
+      while (true) {
+        const req = {
+          path:
+            pathname +
+            '/_changes' +
+            `?${new URLSearchParams({
+              ...params,
+              heartbeat: Number.isFinite(params.heartbeat) ? params.heartbeat : 10e3,
+              limit: Math.min(remaining, options.batchSize ?? (params.include_docs ? 256 : 1024)),
+              feed: live ? 'longpoll' : 'poll',
+            })}`,
+          idempotent: true,
+          method,
+          body,
+          signal: ac.signal,
+        }
+        const res = await client.request(req)
 
-      if (res.statusCode < 200 || res.statusCode >= 300) {
-        throw createError(res.statusCode, {
-          headers: res.headers,
-          data: await res.body.text(),
-        })
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          throw createError(res.statusCode, {
+            headers: res.headers,
+            data: {
+              req,
+              res: await res.body.text(),
+            },
+          })
+        }
+
+        const { last_seq: seq, pending, results } = await res.body.json()
+
+        remaining -= results.length
+
+        params.since = seq
+
+        yield* results
+
+        if (!live && pending === 0) {
+          return
+        }
       }
-
-      const { last_seq: seq, pending, results } = await res.body.json()
-
-      remaining -= results.length
-
-      params.since = seq
-
-      yield* results
-
-      if (!live && pending === 0) {
-        return
-      }
+    } finally {
+      ac.abort()
     }
   }
 
