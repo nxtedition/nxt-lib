@@ -106,6 +106,9 @@ module.exports = function (opts) {
     }
 
     const live = options.live == null || !!options.live
+    const retry = options.retry
+
+    let retryCount = 0
     let remaining = parseInt(options.limit) || Infinity
 
     const ac = new AbortController()
@@ -126,28 +129,39 @@ module.exports = function (opts) {
           body,
           signal: ac.signal,
         }
-        const res = await client.request(req)
 
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          throw createError(res.statusCode, {
-            headers: res.headers,
-            data: {
-              req,
-              res: await res.body.text(),
-            },
-          })
-        }
+        try {
+          const res = await client.request(req)
 
-        const { last_seq: seq, results } = await res.body.json()
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            throw createError(res.statusCode, {
+              headers: res.headers,
+              data: {
+                req,
+                res: await res.body.text(),
+              },
+            })
+          }
 
-        remaining -= results.length
+          const { last_seq: seq, results } = await res.body.json()
 
-        params.since = seq
+          remaining -= results.length
 
-        yield* results
+          params.since = seq
 
-        if (!live && results.length === 0) {
-          return
+          yield* results
+
+          if (!live && results.length === 0) {
+            return
+          }
+
+          retryCount = 0
+        } catch (err) {
+          if (retry) {
+            await retry(err, retryCount++)
+          } else {
+            throw err
+          }
         }
       }
     } finally {
