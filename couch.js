@@ -66,7 +66,7 @@ module.exports = function (opts) {
 
   const defaultClient = getClient({ pipelining: 1 })
 
-  async function* changes({ client = defaultClient, ...options } = {}) {
+  async function* changes({ client = defaultClient, signal, ...options } = {}) {
     const params = {}
 
     let body
@@ -112,6 +112,22 @@ module.exports = function (opts) {
     let remaining = parseInt(options.limit) || Infinity
 
     const ac = new AbortController()
+    const onAbort = () => {
+      ac.abort()
+    }
+
+    if (signal) {
+      if (signal.aborted) {
+        ac.abort()
+      } else {
+        if (signal.on) {
+          signal.on('abort', onAbort)
+        } else if (signal.addEventListener) {
+          signal.addEventListener('abort', onAbort)
+        }
+      }
+    }
+
     try {
       while (true) {
         const req = {
@@ -166,18 +182,35 @@ module.exports = function (opts) {
       }
     } finally {
       ac.abort()
+      if (signal) {
+        if (signal.off) {
+          signal.off('abort', onAbort)
+        } else if (signal.removeEventListener) {
+          signal.removeEventListener('abort', onAbort)
+        }
+      }
     }
   }
 
   function onChanges(options) {
     return new Observable((o) => {
-      const stream = changes(options)
-        .on('data', (data) => o.next(data))
-        .on('error', (err) => o.error(err))
-        .on('end', () => o.complete())
+
+      const ac = new AbortController()
+      async function run () {
+        try {
+          for await (const change of changes({ ...options, signal: ac.signal })) {
+            o.next(change)
+          }
+          o.complete()
+        } catch (err) {
+          o.error(err)
+        }
+      }
+
+      run()
 
       return () => {
-        stream.destroy()
+        ac.abort()
       }
     })
   }
