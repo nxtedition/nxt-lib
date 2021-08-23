@@ -113,7 +113,9 @@ module.exports.request = async function request(ctx, next) {
     }
 
     req.on('error', (err) => {
-      reqLogger.warn({ err }, 'request error')
+      if (statusCode > 500 || err.code !== 'ECONNRESET') {
+        reqLogger.warn({ err }, 'request error')
+      }
     })
     res.on('error', (err) => {
       reqLogger.warn({ err }, 'request error')
