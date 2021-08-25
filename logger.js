@@ -1,6 +1,7 @@
 const serializers = require('./serializers')
 const pino = require('pino')
 const { isMainThread } = require('worker_threads')
+const { isWorker } = require('cluster')
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -22,8 +23,12 @@ module.exports.createLogger = function (
     stream = process.stdout
   }
 
+  if (isMainThread === false || isWorker === true || stream) {
+    extreme = false
+  }
+
   let logger
-  if (!extreme || stream || isMainThread === false) {
+  if (!extreme) {
     stream = stream || pino.destination()
     logger = pino({ serializers, prettyPrint, level, ...options }, stream)
   } else {
@@ -67,7 +72,7 @@ module.exports.createLogger = function (
   process.on('SIGINT', () => finalHandler(null, 'SIGINT'))
   process.on('SIGQUIT', () => finalHandler(null, 'SIGQUIT'))
 
-  if (isMainThread !== false) {
+  if (extreme) {
     process.on('exit', () => finalHandler(null, 'exit'))
     process.on('uncaughtException', (err) => finalHandler(err, 'uncaughtException'))
     process.on('unhandledRejection', (err) => finalHandler(err, 'unhandledRejection'))
