@@ -60,7 +60,7 @@ module.exports = function (appConfig, onTerminate) {
   const serviceName = appConfig.name + (instanceId && instanceId !== '0' ? `-${instanceId}` : '')
 
   {
-    const loggerConfig = { ...appConfig, ...config.logger }
+    const loggerConfig = { ...appConfig.logger, ...config.logger }
 
     logger = createLogger(
       {
