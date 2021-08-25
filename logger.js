@@ -15,35 +15,6 @@ module.exports.createLogger = function (
   } = {},
   onTerminate
 ) {
-  let called = false
-  const finalHandler = async (err, finalLogger, evt) => {
-    if (called) {
-      return
-    }
-    called = true
-
-    finalLogger.info(`${evt} caught`)
-    if (err) {
-      finalLogger.fatal({ err }, 'error caused exit')
-      if (stream && stream.flushSync) {
-        stream.flushSync()
-      }
-      process.exit(1)
-    } else {
-      let exitSignal
-      try {
-        exitSignal = onTerminate ? await onTerminate(finalLogger) : null
-      } catch (err) {
-        exitSignal = err.exitSignal || 1
-        finalLogger.warn({ err })
-      }
-      process.exit(!exitSignal ? 0 : exitSignal)
-    }
-  }
-
-  let logger
-  let handler
-
   if (
     !stream &&
     (process.stdout.write !== process.stdout.constructor.prototype.write || !process.stdout.fd)
@@ -51,28 +22,56 @@ module.exports.createLogger = function (
     stream = process.stdout
   }
 
-  if (!extreme || (stream && !stream.flushSync) || isMainThread === false) {
+  let logger
+  if (!extreme || stream || isMainThread === false) {
     stream = stream || pino.destination()
     logger = pino({ serializers, prettyPrint, level, ...options }, stream)
-    handler = (err, evt) => finalHandler(err, logger, evt)
   } else {
-    stream = stream || pino.destination({ sync: false, minLength: 4096 })
+    stream = pino.destination({ sync: false, minLength: 4096 })
     logger = pino({ serializers, prettyPrint, level, ...options }, stream)
-    handler = pino.final(logger, finalHandler)
     setInterval(() => {
       logger.flush()
     }, flushInterval).unref()
   }
 
-  process.on('beforeExit', () => handler(null, 'beforeExit'))
-  process.on('SIGINT', () => handler(null, 'SIGINT'))
-  process.on('SIGQUIT', () => handler(null, 'SIGQUIT'))
+  let called = false
+  const finalHandler = async (err, evt) => {
+    if (called) {
+      return
+    }
+    called = true
+
+    logger.info(`${evt} caught`)
+    if (err) {
+      logger.fatal({ err }, 'error caused exit')
+      if (stream && stream.flushSync) {
+        stream.flushSync()
+      }
+      process.exit(1)
+    } else {
+      let exitSignal
+      try {
+        exitSignal = onTerminate ? await onTerminate(logger) : null
+      } catch (err) {
+        exitSignal = err.exitSignal || 1
+        logger.warn({ err })
+      }
+      if (stream && stream.flushSync) {
+        stream.flushSync()
+      }
+      process.exit(!exitSignal ? 0 : exitSignal)
+    }
+  }
+
+  process.on('beforeExit', () => finalHandler(null, 'beforeExit'))
+  process.on('SIGINT', () => finalHandler(null, 'SIGINT'))
+  process.on('SIGQUIT', () => finalHandler(null, 'SIGQUIT'))
 
   if (isMainThread !== false) {
-    process.on('exit', () => handler(null, 'exit'))
-    process.on('uncaughtException', (err) => handler(err, 'uncaughtException'))
-    process.on('unhandledRejection', (err) => handler(err, 'unhandledRejection'))
-    process.on('SIGTERM', () => handler(null, 'SIGTERM'))
+    process.on('exit', () => finalHandler(null, 'exit'))
+    process.on('uncaughtException', (err) => finalHandler(err, 'uncaughtException'))
+    process.on('unhandledRejection', (err) => finalHandler(err, 'unhandledRejection'))
+    process.on('SIGTERM', () => finalHandler(null, 'SIGTERM'))
   }
 
   return logger
