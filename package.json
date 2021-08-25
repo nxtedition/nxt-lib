@@ -103,8 +103,8 @@
   },
   "peerDependencies": {
     "@nxtedition/deepstream.io-client-js": ">=14.1.0",
-    "pino": "^6.0.0",
-    "pino-pretty": "^4.0.0",
+    "pino": ">=6.0.0",
+    "pino-pretty": ">=4.0.0",
     "rxjs": ">=6.0.0"
   }
 }
