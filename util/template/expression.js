@@ -319,6 +319,9 @@ module.exports = ({ ds } = {}) => {
       {
         map: (path) => (value) =>
           fp.isArray(path) ? fp.map(fp.pick(path), value) : fp.map(fp.get(path), value),
+        filter: (predicate) => value => fp.filter(predicate, value),
+        findIndex: (predicate) => value => fp.findIndex(predicate, value),
+        findLastIndex: (predicate) => value => fp.findLastIndex(predicate, value),
         slice: (start, end) => (value) => value.slice(start, end),
         reverse: () => (value) => fp.reverse(value),
         join: (delimiter) => (value) => fp.join(delimiter, value),
@@ -329,6 +332,7 @@ module.exports = ({ ds } = {}) => {
         tail: () => (value) => fp.last(value),
         length: () => (value) => fp.size(value),
         sort: () => (value) => [...value].sort(),
+        sortBy: (iteratees) => value => fp.sortBy(iteratees, value),
         sum: () => (value) => fp.sum(value),
         unique: () => (value) => fp.uniq(value),
         uniq: () => (value) => fp.uniq(value),
