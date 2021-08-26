@@ -319,9 +319,14 @@ module.exports = ({ ds } = {}) => {
       {
         map: (path) => (value) =>
           fp.isArray(path) ? fp.map(fp.pick(path), value) : fp.map(fp.get(path), value),
+        every: (predicate) => value => fp.every(predicate, value),
+        some: (predicate) => value => fp.some(predicate, value),
         filter: (predicate) => value => fp.filter(predicate, value),
+        reject: (predicate) => value => fp.reject(predicate, value),
         findIndex: (predicate) => value => fp.findIndex(predicate, value),
         findLastIndex: (predicate) => value => fp.findLastIndex(predicate, value),
+        find: (predicate) => value => fp.find(predicate, value),
+        findLast: (predicate) => value => fp.findLast(predicate, value),
         slice: (start, end) => (value) => value.slice(start, end),
         reverse: () => (value) => fp.reverse(value),
         join: (delimiter) => (value) => fp.join(delimiter, value),
