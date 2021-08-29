@@ -1,6 +1,7 @@
-const { Observable } = require('rxjs')
 const createError = require('http-errors')
 const makeWeak = require('./weakCache')
+
+let rxjs
 
 function parseHeaders(headers, obj = {}) {
   for (let i = 0; i < headers.length; i += 2) {
@@ -193,10 +194,13 @@ module.exports = function (opts) {
   }
 
   function onChanges(options) {
-    return new Observable((o) => {
+    if (!rxjs) {
+      rxjs = require('rxjs')
+    }
 
+    return new rxjs.Observable((o) => {
       const ac = new AbortController()
-      async function run () {
+      async function run() {
         try {
           for await (const change of changes({ ...options, signal: ac.signal })) {
             o.next(change)
