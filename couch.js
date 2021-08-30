@@ -97,6 +97,10 @@ module.exports = function (opts) {
       params.view = options.view
     }
 
+    if (typeof options.filter !== 'undefined') {
+      params.filter = options.filter
+    }
+
     if (typeof options.doc_ids !== 'undefined') {
       method = 'POST'
       body = { doc_ids: options.doc_ids }
