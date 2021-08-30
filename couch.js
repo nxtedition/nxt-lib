@@ -527,11 +527,11 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function upsert(path, diffFun) {
+  async function upsert(path, diffFun, { client, signal } = {}) {
     while (true) {
       let doc
       try {
-        doc = await get(path)
+        doc = await get(path, null, null, { client, signal })
       } catch (err) {
         if (err.status !== 404) {
           throw err
@@ -554,7 +554,7 @@ module.exports = function (opts) {
       newDoc._rev = docRev
 
       try {
-        return await put(path, null, newDoc)
+        return await put(path, null, newDoc, { client, signal })
       } catch (err) {
         if (err.status !== 409) {
           throw err
