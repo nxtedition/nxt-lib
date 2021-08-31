@@ -134,7 +134,7 @@ module.exports = function (opts) {
     }
 
     try {
-      while (true) {
+      while (remaining) {
         const req = {
           path:
             pathname +
