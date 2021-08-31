@@ -390,6 +390,10 @@ module.exports = function (opts) {
       params.startkey = JSON.stringify(options.startkey)
     }
 
+    if (options.startkey_docid) {
+      params.startkey_docid = JSON.stringify(options.startkey_docid)
+    }
+
     if (options.end_key) {
       options.endkey = options.end_key
     }
