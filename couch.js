@@ -144,7 +144,7 @@ module.exports = function (opts) {
               ...options.query,
               heartbeat: Number.isFinite(params.heartbeat) ? params.heartbeat : 10e3,
               limit: Math.min(remaining, options.batchSize ?? (params.include_docs ? 256 : 1024)),
-              feed: live ? 'longpoll' : 'poll',
+              feed: live ? 'longpoll' : 'normal',
             })}`,
           idempotent: true,
           method,
