@@ -551,14 +551,17 @@ module.exports = function (opts) {
       const newDoc = diffFun(doc)
 
       if (!newDoc) {
-        return { updated: false, rev: docRev, id: docId }
+        return { updated: false, rev: docRev, id: docId, doc }
       }
 
       newDoc._id = docId
       newDoc._rev = docRev
 
       try {
-        return await put(path, null, newDoc, { client, signal })
+        return {
+          ...(await put(path, null, newDoc, { client, signal })),
+          doc: newDoc,
+        }
       } catch (err) {
         if (err.status !== 409) {
           throw err
