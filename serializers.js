@@ -63,11 +63,6 @@ module.exports = {
         ureq.id || (ureq.headers && typeof ureq.headers === 'object' && ureq.headers['request-id']),
       method: ureq.method,
       url,
-      path: url?.path,
-      origin: url?.origin,
-      hostname: url?.hostname,
-      protocol: url?.protocol,
-      port: url?.port,
       bytesWritten: ureq.bytesWritten,
       headers: ureq.headers,
     }
