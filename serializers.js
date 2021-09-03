@@ -1,23 +1,34 @@
 const seen = Symbol('circular-ref-tag')
 
+function getHeader(obj, key) {
+  return (
+    obj?.headers?.get?.('request-id') ||
+    obj?.getHeader?.('request-id') ||
+    obj?.headers?.['request-id']
+  )
+}
+
+function getHeaders(obj) {
+  return (
+    (obj.headers?.entries && Object.fromEntries(obj.headers.entries())) ||
+    obj.headers ||
+    obj.getHeaders?.()
+  )
+}
+
 module.exports = {
   err: (err) => serializeError(err),
   res: (res) =>
     res && {
-      id:
-        res.id ||
-        res.req?.id ||
-        (typeof res.getHeader === 'function' && res.getHeader('request-id')) ||
-        (res.headers && typeof res.headers === 'object' && res.headers['request-id']) ||
-        (res.req?.headers && typeof res.req.headers === 'object' && res.req.headers['request-id']),
+      id: res.id || res.req?.id || getHeader(res, 'request-id') || getHeader(res.req, 'request-id'),
       stats: res.stats,
       statusCode: res.statusCode || res.status,
       bytesWritten: res.bytesWritten,
-      headers: typeof res.getHeaders === 'function' ? res.getHeaders() : res.headers,
+      headers: getHeaders(res),
     },
   req: (req) =>
     req && {
-      id: req.id || (req.headers && typeof req.headers === 'object' && req.headers['request-id']),
+      id: req.id || getHeader(req, 'request-id'),
       method: req.method,
       url: req.url,
       headers: req.headers,
@@ -27,23 +38,18 @@ module.exports = {
     },
   ures: (ures) =>
     ures && {
-      id:
-        ures.id ||
-        (ures.headers && typeof ures.headers === 'object' && ures.headers['request-id']) ||
-        (typeof ures.getHeader === 'function' && ures.getHeader('request-id')),
-      statusCode: ures.statusCode,
+      id: ures.id || getHeader(ures, 'request-id') || getHeader(ures.req, 'request-id'),
+      statusCode: ures.statusCode ?? ures.status,
       bytesRead: ures.bytesRead,
-      headers:
-        (typeof ures.headers === 'object' && ures.headers) ||
-        (typeof ures.getHeaders === 'function' ? ures.getHeaders() : ures.headers),
+      headers: getHeaders(ures),
     },
   ureq: (ureq) => {
     if (!ureq) {
       return
     }
 
-    let url = ureq.url?.href
-      ? ureq.url
+    const url = ureq.url?.href
+      ? ureq.url.href
       : typeof ureq.url === 'string'
       ? ureq.url
       : ureq.origin
@@ -54,13 +60,8 @@ module.exports = {
         }${ureq.path || ''}`
       : undefined
 
-    if (!(url instanceof URL)) {
-      url = new URL(url)
-    }
-
     return {
-      id:
-        ureq.id || (ureq.headers && typeof ureq.headers === 'object' && ureq.headers['request-id']),
+      id: ureq.id || (typeof ureq?.headers === 'object' && ureq.headers['request-id']),
       method: ureq.method,
       url,
       bytesWritten: ureq.bytesWritten,
