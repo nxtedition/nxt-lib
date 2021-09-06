@@ -20,8 +20,8 @@ function parseHeaders(headers, obj = {}) {
   return obj
 }
 
-function makeError(res) {
-  return createError(res.status, { headers: res.headers, data: res.data })
+function makeError(res, data) {
+  return createError(res.status, { headers: res.headers, data })
 }
 
 module.exports = function (opts) {
@@ -336,7 +336,7 @@ module.exports = function (opts) {
     })
 
     if (res.status !== 201) {
-      throw makeError(res)
+      throw makeError(res, res.data)
     }
 
     return res.data
@@ -435,7 +435,7 @@ module.exports = function (opts) {
     })
 
     if (res.status !== 200) {
-      throw makeError(res)
+      throw makeError(res, res.data)
     }
 
     return res.data
@@ -453,7 +453,7 @@ module.exports = function (opts) {
     })
 
     if (res.status < 200 || res.status >= 300) {
-      throw makeError(res)
+      throw makeError(res, res.data)
     }
 
     return res.data
@@ -471,7 +471,7 @@ module.exports = function (opts) {
     })
 
     if (res.status < 200 || res.status >= 300) {
-      throw makeError(res)
+      throw makeError(res, res.data)
     }
 
     return res.data
@@ -489,7 +489,7 @@ module.exports = function (opts) {
     })
 
     if (res.status < 200 || res.status >= 300) {
-      throw makeError(res)
+      throw makeError(res, res.data)
     }
 
     return res.data
@@ -507,7 +507,7 @@ module.exports = function (opts) {
     })
 
     if (res.status < 200 || res.status >= 300) {
-      throw makeError(res)
+      throw makeError(res, res.data)
     }
 
     return res.data
@@ -525,7 +525,7 @@ module.exports = function (opts) {
     })
 
     if (res.status < 200 || res.status >= 300) {
-      throw makeError(res)
+      throw makeError(res, res.data)
     }
 
     return res.data
