@@ -21,7 +21,7 @@ function parseHeaders(headers, obj = {}) {
 }
 
 function makeError(res) {
-  return createError(res.status, { headers: res.headers, ...res.data })
+  return createError(res.status, { headers: res.headers, data: res.data })
 }
 
 module.exports = function (opts) {
