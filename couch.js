@@ -122,6 +122,7 @@ module.exports = function (opts) {
       throw new Error('invalid pathname')
     }
 
+    const batched = options.batched || false
     const live = options.live == null || !!options.live
     const retry = options.retry
 
@@ -181,7 +182,11 @@ module.exports = function (opts) {
 
           params.since = seq
 
-          yield* results
+          if (batched) {
+            yield results
+          } else {
+            yield* results
+          }
 
           if (!live && results.length === 0) {
             return
