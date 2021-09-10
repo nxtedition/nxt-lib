@@ -20,8 +20,20 @@ function parseHeaders(headers, obj = {}) {
   return obj
 }
 
-function makeError(res, data) {
-  return createError(res.status, { headers: res.headers, data })
+function makeError(req, res) {
+  return createError(res.status, {
+    req: {
+      method: req.method,
+      params: req.params,
+      headers: req.headers,
+      body: req.body,
+    },
+    res: {
+      status: res.status,
+      headers: res.headers,
+      body: res.data,
+    },
+  })
 }
 
 module.exports = function (opts) {
@@ -156,12 +168,10 @@ module.exports = function (opts) {
           const res = await client.request(req)
 
           if (res.statusCode < 200 || res.statusCode >= 300) {
-            throw createError(res.statusCode, {
+            throw makeError(req, {
+              status: res.statusCode,
               headers: res.headers,
-              data: {
-                req,
-                res: await res.body.text(),
-              },
+              data: await res.body.text(),
             })
           }
 
@@ -327,16 +337,18 @@ module.exports = function (opts) {
   }
 
   async function bulkDocs(body, { client, signal, idempotent = true } = {}) {
-    const res = await request('_bulk_docs', {
+    const req = {
+      path: '_bulk_docs',
       client,
       idempotent,
       body,
       method: 'POST',
       signal,
-    })
+    }
+    const res = await request(req.path, req)
 
     if (res.status !== 201) {
-      throw makeError(res, res.data)
+      throw makeError(req, res)
     }
 
     return res.data
@@ -424,7 +436,8 @@ module.exports = function (opts) {
       headers.push('Content-Type', 'application/json')
     }
 
-    const res = await request(path || '_all_docs', {
+    const req = {
+      path: path || '_all_docs',
       params,
       client,
       idempotent,
@@ -432,17 +445,19 @@ module.exports = function (opts) {
       method,
       headers,
       signal,
-    })
+    }
+    const res = await request(req.path, req)
 
     if (res.status !== 200) {
-      throw makeError(res, res.data)
+      throw makeError(req, res)
     }
 
     return res.data
   }
 
   async function put(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const res = await request(path, {
+    const req = {
+      path,
       params,
       client,
       idempotent,
@@ -450,17 +465,19 @@ module.exports = function (opts) {
       method: 'PUT',
       headers,
       signal,
-    })
+    }
+    const res = await request(req.path, req)
 
     if (res.status < 200 || res.status >= 300) {
-      throw makeError(res, res.data)
+      throw makeError(req, res)
     }
 
     return res.data
   }
 
   async function post(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const res = await request(path, {
+    const req = {
+      path,
       params,
       client,
       idempotent,
@@ -468,17 +485,19 @@ module.exports = function (opts) {
       method: 'POST',
       headers,
       signal,
-    })
+    }
+    const res = await request(req.path, req)
 
     if (res.status < 200 || res.status >= 300) {
-      throw makeError(res, res.data)
+      throw makeError(req, res)
     }
 
     return res.data
   }
 
   async function get(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const res = await request(path, {
+    const req = {
+      path,
       params,
       client,
       idempotent,
@@ -486,17 +505,19 @@ module.exports = function (opts) {
       method: 'GET',
       headers,
       signal,
-    })
+    }
+    const res = await request(req.path, req)
 
     if (res.status < 200 || res.status >= 300) {
-      throw makeError(res, res.data)
+      throw makeError(req, res)
     }
 
     return res.data
   }
 
   async function _delete(path, params, body, { client, signal, idempotent = true, headers } = {}) {
-    const res = await request(path, {
+    const req = {
+      path,
       params,
       client,
       idempotent,
@@ -504,17 +525,19 @@ module.exports = function (opts) {
       method: 'DELETE',
       headers,
       signal,
-    })
+    }
+    const res = await request(req.path, req)
 
     if (res.status < 200 || res.status >= 300) {
-      throw makeError(res, res.data)
+      throw makeError(req, res)
     }
 
     return res.data
   }
 
   async function info(params, body, { client, signal, idempotent = true, headers } = {}) {
-    const res = await request(null, {
+    const req = {
+      path: null,
       params,
       client,
       idempotent,
@@ -522,10 +545,11 @@ module.exports = function (opts) {
       method: 'GET',
       headers,
       signal,
-    })
+    }
+    const res = await request(req.path, req)
 
     if (res.status < 200 || res.status >= 300) {
-      throw makeError(res, res.data)
+      throw makeError(req, res)
     }
 
     return res.data
