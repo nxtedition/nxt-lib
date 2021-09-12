@@ -20,22 +20,6 @@ function parseHeaders(headers, obj = {}) {
   return obj
 }
 
-function makeError(req, res) {
-  return createError(res.status, {
-    req: {
-      method: req.method,
-      params: req.params,
-      headers: req.headers,
-      body: req.body,
-    },
-    res: {
-      status: res.status,
-      headers: res.headers,
-      body: res.data,
-    },
-  })
-}
-
 module.exports = function (opts) {
   const querystring = require('querystring')
   const urljoin = require('url-join')
@@ -76,6 +60,32 @@ module.exports = function (opts) {
           ...options,
         })
     )
+
+  function makeError(req, res) {
+    let path = pathname
+
+    if (req.path) {
+      path = urljoin(path, req.path)
+    }
+
+    if (req.params) {
+      path += `?${querystring.stringify(req.params)}`
+    }
+
+    return createError(res.status, {
+      req: {
+        path,
+        method: req.method,
+        headers: req.headers,
+        body: req.body,
+      },
+      res: {
+        status: res.status,
+        headers: res.headers,
+        body: res.data,
+      },
+    })
+  }
 
   const defaultClient = getClient({ pipelining: 1 })
 
