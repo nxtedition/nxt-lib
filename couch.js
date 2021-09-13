@@ -77,7 +77,7 @@ module.exports = function (opts) {
         path,
         method: req.method,
         headers: req.headers,
-        body: req.body,
+        body: req.body ? JSON.stringify(req.body).slice(0, 4096) : null,
       },
       res: {
         status: res.status,
