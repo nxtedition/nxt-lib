@@ -48,16 +48,19 @@ module.exports = function (opts) {
 
   const { origin, pathname } = new URL(Array.isArray(config.url) ? config.url[0] : config.url)
 
+  const defaultClient = new undici.Pool(origin, {
+    keepAliveTimeout: 30e3,
+    connections: 256,
+  })
+
   const getClient =
     config.getClient ??
     makeWeak(
-      (key, options) =>
+      () =>
         new undici.Pool(origin, {
-          connections: 256,
+          connections: 16, // TODO (fix): Global limit?
           pipelining: 1, // TODO (perf): Allow pipelining?
-          keepAliveTimeout: 30e3, // TODO (fix): What is correct keep alive timeout?
-          ...config.undici,
-          ...options,
+          keepAliveTimeout: 30e3,
         })
     )
 
@@ -87,9 +90,7 @@ module.exports = function (opts) {
     })
   }
 
-  const defaultClient = getClient({ pipelining: 1 })
-
-  async function* changes({ client = defaultClient, signal, ...options } = {}) {
+  async function* changes({ client, signal, ...options } = {}) {
     const params = {}
 
     let body
@@ -157,6 +158,11 @@ module.exports = function (opts) {
     }
 
     try {
+      if (!client) {
+        // TODO (fix): Remove when we have blocking support in undici.
+        client = live ? new undici.Pool(origin) : getClient('_changes')
+      }
+
       while (remaining) {
         const req = {
           path:
@@ -173,6 +179,7 @@ module.exports = function (opts) {
               feed: live ? 'longpoll' : 'normal',
             })}`,
           idempotent: true,
+          // blocking: live,
           method,
           body,
           signal: ac.signal,
@@ -354,7 +361,8 @@ module.exports = function (opts) {
     )
   }
 
-  async function bulkDocs(body, { client, signal, idempotent = true } = {}) {
+  async function bulkDocs(body, opts = {}) {
+    const { client = getClient('_bulk_docs'), signal, idempotent = true } = opts
     const req = {
       path: '_bulk_docs',
       client,
@@ -372,7 +380,7 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function allDocs(path, opts) {
+  async function allDocs(path, opts = {}) {
     if (path && typeof path === 'object') {
       opts = path
       path = null
@@ -380,7 +388,7 @@ module.exports = function (opts) {
 
     path = path || '_all_docs'
 
-    const { client = getClient(path), signal, idempotent = true, ...options } = opts ?? {}
+    const { client = getClient(path), signal, idempotent = true, ...options } = opts
 
     const params = {}
     const headers = ['Accept', 'application/json']
@@ -493,7 +501,8 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function post(path, params, body, { client, signal, idempotent = true, headers } = {}) {
+  async function post(path, params, body, opts = {}) {
+    const { client, signal, idempotent = true, headers } = opts
     const req = {
       path,
       params,
@@ -513,7 +522,12 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function get(path, params, body, { client, signal, idempotent = true, headers } = {}) {
+  async function get(
+    path,
+    params,
+    body,
+    { client = getClient('_get'), signal, idempotent = true, headers } = {}
+  ) {
     const req = {
       path,
       params,
