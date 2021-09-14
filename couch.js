@@ -53,7 +53,7 @@ module.exports = function (opts) {
     makeWeak(
       (key, options) =>
         new undici.Pool(origin, {
-          connections: 0,
+          connections: 256,
           pipelining: 1, // TODO (perf): Allow pipelining?
           keepAliveTimeout: 30e3, // TODO (fix): What is correct keep alive timeout?
           ...config.undici,
