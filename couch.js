@@ -526,7 +526,7 @@ module.exports = function (opts) {
     path,
     params,
     body,
-    { client = getClient('_get'), signal, idempotent = true, headers } = {}
+    { client = getClient('_all_docs'), signal, idempotent = true, headers } = {}
   ) {
     const req = {
       path,
