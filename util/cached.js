@@ -1,4 +1,4 @@
-const { Observable, ReplaySubject } = require('rxjs')
+const { Observable, ReplaySubject, Subject } = require('rxjs')
 
 const STATS = {}
 
@@ -59,7 +59,7 @@ module.exports = function cached(fn, options, keySelector) {
       let entry = cache.get(key)
 
       if (!entry) {
-        const observable = new ReplaySubject(buffer)
+        const observable = buffer ? new ReplaySubject(buffer) : Subject()
         entry = {
           key,
           observable,
