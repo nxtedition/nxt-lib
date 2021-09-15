@@ -162,52 +162,54 @@ module.exports = function (opts) {
         return
       }
 
-      try {
-        const req = {
-          path:
-            pathname +
-            '/_changes' +
-            `?${new URLSearchParams({
-              ...params,
-              ...options.query,
-              heartbeat: Number.isFinite(params.heartbeat) ? params.heartbeat : 10e3,
-              limit: Math.min(
-                remaining,
-                options.batch_size ?? options.batchSize ?? (params.include_docs ? 256 : 1024)
-              ),
-              feed: live ? 'longpoll' : 'normal',
-            })}`,
-          idempotent: true,
-          // blocking: live,
-          method,
-          body,
-          signal: ac.signal,
-        }
+      while (true) {
+        try {
+          const req = {
+            path:
+              pathname +
+              '/_changes' +
+              `?${new URLSearchParams({
+                ...params,
+                ...options.query,
+                heartbeat: Number.isFinite(params.heartbeat) ? params.heartbeat : 10e3,
+                limit: Math.min(
+                  remaining,
+                  options.batch_size ?? options.batchSize ?? (params.include_docs ? 256 : 1024)
+                ),
+                feed: live ? 'longpoll' : 'normal',
+              })}`,
+            idempotent: true,
+            // blocking: live,
+            method,
+            body,
+            signal: ac.signal,
+          }
 
-        const res = await client.request(req)
+          const res = await client.request(req)
 
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          throw makeError(req, {
-            status: res.statusCode,
-            headers: res.headers,
-            data: await res.body.text(),
-          })
-        }
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            throw makeError(req, {
+              status: res.statusCode,
+              headers: res.headers,
+              data: await res.body.text(),
+            })
+          }
 
-        // TODO (perf): Read last_seq first and then parse rest of body.
-        const { last_seq: seq, results } = await res.body.json()
+          // TODO (perf): Read last_seq first and then parse rest of body.
+          const { last_seq: seq, results } = await res.body.json()
 
-        retryCount = 0
+          retryCount = 0
 
-        params.since = seq
-        remaining -= results.length
+          params.since = seq
+          remaining -= results.length
 
-        return { results }
-      } catch (err) {
-        if (retry) {
-          await retry(err, retryCount++)
-        } else {
-          return { err }
+          return { results }
+        } catch (err) {
+          if (retry && err.name !== 'AbortError') {
+            await retry(err, retryCount++)
+          } else {
+            return { err }
+          }
         }
       }
     }
