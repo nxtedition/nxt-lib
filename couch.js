@@ -234,6 +234,9 @@ module.exports = function (opts) {
 
         promise = next()
 
+        // Ensure request has been dispatched.
+        await Promise.resolve()
+
         if (batched) {
           yield results
         } else {
