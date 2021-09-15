@@ -157,13 +157,12 @@ module.exports = function (opts) {
       }
     }
 
-    try {
-      if (!client) {
-        // TODO (fix): Remove when we have blocking support in undici.
-        client = live ? new undici.Pool(origin) : getClient('_changes')
+    const next = async () => {
+      if (!remaining) {
+        return
       }
 
-      while (remaining) {
+      try {
         const req = {
           path:
             pathname +
@@ -185,40 +184,64 @@ module.exports = function (opts) {
           signal: ac.signal,
         }
 
-        try {
-          const res = await client.request(req)
+        const res = await client.request(req)
 
-          if (res.statusCode < 200 || res.statusCode >= 300) {
-            throw makeError(req, {
-              status: res.statusCode,
-              headers: res.headers,
-              data: await res.body.text(),
-            })
-          }
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          throw makeError(req, {
+            status: res.statusCode,
+            headers: res.headers,
+            data: await res.body.text(),
+          })
+        }
 
-          const { last_seq: seq, results } = await res.body.json()
+        // TODO (perf): Read last_seq first and then parse rest of body.
+        const { last_seq: seq, results } = await res.body.json()
 
-          remaining -= results.length
+        retryCount = 0
 
-          params.since = seq
+        params.since = seq
+        remaining -= results.length
 
-          if (batched) {
-            yield results
-          } else {
-            yield* results
-          }
+        return { results }
+      } catch (err) {
+        if (retry) {
+          await retry(err, retryCount++)
+        } else {
+          return { err }
+        }
+      }
+    }
 
-          if (!live && results.length === 0) {
-            return
-          }
+    try {
+      if (!client) {
+        // TODO (fix): Remove when we have blocking support in undici.
+        client = live ? new undici.Pool(origin) : getClient('_changes')
+      }
 
-          retryCount = 0
-        } catch (err) {
-          if (retry) {
-            await retry(err, retryCount++)
-          } else {
-            throw err
-          }
+      let promise = next()
+      while (true) {
+        const res = await promise
+
+        if (!res) {
+          return
+        }
+
+        const { results, err } = res
+
+        if (err) {
+          throw err
+        }
+
+        promise = next()
+
+        if (batched) {
+          yield results
+        } else {
+          yield* results
+        }
+
+        if (!live && results.length === 0) {
+          return
         }
       }
     } finally {
