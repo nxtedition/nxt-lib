@@ -196,14 +196,14 @@ module.exports = function (opts) {
           }
 
           // TODO (perf): Read last_seq first and then parse rest of body.
-          const { last_seq: seq, results } = await res.body.json()
+          const json = await res.body.json()
 
           retryCount = 0
 
-          params.since = seq
-          remaining -= results.length
+          params.since = json.last_seq
+          remaining -= json.results.length
 
-          return { results }
+          return json
         } catch (err) {
           if (retry && err.name !== 'AbortError') {
             await retry(err, retryCount++)
