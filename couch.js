@@ -92,7 +92,7 @@ module.exports = function (opts) {
     })
   }
 
-  async function* changes({ client, signal, ...options } = {}) {
+  async function* changes({ client = defaultClient, signal, ...options } = {}) {
     const params = {}
 
     let body
@@ -181,7 +181,7 @@ module.exports = function (opts) {
                 feed: live ? 'longpoll' : 'normal',
               })}`,
             idempotent: true,
-            // blocking: live,
+            blocking: live,
             method,
             body,
             signal: ac.signal,
@@ -217,11 +217,6 @@ module.exports = function (opts) {
     }
 
     try {
-      if (!client) {
-        // TODO (fix): Remove when we have blocking support in undici.
-        client = live ? new undici.Pool(origin) : getClient('_changes')
-      }
-
       let promise = next()
       while (true) {
         const res = await promise
