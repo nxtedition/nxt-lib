@@ -1,5 +1,6 @@
 const createError = require('http-errors')
 const makeWeak = require('./weakCache')
+const tp = require('timers/promises')
 
 let rxjs
 
@@ -287,7 +288,27 @@ module.exports = function (opts) {
   const ACCEPT_HEADERS = ['Accept', 'application/json']
   const ACCEPT_CONTENT_TYPE_HEADERS = [...ACCEPT_HEADERS, 'Content-Type', 'application/json']
 
-  function request(
+  async function request(url, opts) {
+    for (let n = 0; true; ++n) {
+      try {
+        return await _request(url, opts)
+      } catch (err) {
+        if (
+          !opts.idempotent ||
+          n >= 10 ||
+          (err.code !== 'UND_ERR_SOCKET' &&
+            err.code !== 'ECONNRESET' &&
+            err.code !== 'ECONNREFUSED' &&
+            err.code !== 'EHOSTUNREACH')
+        ) {
+          throw err
+        }
+        await tp.setTimeout(n * 1e3)
+      }
+    }
+  }
+
+  function _request(
     url,
     { params, client = defaultClient, idempotent, body, method, headers, signal }
   ) {
