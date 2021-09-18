@@ -299,7 +299,8 @@ module.exports = function (opts) {
           (err.code !== 'UND_ERR_SOCKET' &&
             err.code !== 'ECONNRESET' &&
             err.code !== 'ECONNREFUSED' &&
-            err.code !== 'EHOSTUNREACH')
+            err.code !== 'EHOSTUNREACH' &&
+            err.message !== 'write EPIPE')
         ) {
           throw err
         }
