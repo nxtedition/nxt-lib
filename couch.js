@@ -79,16 +79,18 @@ module.exports = function (opts) {
     }
 
     return createError(res.status, {
-      req: {
-        path,
-        method: req.method,
-        headers: req.headers,
-        body: req.body ? JSON.stringify(req.body).slice(0, 4096) : null,
-      },
-      res: {
-        status: res.status,
-        headers: res.headers,
-        body: res.data,
+      data: {
+        req: {
+          path,
+          method: req.method,
+          headers: req.headers,
+          body: req.body ? JSON.stringify(req.body).slice(0, 4096) : null,
+        },
+        res: {
+          status: res.status,
+          headers: res.headers,
+          body: res.data,
+        },
       },
     })
   }
