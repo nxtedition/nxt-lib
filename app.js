@@ -8,6 +8,11 @@ module.exports = function (appConfig, onTerminate) {
   let config
   let logger
 
+  // Crash on unhandledRejection
+  process.on('unhandledRejection', (err) => {
+    throw err
+  })
+
   const { createLogger } = require('./logger')
 
   const cleanAppConfig = ({
