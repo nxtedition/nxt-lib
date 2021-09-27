@@ -505,6 +505,18 @@ module.exports = function (opts) {
       params.stale = options.stale
     }
 
+    if (typeof options.reduce !== 'undefined') {
+      params.reduce = options.reduce
+    }
+
+    if (typeof options.group !== 'undefined') {
+      params.group = options.group
+    }
+
+    if (typeof options.group_level !== 'undefined') {
+      params.group_level = options.group_level
+    }
+
     if (typeof options.keys !== 'undefined') {
       method = 'POST'
       body = { keys: options.keys }
