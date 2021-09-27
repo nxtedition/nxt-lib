@@ -223,7 +223,7 @@ module.exports = function (opts) {
           return json
         } catch (err) {
           if (retry && err.name !== 'AbortError') {
-            await retry(err, retryCount++)
+            Object.assign(params, await retry(err, retryCount++, params))
           } else {
             return { err }
           }
