@@ -78,7 +78,19 @@ module.exports = function (opts) {
       path += `?${querystring.stringify(req.params)}`
     }
 
+    let reason
+    let error
+    try {
+      const json = JSON.parse(res.data)
+      reason = json.reason
+      error = json.error
+    } catch {
+      // Do nothing...
+    }
+
     return createError(res.status, {
+      reason,
+      error,
       data: {
         req: {
           path,
