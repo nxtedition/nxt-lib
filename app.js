@@ -372,6 +372,7 @@ module.exports = function (appConfig, onTerminate) {
         ].filter(Boolean)
       )
       .pipe(
+        rx.auditTime(1e3),
         rx.map(([status, lag, couch, ds, dsConnected]) => {
           const messages = [
             lag,
