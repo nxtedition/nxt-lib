@@ -468,6 +468,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     stats$ = stats$.pipe(
+      rx.auditTime(1e3),
       rx.filter(Boolean),
       rx.retryWhen((err$) =>
         err$.pipe(
