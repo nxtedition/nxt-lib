@@ -205,7 +205,7 @@ module.exports = function (opts) {
           const res = await client.request(req)
 
           if (res.statusCode < 200 || res.statusCode >= 300) {
-            throw makeError(req, {
+            throw createError(res.status, {
               status: res.statusCode,
               headers: res.headers,
               data: await res.body.text(),
