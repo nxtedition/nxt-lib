@@ -690,6 +690,7 @@ module.exports = function (opts) {
         return {
           ...(await put(path, null, newDoc, { client, signal })),
           doc: newDoc,
+          updated: true,
         }
       } catch (err) {
         if (err.status !== 409) {
