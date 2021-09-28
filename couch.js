@@ -60,7 +60,7 @@ module.exports = function (opts) {
     makeWeak(
       () =>
         new undici.Pool(origin, {
-          connections: 4, // TODO (fix): Global limit?
+          connections: 8, // TODO (fix): Global limit?
           pipelining: 8, // TODO (perf): Allow pipelining?
           keepAliveTimeout: 30e3,
           headersTimeout: 10 * 60e3,
