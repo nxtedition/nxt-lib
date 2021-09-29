@@ -72,14 +72,13 @@ module.exports = function (opts) {
   function makeError(req, res) {
     let path
 
-    if (req.pathname) {
-      path = req.pathname
+    if (req.path) {
+      path = req.path
     } else {
       path = dbPathname
-      if (req.path) {
-        path = urljoin(path, req.path)
+      if (req.pathname) {
+        path = urljoin(path, req.pathname)
       }
-
       if (req.params) {
         path += `?${querystring.stringify(req.params)}`
       }
@@ -219,17 +218,11 @@ module.exports = function (opts) {
       const res = await client.request(req)
 
       if (res.statusCode < 200 || res.statusCode >= 300) {
-        throw makeError(
-          {
-            ...req,
-            pathname: req.path,
-          },
-          {
-            status: res.statusCode,
-            headers: res.headers,
-            data: await res.body.text(),
-          }
-        )
+        throw makeError(req, {
+          status: res.statusCode,
+          headers: res.headers,
+          data: await res.body.text(),
+        })
       }
 
       let str = ''
@@ -281,17 +274,11 @@ module.exports = function (opts) {
         const res = await client.request(req)
 
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          throw makeError(
-            {
-              ...req,
-              pathname: req.path,
-            },
-            {
-              status: res.statusCode,
-              headers: res.headers,
-              data: await res.body.text(),
-            }
-          )
+          throw makeError(req, {
+            status: res.statusCode,
+            headers: res.headers,
+            data: await res.body.text(),
+          })
         }
 
         const { last_seq: seq, results } = await res.body.json()
@@ -493,14 +480,14 @@ module.exports = function (opts) {
   async function bulkDocs(body, opts = {}) {
     const { client = getClient('_bulk_docs'), signal, idempotent = true } = opts
     const req = {
-      path: '_bulk_docs',
+      pathname: '_bulk_docs',
       client,
       idempotent,
       body,
       method: 'POST',
       signal,
     }
-    const res = await request(req.path, req)
+    const res = await request(req.pathname, req)
 
     if (res.status !== 201) {
       throw makeError(req, res)
@@ -509,15 +496,15 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function allDocs(path, opts = {}) {
-    if (path && typeof path === 'object') {
-      opts = path
-      path = null
+  async function allDocs(pathname, opts = {}) {
+    if (pathname && typeof pathname === 'object') {
+      opts = pathname
+      pathname = null
     }
 
-    path = path || '_all_docs'
+    pathname = pathname || '_all_docs'
 
-    const { client = getClient(path), signal, idempotent = true, ...options } = opts
+    const { client = getClient(pathname), signal, idempotent = true, ...options } = opts
 
     const params = {}
     const headers = ['Accept', 'application/json']
@@ -604,7 +591,7 @@ module.exports = function (opts) {
     }
 
     const req = {
-      path: path || '_all_docs',
+      pathname: pathname || '_all_docs',
       params,
       client,
       idempotent,
@@ -613,7 +600,7 @@ module.exports = function (opts) {
       headers,
       signal,
     }
-    const res = await request(req.path, req)
+    const res = await request(req.pathname, req)
 
     if (res.status !== 200) {
       throw makeError(req, res)
@@ -622,9 +609,9 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function put(path, params, body, { client, signal, idempotent = true, headers } = {}) {
+  async function put(pathname, params, body, { client, signal, idempotent = true, headers } = {}) {
     const req = {
-      path,
+      pathname,
       params,
       client,
       idempotent,
@@ -633,7 +620,7 @@ module.exports = function (opts) {
       headers,
       signal,
     }
-    const res = await request(req.path, req)
+    const res = await request(req.pathname, req)
 
     if (res.status < 200 || res.status >= 300) {
       throw makeError(req, res)
@@ -642,10 +629,10 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function post(path, params, body, opts = {}) {
+  async function post(pathname, params, body, opts = {}) {
     const { client, signal, idempotent = true, headers } = opts
     const req = {
-      path,
+      pathname,
       params,
       client,
       idempotent,
@@ -654,7 +641,7 @@ module.exports = function (opts) {
       headers,
       signal,
     }
-    const res = await request(req.path, req)
+    const res = await request(req.pathname, req)
 
     if (res.status < 200 || res.status >= 300) {
       throw makeError(req, res)
@@ -664,13 +651,13 @@ module.exports = function (opts) {
   }
 
   async function get(
-    path,
+    pathname,
     params,
     body,
     { client = getClient('_all_docs'), signal, idempotent = true, headers } = {}
   ) {
     const req = {
-      path,
+      pathname,
       params,
       client,
       idempotent,
@@ -679,7 +666,7 @@ module.exports = function (opts) {
       headers,
       signal,
     }
-    const res = await request(req.path, req)
+    const res = await request(req.pathname, req)
 
     if (res.status < 200 || res.status >= 300) {
       throw makeError(req, res)
@@ -688,9 +675,14 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function _delete(path, params, body, { client, signal, idempotent = true, headers } = {}) {
+  async function _delete(
+    pathname,
+    params,
+    body,
+    { client, signal, idempotent = true, headers } = {}
+  ) {
     const req = {
-      path,
+      pathname,
       params,
       client,
       idempotent,
@@ -699,7 +691,7 @@ module.exports = function (opts) {
       headers,
       signal,
     }
-    const res = await request(req.path, req)
+    const res = await request(req.pathname, req)
 
     if (res.status < 200 || res.status >= 300) {
       throw makeError(req, res)
@@ -710,7 +702,7 @@ module.exports = function (opts) {
 
   async function info(params, body, { client, signal, idempotent = true, headers } = {}) {
     const req = {
-      path: null,
+      pathname: null,
       params,
       client,
       idempotent,
@@ -719,7 +711,7 @@ module.exports = function (opts) {
       headers,
       signal,
     }
-    const res = await request(req.path, req)
+    const res = await request(req.pathname, req)
 
     if (res.status < 200 || res.status >= 300) {
       throw makeError(req, res)
@@ -728,17 +720,17 @@ module.exports = function (opts) {
     return res.data
   }
 
-  async function upsert(path, diffFun, { client, signal } = {}) {
+  async function upsert(pathname, diffFun, { client, signal } = {}) {
     while (true) {
       let doc
       try {
-        doc = await get(path, null, null, { client, signal })
+        doc = await get(pathname, null, null, { client, signal })
       } catch (err) {
         if (err.status !== 404) {
           throw err
         }
         doc = {
-          _id: path.split('/').pop(),
+          _id: pathname.split('/').pop(),
         }
       }
 
@@ -756,7 +748,7 @@ module.exports = function (opts) {
 
       try {
         return {
-          ...(await put(path, null, newDoc, { client, signal })),
+          ...(await put(pathname, null, newDoc, { client, signal })),
           doc: newDoc,
           updated: true,
         }
