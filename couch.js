@@ -70,8 +70,11 @@ module.exports = function (opts) {
   function makeError(req, res) {
     let path = pathname
 
-    if (req.path) {
+    if (req.path && req.params) {
+      // req.params is a hack
       path = urljoin(path, req.path)
+    } else {
+      path = req.path
     }
 
     if (req.params) {
@@ -194,7 +197,7 @@ module.exports = function (opts) {
     }
 
     async function* continuous() {
-      const res = await client.request({
+      const req = {
         path:
           pathname +
           '/_changes' +
@@ -208,13 +211,14 @@ module.exports = function (opts) {
         method,
         body,
         signal: ac.signal,
-      })
+      }
+      const res = await client.request(req)
 
       if (res.statusCode < 200 || res.statusCode >= 300) {
-        throw createError(res.status, {
+        throw makeError(req, {
           status: res.statusCode,
           headers: res.headers,
-          data: await res.body.text(),
+          data: await res.body.text()
         })
       }
 
@@ -248,7 +252,7 @@ module.exports = function (opts) {
 
     async function* normal() {
       while (remaining) {
-        const res = await client.request({
+        const req = {
           path:
             pathname +
             '/_changes' +
@@ -263,13 +267,14 @@ module.exports = function (opts) {
           method,
           body,
           signal: ac.signal,
-        })
+        }
+        const res = await client.request(req)
 
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          throw createError(res.status, {
+          throw makeError(req, {
             status: res.statusCode,
             headers: res.headers,
-            data: await res.body.text(),
+            data: await res.body.text()
           })
         }
 
