@@ -247,7 +247,7 @@ module.exports = function (opts) {
           }
         }
 
-        if (results) {
+        if (results && results.length) {
           yield results
         }
       }
