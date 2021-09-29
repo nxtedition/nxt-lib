@@ -47,9 +47,11 @@ module.exports = function (opts) {
     config = { ...config, url: config.name }
   }
 
-  const { origin, pathname } = new URL(Array.isArray(config.url) ? config.url[0] : config.url)
+  const { origin: dbOrigin, pathname: dbPathname } = new URL(
+    Array.isArray(config.url) ? config.url[0] : config.url
+  )
 
-  const defaultClient = new undici.Pool(origin, {
+  const defaultClient = new undici.Pool(dbOrigin, {
     keepAliveTimeout: 30e3,
     headersTimeout: 10 * 60e3,
     connections: 256,
@@ -59,7 +61,7 @@ module.exports = function (opts) {
     config.getClient ??
     makeWeak(
       () =>
-        new undici.Pool(origin, {
+        new undici.Pool(dbOrigin, {
           connections: 8, // TODO (fix): Global limit?
           pipelining: 8, // TODO (perf): Allow pipelining?
           keepAliveTimeout: 30e3,
@@ -68,17 +70,19 @@ module.exports = function (opts) {
     )
 
   function makeError(req, res) {
-    let path = pathname
+    let path
 
-    if (req.path && req.params) {
-      // req.params is a hack
-      path = urljoin(path, req.path)
+    if (req.pathname) {
+      path = req.pathname
     } else {
-      path = req.path
-    }
+      path = dbPathname
+      if (req.path) {
+        path = urljoin(path, req.path)
+      }
 
-    if (req.params) {
-      path += `?${querystring.stringify(req.params)}`
+      if (req.params) {
+        path += `?${querystring.stringify(req.params)}`
+      }
     }
 
     let reason
@@ -165,7 +169,7 @@ module.exports = function (opts) {
       body = { doc_ids: options.doc_ids }
     }
 
-    if (pathname === '/') {
+    if (dbPathname === '/') {
       throw new Error('invalid pathname')
     }
 
@@ -199,7 +203,7 @@ module.exports = function (opts) {
     async function* continuous() {
       const req = {
         path:
-          pathname +
+          dbPathname +
           '/_changes' +
           `?${new URLSearchParams({
             ...params,
@@ -215,11 +219,17 @@ module.exports = function (opts) {
       const res = await client.request(req)
 
       if (res.statusCode < 200 || res.statusCode >= 300) {
-        throw makeError(req, {
-          status: res.statusCode,
-          headers: res.headers,
-          data: await res.body.text()
-        })
+        throw makeError(
+          {
+            ...req,
+            pathname: req.path,
+          },
+          {
+            status: res.statusCode,
+            headers: res.headers,
+            data: await res.body.text(),
+          }
+        )
       }
 
       let str = ''
@@ -254,7 +264,7 @@ module.exports = function (opts) {
       while (remaining) {
         const req = {
           path:
-            pathname +
+            dbPathname +
             '/_changes' +
             `?${new URLSearchParams({
               ...params,
@@ -271,11 +281,17 @@ module.exports = function (opts) {
         const res = await client.request(req)
 
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          throw makeError(req, {
-            status: res.statusCode,
-            headers: res.headers,
-            data: await res.body.text()
-          })
+          throw makeError(
+            {
+              ...req,
+              pathname: req.path,
+            },
+            {
+              status: res.statusCode,
+              headers: res.headers,
+              data: await res.body.text(),
+            }
+          )
         }
 
         const { last_seq: seq, results } = await res.body.json()
@@ -391,7 +407,7 @@ module.exports = function (opts) {
       headers = body ? ACCEPT_CONTENT_TYPE_HEADERS : ACCEPT_HEADERS
     }
 
-    let path = pathname
+    let path = dbPathname
 
     if (url) {
       path = urljoin(path, url)
@@ -405,7 +421,7 @@ module.exports = function (opts) {
       client.dispatch(
         {
           path,
-          origin,
+          origin: dbOrigin,
           idempotent,
           method,
           body: typeof body === 'object' && body ? JSON.stringify(body) : body,
