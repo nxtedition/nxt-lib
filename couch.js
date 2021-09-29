@@ -141,6 +141,22 @@ module.exports = function (opts) {
       params.filter = options.filter
     }
 
+    if (typeof options.heartbeat !== 'undefined') {
+      params.heartbeat = options.heartbeat
+    } else {
+      params.heartbeat = 10e3
+    }
+
+    if (typeof options.timeout !== 'undefined') {
+      params.timeout = options.timeout
+    } else {
+      params.timeout = parseInt(params.heartbeat) * 4
+    }
+
+    if (typeof options.limit !== 'undefined') {
+      params.limit = options.limit
+    }
+
     if (typeof options.doc_ids !== 'undefined') {
       method = 'POST'
       body = { doc_ids: options.doc_ids }
@@ -154,8 +170,11 @@ module.exports = function (opts) {
     const live = options.live == null || !!options.live
     const retry = options.retry
 
-    let retryCount = 0
+    // 'normal' feed options
+    const batchSize = options.batch_size ?? options.batchSize ?? (params.include_docs ? 256 : 1024)
     let remaining = parseInt(options.limit) || Infinity
+
+    let retryCount = 0
 
     const ac = new AbortController()
     const onAbort = () => {
@@ -174,91 +193,119 @@ module.exports = function (opts) {
       }
     }
 
-    const next = async () => {
-      if (!remaining) {
-        return
+    async function* continuous() {
+      const res = await client.request({
+        path:
+          pathname +
+          '/_changes' +
+          `?${new URLSearchParams({
+            ...params,
+            ...options.query,
+            feed: 'continuous',
+          })}`,
+        idempotent: true,
+        blocking: true,
+        method,
+        body,
+        signal: ac.signal,
+      })
+
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw createError(res.status, {
+          status: res.statusCode,
+          headers: res.headers,
+          data: await res.body.text(),
+        })
       }
 
-      while (true) {
-        try {
-          const req = {
-            path:
-              pathname +
-              '/_changes' +
-              `?${new URLSearchParams({
-                ...params,
-                ...options.query,
-                heartbeat: Number.isFinite(params.heartbeat) ? params.heartbeat : 10e3,
-                limit: Math.min(
-                  remaining,
-                  options.batch_size ?? options.batchSize ?? (params.include_docs ? 256 : 1024)
-                ),
-                feed: live ? 'longpoll' : 'normal',
-              })}`,
-            idempotent: true,
-            blocking: live,
-            method,
-            body,
-            signal: ac.signal,
+      let str = ''
+      for await (const chunk of res.body) {
+        retryCount = 0
+
+        str += chunk
+
+        const lines = str.split('\n') // TODO (perf): Avoid extra array allocation.
+        str = lines.pop()
+
+        const results = batched ? [] : null
+        for (const line of lines) {
+          if (line) {
+            const change = JSON.parse(line)
+            params.since = change.seq
+            if (results) {
+              results.push(change)
+            } else {
+              yield change
+            }
           }
+        }
 
-          const res = await client.request(req)
-
-          if (res.statusCode < 200 || res.statusCode >= 300) {
-            throw createError(res.status, {
-              status: res.statusCode,
-              headers: res.headers,
-              data: await res.body.text(),
-            })
-          }
-
-          // TODO (perf): Read last_seq first and then parse rest of body.
-          const json = await res.body.json()
-
-          retryCount = 0
-
-          params.since = json.last_seq
-          remaining -= json.results.length
-
-          return json
-        } catch (err) {
-          if (retry && err.name !== 'AbortError') {
-            Object.assign(params, await retry(err, retryCount++, params))
-          } else {
-            return { err }
-          }
+        if (results) {
+          yield results
         }
       }
     }
 
-    try {
-      let promise = next()
-      while (true) {
-        const res = await promise
+    async function* normal() {
+      while (remaining) {
+        const res = await client.request({
+          path:
+            pathname +
+            '/_changes' +
+            `?${new URLSearchParams({
+              ...params,
+              ...options.query,
+              limit: Math.min(remaining, batchSize),
+              feed: live ? 'continuous' : 'normal',
+            })}`,
+          idempotent: true,
+          blocking: live,
+          method,
+          body,
+          signal: ac.signal,
+        })
 
-        if (!res) {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          throw createError(res.status, {
+            status: res.statusCode,
+            headers: res.headers,
+            data: await res.body.text(),
+          })
+        }
+
+        const { last_seq: seq, results } = await res.body.json()
+        retryCount = 0
+
+        params.since = seq
+        remaining -= results.length
+
+        if (results.length === 0) {
           return
         }
-
-        const { results, err } = res
-
-        if (err) {
-          throw err
-        }
-
-        promise = next()
-
-        // Ensure request has been dispatched.
-        await Promise.resolve()
 
         if (batched) {
           yield results
         } else {
           yield* results
         }
+      }
+    }
 
-        if (!live && results.length === 0) {
+    try {
+      while (true) {
+        try {
+          if (live) {
+            yield* continuous()
+          } else {
+            yield* normal()
+          }
           return
+        } catch (err) {
+          if (retry && err.name !== 'AbortError' && err.code !== 'UND_ERR_ABORTED') {
+            Object.assign(params, await retry(err, retryCount++, params))
+          } else {
+            throw err
+          }
         }
       }
     } finally {
