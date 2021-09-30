@@ -81,6 +81,7 @@
     "nested-error-stacks": "^2.1.0",
     "object-hash": "^2.2.0",
     "request-target": "^1.0.2",
+    "sonic-boom": "^2.3.0",
     "split-string": "^6.0.0",
     "toobusy-js": "^0.5.1",
     "undici": "^4.7.0",
