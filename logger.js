@@ -1,6 +1,7 @@
 const serializers = require('./serializers')
 const pino = require('pino')
 const { isMainThread } = require('worker_threads')
+const { isWorker } = require('cluster')
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -22,7 +23,7 @@ module.exports.createLogger = function (
     stream = process.stdout
   }
 
-  if (isMainThread === false || stream) {
+  if (isMainThread === false || isWorker || stream) {
     extreme = false
   }
 
