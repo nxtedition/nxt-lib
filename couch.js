@@ -455,8 +455,13 @@ module.exports = function (opts) {
               }
             }
 
+            let data = this.data
+            if (this.headers['content-type']?.toLowerCase() === 'application/json') {
+              data = JSON.parse(this.data)
+            }
+
             this.resolve({
-              data: this.data ? JSON.parse(this.data) : this.data,
+              data,
               status: this.status,
               headers: this.headers,
             })
