@@ -361,7 +361,7 @@ module.exports = function (appConfig, onTerminate) {
                 o.next({
                   level: state !== 'OPEN' ? 50 : 30,
                   code: `NXT_DEEPSTREAM_${state}`,
-                  msg: `ds: ${state}`,
+                  msg: `deepstream connection state is ${state}`,
                 })
               }
               ds.on('connectionStateChanged', _next)
@@ -417,11 +417,14 @@ module.exports = function (appConfig, onTerminate) {
     const loggerSubscription = status$
       .pipe(rx.pluck('messages'), rx.startWith([]), rx.pairwise())
       .subscribe(([prev, next]) => {
-        for (const { msg, ...message } of fp.differenceBy('id', next, prev)) {
-          logger.info({ status: msg, message }, 'status added')
+        for (const message of fp.differenceBy('id', next, prev)) {
+          logger.info(message, 'status added')
         }
-        for (const { msg, ...message } of fp.differenceBy('id', prev, next)) {
-          logger.info({ status: msg, message }, 'status removed')
+        for (const { msg, ...message } of fp.differenceBy('id', next, prev)) {
+          logger.info(message, `status added: ${msg}`)
+        }
+        for (const { level, msg, ...message } of fp.differenceBy('id', prev, next)) {
+          logger.info(message, `status removed: ${msg}`)
         }
       })
 
