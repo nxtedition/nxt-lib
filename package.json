@@ -4,6 +4,7 @@
   "license": "UNLICENSED",
   "author": "Robert Nagy <robert.nagy@boffins.se>",
   "files": [
+    "ass.js",
     "rxjs/*",
     "util/*",
     "subtract-ranges.js",
