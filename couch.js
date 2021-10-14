@@ -94,23 +94,27 @@ module.exports = function (opts) {
       // Do nothing...
     }
 
-    return createError(res.status, {
-      reason,
-      error,
-      data: {
-        req: {
-          path,
-          method: req.method,
-          headers: req.headers,
-          body: req.body ? JSON.stringify(req.body).slice(0, 4096) : null,
+    return Object.assign(
+      createError(res.status, {
+        data: {
+          req: {
+            path,
+            method: req.method,
+            headers: req.headers,
+            body: req.body ? JSON.stringify(req.body).slice(0, 4096) : null,
+          },
+          res: {
+            status: res.status,
+            headers: res.headers,
+            body: res.data,
+          },
         },
-        res: {
-          status: res.status,
-          headers: res.headers,
-          body: res.data,
-        },
-      },
-    })
+      }),
+      {
+        reason,
+        error,
+      }
+    )
   }
 
   async function* changes({ client = defaultClient, signal, ...options } = {}) {
