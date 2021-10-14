@@ -87,34 +87,30 @@ module.exports = function (opts) {
     let reason
     let error
     try {
-      const json = JSON.parse(res.data)
+      const json = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
       reason = json.reason
       error = json.error
     } catch {
       // Do nothing...
     }
 
-    return Object.assign(
-      createError(res.status, {
-        data: {
-          req: {
-            path,
-            method: req.method,
-            headers: req.headers,
-            body: req.body ? JSON.stringify(req.body).slice(0, 4096) : null,
-          },
-          res: {
-            status: res.status,
-            headers: res.headers,
-            body: res.data,
-          },
+    return createError(res.status, {
+      reason,
+      error,
+      data: {
+        req: {
+          path,
+          method: req.method,
+          headers: req.headers,
+          body: req.body ? JSON.stringify(req.body).slice(0, 4096) : null,
         },
-      }),
-      {
-        reason,
-        error,
-      }
-    )
+        res: {
+          status: res.status,
+          headers: res.headers,
+          body: res.data,
+        },
+      },
+    })
   }
 
   async function* changes({ client = defaultClient, signal, ...options } = {}) {
