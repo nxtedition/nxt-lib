@@ -4,6 +4,7 @@
   "license": "UNLICENSED",
   "author": "Robert Nagy <robert.nagy@boffins.se>",
   "files": [
+    "hash.js",
     "ass.js",
     "rxjs/*",
     "util/*",
