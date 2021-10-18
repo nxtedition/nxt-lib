@@ -1,6 +1,5 @@
 const serializers = require('./serializers')
 const pino = require('pino')
-const SonicBoom = require('sonic-boom')
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -23,20 +22,25 @@ module.exports.createLogger = function (
   }
 
   if (stream) {
-    extreme = false
-  }
-
-  let logger
-  if (!extreme) {
-    stream = stream || new SonicBoom({ fd: process.stdout.fd, sync: true })
-    logger = pino({ serializers, prettyPrint, level, ...options }, stream)
+    // Do nothing...
+  } else if (!extreme) {
+    stream = pino.destination({ fd: process.stdout.fd, sync: true })
   } else {
-    stream = new SonicBoom({ fd: process.stdout.fd, sync: false, minLength: 4096 })
-    logger = pino({ serializers, prettyPrint, level, ...options }, stream)
+    stream = pino.destination({ fd: process.stdout.fd, sync: false, minLength: 4096 })
     setInterval(() => {
       logger.flush()
     }, flushInterval).unref()
   }
+
+  const logger = pino(
+    {
+      serializers,
+      prettyPrint, // TODO (fix): This is deprecated...
+      level,
+      ...options,
+    },
+    stream
+  )
 
   let called = false
   const finalHandler = async (err, evt) => {
@@ -48,7 +52,7 @@ module.exports.createLogger = function (
     logger.info(`${evt} caught`)
     if (err) {
       logger.fatal({ err }, 'error caused exit')
-      if (stream && stream.flushSync) {
+      if (stream?.flushSync) {
         stream.flushSync()
       }
       process.exit(1)
@@ -60,23 +64,20 @@ module.exports.createLogger = function (
         exitSignal = err.exitSignal || 1
         logger.warn({ err })
       }
-      if (stream && stream.flushSync) {
+      if (stream?.flushSync) {
         stream.flushSync()
       }
       process.exit(!exitSignal ? 0 : exitSignal)
     }
   }
 
+  process.on('exit', () => finalHandler(null, 'exit'))
   process.on('beforeExit', () => finalHandler(null, 'beforeExit'))
   process.on('SIGINT', () => finalHandler(null, 'SIGINT'))
   process.on('SIGQUIT', () => finalHandler(null, 'SIGQUIT'))
-
-  if (extreme) {
-    process.on('exit', () => finalHandler(null, 'exit'))
-    process.on('uncaughtException', (err) => finalHandler(err, 'uncaughtException'))
-    process.on('unhandledRejection', (err) => finalHandler(err, 'unhandledRejection'))
-    process.on('SIGTERM', () => finalHandler(null, 'SIGTERM'))
-  }
+  process.on('SIGTERM', () => finalHandler(null, 'SIGTERM'))
+  process.on('uncaughtException', (err) => finalHandler(err, 'uncaughtException'))
+  process.on('unhandledRejection', (err) => finalHandler(err, 'unhandledRejection'))
 
   return logger
 }
