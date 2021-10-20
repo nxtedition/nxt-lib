@@ -34,8 +34,8 @@ const formatDialogues = fp.pipe(
 
 function encASSEvents(events) {
   return `[Events]
-  Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-  ${formatDialogues(events)}`
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+${formatDialogues(events)}`
 }
 
 const formatStyles = fp.pipe(
