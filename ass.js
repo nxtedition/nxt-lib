@@ -11,7 +11,7 @@ function encodeASS(events, { styles = {}, ...options } = {}) {
     encASSEvents(
       events.map((event) => {
         // NOTE: :subtitle uses `end`, :event uses `duration`
-        if (event.end != null) {
+        if (event.end == null) {
           return { ...event, end: event.duration != null ? event.start + event.duration : null }
         }
         return event
