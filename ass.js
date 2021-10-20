@@ -2,8 +2,6 @@ const fp = require('lodash/fp')
 
 module.exports = { encodeASS }
 
-// TODO move referencedStyles out as argument, like with subtitleEvents.
-// We need "hardcoded" styles snapshots to be passed in as well.
 function encodeASS(events, { styles = {}, ...options } = {}) {
   return [
     encASSHeader(options),
