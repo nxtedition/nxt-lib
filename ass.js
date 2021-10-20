@@ -1,96 +1,27 @@
-const { Observable } = require('rxjs')
 const fp = require('lodash/fp')
 
 module.exports = { encodeASS }
 
 // TODO move referencedStyles out as argument, like with subtitleEvents.
 // We need "hardcoded" styles snapshots to be passed in as well.
-function encodeASS(ds, subtitleEvents) {
-  if (subtitleEvents.length === 0) {
-    return Observable.of({})
-  }
-
-  const referencedStyles$ = Observable.combineLatest(
-    ...fp.pipe(
-      fp.map(fp.prop('style')),
-      fp.uniq,
-      fp.map((id) =>
-        ds.record
-          .observe(`${id}:subtitle-style`)
-          .map((style) => (fp.isEmpty(style) ? {} : { [id]: style }))
-      )
-    )(subtitleEvents)
-  ).map((xs) => (xs.length ? fp.mergeAll(xs) : {}))
-
-  const input$ = Observable.combineLatest(referencedStyles$, getDefaultStyle(ds)).map(
-    ([styles, defaultStyle]) => {
-      const extraStyles = {}
-
-      const events = subtitleEvents.map((event) => {
-        const change = {}
-
-        if (!event.end) {
-          // NOTE: :subtitle uses `end`, :event uses `duration`
-          change.end = event.duration != null ? event.start + event.duration : null
+function encodeASS(events, { styles = {}, ...options } = {}) {
+  return [
+    encASSHeader(options),
+    encASSStyles(styles),
+    encASSEvents(
+      events.map((event) => {
+        // NOTE: :subtitle uses `end`, :event uses `duration`
+        if (event.end != null) {
+          return { ...event, end: event.duration != null ? event.start + event.duration : null }
         }
-
-        if (!styles[event.style]) {
-          extraStyles['nxt-default'] = defaultStyle
-          change.style = 'nxt-default'
-        }
-
-        return { ...event, ...change }
+        return event
       })
-
-      return { events, styles: { ...styles, ...extraStyles } }
-    }
-  )
-
-  return input$.map(({ styles, events }) => {
-    const value = [
-      encASSHeader(), // TODO { width, height }?
-      encASSStyles(styles),
-      encASSEvents(events),
-    ].join('\n')
-
-    return { value, styles, events }
-  })
-}
-
-function getDefaultStyle(ds) {
-  return ds.record.observe('nxt-default:subtitle-style').map((style) =>
-    !fp.isEmpty(style)
-      ? style
-      : {
-          name: 'nxt-default',
-          fontname: 'FreeSans',
-          fontsize: '72',
-          primaryColour: '&H00FFFFFF',
-          secondaryColour: '&H000000FF',
-          outlineColour: '&H80000000',
-          backColour: '&H0',
-          bold: '0',
-          italic: '0',
-          underline: '0',
-          strikeOut: '0',
-          scaleX: '100',
-          scaleY: '100',
-          spacing: '0',
-          angle: '0',
-          borderStyle: '3',
-          outline: '0.001',
-          shadow: '0',
-          alignment: '1',
-          marginL: '60',
-          marginR: '60',
-          marginV: '60',
-          encoding: '1',
-        }
-  )
+    ),
+  ].join('\n')
 }
 
 const formatDialogues = fp.pipe(
-  fp.filter(fp.conformsTo({ start: fp.isNumber })),
+  fp.filter(fp.conformsTo({ start: fp.isFinite })),
   fp.sortBy('start'),
   fp.reduce((s, event) => {
     const { start, end, text, style } = event
