@@ -54,6 +54,7 @@ module.exports = function (opts) {
   const defaultClient = new undici.Pool(dbOrigin, {
     keepAliveTimeout: 30e3,
     headersTimeout: 10 * 60e3,
+    bodyTimeout: 2 * 60e3,
     connections: 256,
   })
 
@@ -66,6 +67,7 @@ module.exports = function (opts) {
           pipelining: 8, // TODO (perf): Allow pipelining?
           keepAliveTimeout: 30e3,
           headersTimeout: 10 * 60e3,
+          bodyTimeout: 2 * 60e3,
         })
     )
 
