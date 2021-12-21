@@ -94,6 +94,29 @@ module.exports.request = async function request(ctx, next) {
 
     const responseTime = Math.round(performance.now() - startTime)
 
+    if (!res.headersSent) {
+      for (const name of res.getHeaderNames()) {
+        res.removeHeader(name)
+      }
+
+      res.setHeader('request-id', req.id)
+
+      if (err.headers) {
+        assert(typeof err.headers === 'object')
+
+        for (const [key, val] of Object.entries(err.headers)) {
+          if (!ERR_HEADER_EXPR.test(key)) {
+            res.setHeader(key, val)
+          }
+        }
+      }
+
+      res.statusCode = statusCode
+      res.end()
+    } else {
+      res.destroy(err)
+    }
+
     reqLogger = reqLogger.child({ res })
 
     if (req.aborted || err.name === 'AbortError') {
@@ -121,29 +144,6 @@ module.exports.request = async function request(ctx, next) {
     res.on('error', (err) => {
       reqLogger.warn({ err }, 'request error')
     })
-
-    if (!res.headersSent) {
-      for (const name of res.getHeaderNames()) {
-        res.removeHeader(name)
-      }
-
-      res.setHeader('request-id', req.id)
-
-      if (err.headers) {
-        assert(typeof err.headers === 'object')
-
-        for (const [key, val] of Object.entries(err.headers)) {
-          if (!ERR_HEADER_EXPR.test(key)) {
-            res.setHeader(key, val)
-          }
-        }
-      }
-
-      res.statusCode = statusCode
-      res.end()
-    } else {
-      res.destroy(err)
-    }
   } finally {
     queueMicrotask(() => ac.abort())
   }
