@@ -350,7 +350,12 @@ module.exports = function (appConfig, onTerminate) {
                     await undici.request(`http://${host}/healthcheck`)
                   }
                 } catch (err) {
-                  return { level: 40, code: err.code, msg: 'ds: ' + err.message }
+                  return {
+                    id: 'ds_http_connection',
+                    level: 40,
+                    code: err.code,
+                    msg: 'ds: ' + err.message,
+                  }
                 }
               }),
               rx.distinctUntilChanged(fp.isEqual)
@@ -359,6 +364,7 @@ module.exports = function (appConfig, onTerminate) {
             new rxjs.Observable((o) => {
               const _next = (state) => {
                 o.next({
+                  id: 'ds_connection',
                   level: state !== 'OPEN' ? 50 : 30,
                   code: `NXT_DEEPSTREAM_${state}`,
                   msg: `deepstream connection state is ${state}`,
@@ -393,7 +399,7 @@ module.exports = function (appConfig, onTerminate) {
             .filter(fp.isPlainObject)
             .map((message) => ({
               ...message,
-              id: message.id || objectHash(message),
+              id: message.id || objectHash(message.msg ?? message.message ?? message),
             }))
 
           const warnings = messages.filter((x) => x.level >= 40 && x.msg).map((x) => x.msg)
