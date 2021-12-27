@@ -397,10 +397,14 @@ module.exports = function (appConfig, onTerminate) {
           ]
             .flat()
             .filter(fp.isPlainObject)
-            .map((message) => ({
-              ...message,
-              id: message.id || objectHash(message.msg ?? message.message ?? message),
-            }))
+            .map((message) =>
+              message.id
+                ? message
+                : {
+                    ...message,
+                    id: objectHash(message.msg ?? message.message ?? message),
+                  }
+            )
 
           const warnings = messages.filter((x) => x.level >= 40 && x.msg).map((x) => x.msg)
 
