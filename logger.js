@@ -35,7 +35,11 @@ module.exports.createLogger = function (
   const logger = pino(
     {
       serializers,
-      prettyPrint, // TODO (fix): This is deprecated...
+      transport: prettyPrint
+        ? {
+            target: 'pino-pretty',
+          }
+        : null,
       level,
       ...options,
     },
