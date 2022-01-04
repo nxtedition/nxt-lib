@@ -1,5 +1,9 @@
 // https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript
 module.exports = function hash(str, seed = 0) {
+  if (typeof str !== 'string') {
+    throw new Error('invalid argument "str"')
+  }
+
   let h1 = 0xdeadbeef ^ seed
   let h2 = 0x41c6ce57 ^ seed
   for (let i = 0, ch; i < str.length; i++) {

@@ -289,7 +289,7 @@ module.exports = function (appConfig, onTerminate) {
     const rx = require('rxjs/operators')
     const undici = require('undici')
     const fp = require('lodash/fp')
-    const objectHash = require('object-hash')
+    const hashString = require('./hash')
 
     let status$
     if (appConfig.status.subscribe) {
@@ -314,18 +314,28 @@ module.exports = function (appConfig, onTerminate) {
           status$.pipe(
             rx.filter(Boolean),
             rx.startWith(null),
-            rx.distinctUntilChanged(fp.isEqual),
             rx.catchError((err) => {
               logger.error({ err }, 'monitor.status')
-              return rxjs.of({ level: 50, code: err.code, msg: err.message })
+              return rxjs.of({
+                id: 'app:user_monitor_status',
+                level: 50,
+                code: err.code,
+                msg: err.message,
+              })
             }),
+            rx.distinctUntilChanged(fp.isEqual),
             rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
           ),
           toobusy &&
             rxjs.timer(0, 1e3).pipe(
               rx.map(() =>
                 toobusy.lag() > 1e3
-                  ? { level: 40, code: 'NXT_LAG', msg: `lag: ${toobusy.lag()}` }
+                  ? {
+                      id: 'app:toobusy_lag',
+                      level: 40,
+                      code: 'NXT_LAG',
+                      msg: `lag: ${toobusy.lag()}`,
+                    }
                   : null
               ),
               rx.distinctUntilChanged(fp.isEqual)
@@ -336,7 +346,12 @@ module.exports = function (appConfig, onTerminate) {
                 try {
                   await couch.info()
                 } catch (err) {
-                  return { level: 40, code: err.code, msg: 'couch: ' + err.message }
+                  return {
+                    id: 'app:couch',
+                    level: 40,
+                    code: err.code,
+                    msg: 'couch: ' + err.message,
+                  }
                 }
               }),
               rx.distinctUntilChanged(fp.isEqual)
@@ -352,7 +367,7 @@ module.exports = function (appConfig, onTerminate) {
                   }
                 } catch (err) {
                   return {
-                    id: 'ds_http_connection',
+                    id: 'app:ds_http_connection',
                     level: 40,
                     code: err.code,
                     msg: 'ds: ' + err.message,
@@ -365,7 +380,7 @@ module.exports = function (appConfig, onTerminate) {
             new rxjs.Observable((o) => {
               const _next = (state) => {
                 o.next({
-                  id: 'ds_connection',
+                  id: 'app:ds_connection',
                   level: state !== 'OPEN' ? 50 : 30,
                   code: `NXT_DEEPSTREAM_${state}`,
                   msg: `deepstream connection state is ${state}`,
@@ -403,26 +418,19 @@ module.exports = function (appConfig, onTerminate) {
                 ? message
                 : {
                     ...message,
-                    id: objectHash(message.msg ?? message.message ?? message),
+                    id: hashString(message.msg ?? message.message ?? message ?? ''),
                   }
             )
 
-          const warnings = messages.filter((x) => x.level >= 40 && x.msg).map((x) => x.msg)
-
-          return {
-            ...status,
-            messages,
-            warnings: warnings.length === 0 ? null : warnings, // Compat
-          }
+          return { ...status, messages }
         }),
         rx.catchError((err) => {
           logger.error({ err }, 'monitor.status')
-          return rxjs.of({ level: 50, code: err.code, msg: err.message })
+          return rxjs.of({ id: 'app:monitor_status', level: 50, code: err.code, msg: err.message })
         }),
         rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
         rx.startWith({}),
-        rx.publishReplay(1),
-        rx.refCount()
+        rx.share()
       )
 
     const loggerSubscription = status$
