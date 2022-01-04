@@ -788,11 +788,6 @@ asynckit@^0.4.0:
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
   integrity sha1-x57Zf380y48robyXkLzDZkdLS3k=
 
-atomic-sleep@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/atomic-sleep/-/atomic-sleep-1.0.0.tgz#eb85b77a601fc932cfe432c5acd364a9e2c9075b"
-  integrity sha512-kNOjDqAh7px0XWNI+4QbzoiR/nTkHAWNud2uvnJquD1/x5a7EQZMJT0AczqK0Qn67oY/TTQ1LbUKajZpp3I9tQ==
-
 babel-jest@^27.4.5:
   version "27.4.5"
   resolved "https://registry.yarnpkg.com/babel-jest/-/babel-jest-27.4.5.tgz#d38bd0be8ea71d8b97853a5fc9f76deeb095c709"
@@ -3311,13 +3306,6 @@ slice-ansi@^5.0.0:
   dependencies:
     ansi-styles "^6.0.0"
     is-fullwidth-code-point "^4.0.0"
-
-sonic-boom@^2.3.1:
-  version "2.4.2"
-  resolved "https://registry.yarnpkg.com/sonic-boom/-/sonic-boom-2.4.2.tgz#34c0965b1a498abedaaca794c752d190f74b5e8f"
-  integrity sha512-zlOmAKFLJzTI+MbvmkWhnOOJ++NYo0Iy7F93ARNPmvZvpWG2l8Ff3uwM3CkpHqRw8v3pcRROScM5E+vbeTeOKw==
-  dependencies:
-    atomic-sleep "^1.0.0"
 
 source-map-support@^0.5.6:
   version "0.5.21"
