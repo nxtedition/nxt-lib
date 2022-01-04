@@ -358,9 +358,7 @@ module.exports = function (appConfig, onTerminate) {
             ),
           ds &&
             new rxjs.Observable((o) => {
-              const { host } = new URL(ds._url || ds.url)
-              const url = `http://${host}/healthcheck`
-              const agent = new undici.Agent({
+              const client = new undici.Client(`http://${new URL(ds._url || ds.url).host}`, {
                 keepAliveTimeout: 30e3,
               })
 
@@ -369,7 +367,12 @@ module.exports = function (appConfig, onTerminate) {
                 .pipe(
                   rx.exhaustMap(async () => {
                     try {
-                      await agent.request(url).then(({ body }) => body.dump())
+                      await client
+                        .request({
+                          method: 'GET',
+                          path: '/healthcheck',
+                        })
+                        .then(({ body }) => body.dump())
                     } catch (err) {
                       return {
                         id: 'app:ds_http_connection',
@@ -384,7 +387,7 @@ module.exports = function (appConfig, onTerminate) {
                 .subscribe(o)
 
               return () => {
-                agent.destroy()
+                client.destroy()
                 subscription.unsubscribe()
               }
             }),
