@@ -357,25 +357,37 @@ module.exports = function (appConfig, onTerminate) {
               rx.distinctUntilChanged(fp.isEqual)
             ),
           ds &&
-            rxjs.timer(0, 10e3).pipe(
-              rx.exhaustMap(async () => {
-                try {
-                  if (ds._url || ds.url) {
-                    const { host } = new URL(ds._url || ds.url)
-                    const { body } = await undici.request(`http://${host}/healthcheck`)
-                    await body.dump()
-                  }
-                } catch (err) {
-                  return {
-                    id: 'app:ds_http_connection',
-                    level: 40,
-                    code: err.code,
-                    msg: 'ds: ' + err.message,
-                  }
-                }
-              }),
-              rx.distinctUntilChanged(fp.isEqual)
-            ),
+            new rxjs.Observable((o) => {
+              const { host } = new URL(ds._url || ds.url)
+              const url = `http://${host}/healthcheck`
+              const agent = new undici.Agent({
+                keepAliveTimeout: 30e3,
+              })
+
+              const subscription = rxjs
+                .timer(0, 10e3)
+                .pipe(
+                  rx.exhaustMap(async () => {
+                    try {
+                      await agent.request(url).then(({ body }) => body.dump())
+                    } catch (err) {
+                      return {
+                        id: 'app:ds_http_connection',
+                        level: 40,
+                        code: err.code,
+                        msg: 'ds: ' + err.message,
+                      }
+                    }
+                  }),
+                  rx.distinctUntilChanged(fp.isEqual)
+                )
+                .subscribe(o)
+
+              return () => {
+                agent.destroy()
+                subscription.unsubscribe()
+              }
+            }),
           ds &&
             new rxjs.Observable((o) => {
               const _next = (state) => {
