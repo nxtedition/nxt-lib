@@ -347,7 +347,8 @@ module.exports = function (appConfig, onTerminate) {
                 try {
                   if (ds._url || ds.url) {
                     const { host } = new URL(ds._url || ds.url)
-                    await undici.request(`http://${host}/healthcheck`)
+                    const { body } = await undici.request(`http://${host}/healthcheck`)
+                    await body.dump()
                   }
                 } catch (err) {
                   return {
