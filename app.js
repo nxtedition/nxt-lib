@@ -367,18 +367,22 @@ module.exports = function (appConfig, onTerminate) {
                 .pipe(
                   rx.exhaustMap(async () => {
                     try {
-                      await client
-                        .request({
+                      const { body } = await client.request({ method: 'GET', path: '/healthcheck' })
+                      await body.dump()
+                    } catch {
+                      try {
+                        const { body } = await client.request({
                           method: 'GET',
                           path: '/healthcheck',
                         })
-                        .then(({ body }) => body.dump())
-                    } catch (err) {
-                      return {
-                        id: 'app:ds_http_connection',
-                        level: 40,
-                        code: err.code,
-                        msg: 'ds: ' + err.message,
+                        await body.dump()
+                      } catch (err) {
+                        return {
+                          id: 'app:ds_http_connection',
+                          level: 40,
+                          code: err.code,
+                          msg: 'ds: ' + err.message,
+                        }
                       }
                     }
                   }),
