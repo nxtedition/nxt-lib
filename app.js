@@ -433,11 +433,20 @@ module.exports = function (appConfig, onTerminate) {
             .flat()
             .filter(fp.isPlainObject)
             .map((message) =>
+              message.msg || !message.message
+                ? message
+                : {
+                    ...message,
+                    message: undefined,
+                    msg: message,
+                  }
+            )
+            .map((message) =>
               message.id
                 ? message
                 : {
                     ...message,
-                    id: hashString(message.msg ?? message.message ?? message ?? ''),
+                    id: hashString(message.msg ?? message ?? ''),
                   }
             )
 
