@@ -237,7 +237,7 @@ module.exports = function (appConfig, onTerminate) {
       })(dsConfig)
 
     dsConfig = {
-      url: 'ws://localhost:6020/deepstream',
+      url: 'ws://0.0.0.0:6020/deepstream',
       maxReconnectAttempts: Infinity,
       maxReconnectInterval: 10e3,
       cache: dsCache,
