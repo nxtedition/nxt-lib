@@ -314,7 +314,6 @@ module.exports = function (appConfig, onTerminate) {
         [
           status$.pipe(
             rx.filter(Boolean),
-            rx.startWith(null),
             rx.catchError((err) => {
               logger.error({ err }, 'monitor.status')
               return rxjs.of({
@@ -325,7 +324,8 @@ module.exports = function (appConfig, onTerminate) {
               })
             }),
             rx.distinctUntilChanged(fp.isEqual),
-            rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
+            rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
+            rx.startWith(null)
           ),
           toobusy &&
             rxjs.timer(0, 1e3).pipe(
@@ -339,7 +339,8 @@ module.exports = function (appConfig, onTerminate) {
                     }
                   : null
               ),
-              rx.distinctUntilChanged(fp.isEqual)
+              rx.distinctUntilChanged(fp.isEqual),
+              rx.startWith(null)
             ),
           couch &&
             rxjs.timer(0, 10e3).pipe(
@@ -355,7 +356,8 @@ module.exports = function (appConfig, onTerminate) {
                   }
                 }
               }),
-              rx.distinctUntilChanged(fp.isEqual)
+              rx.distinctUntilChanged(fp.isEqual),
+              rx.startWith(null)
             ),
           ds &&
             new rxjs.Observable((o) => {
@@ -395,7 +397,7 @@ module.exports = function (appConfig, onTerminate) {
                 client.destroy()
                 subscription.unsubscribe()
               }
-            }),
+            }).pipe(rx.startWith(null)),
           ds &&
             new rxjs.Observable((o) => {
               const _next = (state) => {
@@ -410,7 +412,7 @@ module.exports = function (appConfig, onTerminate) {
               return () => {
                 ds.off('connectionStateChanged', _next)
               }
-            }),
+            }).pipe(rx.startWith(null)),
         ].filter(Boolean)
       )
       .pipe(
@@ -459,7 +461,8 @@ module.exports = function (appConfig, onTerminate) {
         }),
         rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
         rx.startWith({}),
-        rx.share()
+        rx.publishReplay(1),
+        rx.refCount()
       )
 
     const loggerSubscription = status$
