@@ -520,7 +520,7 @@ module.exports = function (appConfig, onTerminate) {
     const containerId = appConfig.containerId ?? os.hostname()
     const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
 
-    monitorProviders.status$ = stats$
+    monitorProviders.stats$ = stats$
 
     logger.debug({ hostname }, 'monitor.stats')
 
