@@ -283,8 +283,9 @@ module.exports = function (appConfig, onTerminate) {
     compiler = createTemplateCompiler({ ds })
   }
 
+  const monitorProviders = {}
+
   if (appConfig.status) {
-    const os = require('os')
     const rxjs = require('rxjs')
     const rx = require('rxjs/operators')
     const undici = require('undici')
@@ -472,21 +473,9 @@ module.exports = function (appConfig, onTerminate) {
         }
       })
 
-    const containerId = appConfig.containerId ?? os.hostname()
-    const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
-
-    logger.debug({ hostname }, 'monitor.status')
-
-    const unprovide = nxt?.record.provide(
-      'monitor.status',
-      (id) => (id === hostname ? status$ : null),
-      { id: true }
-    )
+    monitorProviders.status$ = status$
 
     destroyers.push(() => {
-      if (unprovide) {
-        unprovide()
-      }
       loggerSubscription.unsubscribe()
     })
   }
@@ -531,11 +520,7 @@ module.exports = function (appConfig, onTerminate) {
     const containerId = appConfig.containerId ?? os.hostname()
     const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
 
-    const unprovide = nxt?.record.provide(
-      'monitor.stats',
-      (id) => (id === hostname ? stats$ : null),
-      { id: true }
-    )
+    monitorProviders.status$ = stats$
 
     logger.debug({ hostname }, 'monitor.stats')
 
@@ -560,10 +545,27 @@ module.exports = function (appConfig, onTerminate) {
     })
 
     destroyers.push(() => {
+      subscription.unsubscribe()
+    })
+  }
+
+  if (Object.keys(monitorProviders).length) {
+    const os = require('os')
+
+    const containerId = appConfig.containerId ?? os.hostname()
+    const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
+
+    logger.debug({ hostname }, 'monitor')
+
+    const unprovide = ds.record.provide(`^([^:]+):monitor\\.([^?]+)[?]?`, (key) => {
+      const [, id, prop] = key.match(/^([^:]+):monitor\.([^?]+)[?]?/)
+      return id === hostname && monitorProviders[prop + '$']
+    })
+
+    destroyers.push(() => {
       if (unprovide) {
         unprovide()
       }
-      subscription.unsubscribe()
     })
   }
 
