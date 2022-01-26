@@ -34,7 +34,10 @@ module.exports.createLogger = function (
 
   const logger = pino(
     {
-      serializers,
+      serializers: {
+        ...serializers,
+        ...options.serializers,
+      },
       transport: prettyPrint
         ? {
             target: 'pino-pretty',
