@@ -29,6 +29,8 @@ module.exports = function (opts) {
   let config
   if (typeof opts === 'string') {
     config = opts
+  } else if (Array.isArray(opts)) {
+    config = opts
   } else if (opts?.url) {
     config = opts
   } else if (opts?.couchdb || opts?.couch) {
