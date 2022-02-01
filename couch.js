@@ -401,7 +401,7 @@ module.exports = function (opts) {
     let path = dbPathname
 
     if (url) {
-      path = urljoin(path, url)
+      path = urljoin(path, encodeURI(url))
     }
 
     if (params) {
