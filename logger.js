@@ -34,10 +34,6 @@ module.exports.createLogger = function (
 
   const logger = pino(
     {
-      serializers: {
-        ...serializers,
-        ...options.serializers,
-      },
       transport: prettyPrint
         ? {
             target: 'pino-pretty',
@@ -45,6 +41,10 @@ module.exports.createLogger = function (
         : null,
       level,
       ...options,
+      serializers: {
+        ...serializers,
+        ...options.serializers,
+      },
     },
     stream
   )
