@@ -1,8 +1,6 @@
 const querystring = require('querystring')
 const objectHash = require('object-hash')
 const cached = require('./util/cached')
-const xuid = require('xuid')
-const rxjs = require('rxjs')
 const rx = require('rxjs/operators')
 
 function provide(ds, domain, callback, options) {
@@ -117,59 +115,6 @@ function observe2(ds, name, ...args) {
   )
 }
 
-function rpcProvide(ds, rpcName, callback, options) {
-  return provide(
-    ds,
-    rpcName,
-    (id, options) => {
-      try {
-        let ret$ = callback(options, id)
-
-        if (!options || !options.recursive) {
-          ret$ = rxjs.of(ret$)
-        }
-
-        return ret$.pipe(
-          rx.map((ret) =>
-            !ret
-              ? null
-              : ret.pipe(
-                  rx.map((data) => ({ data })),
-                  rx.endWith({ error: null }),
-                  rx.catchError((err) => rxjs.of({ error: err.message })),
-                  rx.scan((xs, x) => ({ ...xs, ...x }))
-                )
-          )
-        )
-      } catch (err) {
-        return rxjs.of({ error: err.message })
-      }
-    },
-    { id: true, recursive: true }
-  )
-}
-
-function rpcObserve(ds, rpcName, data) {
-  return rxjs.defer(() => {
-    const rpcId = xuid()
-    return observe(ds, `${rpcId}:${rpcName}`, data, ds.record.PROVIDER).pipe(
-      rx.takeWhile(({ error }) => error === undefined, true),
-      rx.map(({ data, error }) => {
-        if (error) {
-          throw error
-        }
-        return data || {}
-      })
-    )
-  })
-}
-
-function rpcMake(ds, rpcName, data) {
-  const subject = new rxjs.ReplaySubject(1)
-  rpcObserve(ds, rpcName, data).subscribe(subject)
-  return subject
-}
-
 function init(ds) {
   const nxt = {
     ds,
@@ -181,11 +126,6 @@ function init(ds) {
       set: (...args) => ds.set(...args),
       get: (...args) => ds.get(...args),
       update: (...args) => ds.update(...args),
-    },
-    rpc: {
-      provide: (...args) => rpcProvide(ds, ...args),
-      observe: (...args) => rpcObserve(ds, ...args),
-      make: (...args) => rpcMake(ds, ...args),
     },
   }
   ds.nxt = nxt
@@ -202,10 +142,5 @@ module.exports = Object.assign(init, {
     provide,
     observe,
     observe2,
-  },
-  rpc: {
-    provide: rpcProvide,
-    observe: rpcObserve,
-    make: rpcMake,
   },
 })
