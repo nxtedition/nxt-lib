@@ -169,7 +169,7 @@ module.exports = ({ ds } = {}) => {
         }
 
         if (typeof state === 'string') {
-          state = ds.record.STATE[state]
+          state = ds.record.STATE[state.toUpperCase()]
         }
 
         function observe(id) {
