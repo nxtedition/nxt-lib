@@ -168,6 +168,10 @@ module.exports = ({ ds } = {}) => {
           throw new Error('invalid argument')
         }
 
+        if (typeof state === 'string') {
+          state = ds.record.STATE[state]
+        }
+
         function observe(id) {
           return ds.record.observe((id || '') + (postfix || ''), path, state)
         }
