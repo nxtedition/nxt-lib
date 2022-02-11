@@ -103,68 +103,6 @@ module.exports = function (appConfig, onTerminate) {
     couch = require('./couch')(couchConfig)
   }
 
-  if (appConfig.esc) {
-    const Elasticsearch = require('@elastic/elasticsearch')
-    const dns = require('dns/promises')
-
-    const dnsCache = new Map()
-    async function lookup(hostname, opts) {
-      const key = JSON.stringify({ hostname, opts })
-
-      const entry = await dnsCache.get(key)?.catch(() => null)
-      if (entry && entry.expires > Date.now()) {
-        return entry
-      }
-
-      const dnsLogger = logger.child({ key, dns: { hostname } })
-      dnsLogger.debug('dns lookup started')
-
-      const promise = dns
-        .lookup(hostname, opts)
-        .then(({ address, family }) => {
-          const entry = {
-            address,
-            family,
-            expires: Date.now() + 10e3,
-          }
-          dnsLogger.debug({ dns: entry }, 'dns lookup completed')
-          return entry
-        })
-        .catch((err) => {
-          if (entry) {
-            dnsLogger.warn({ err, dns: entry }, 'dns lookup fallback')
-            return entry
-          } else {
-            dnsLogger.error({ err }, 'dns lookup failed')
-            throw err
-          }
-        })
-
-      dnsCache.set(key, promise)
-
-      return promise
-    }
-
-    const esc = new Elasticsearch.Client({
-      node: appConfig.esc.url,
-      ...appConfig.esc,
-      agent: {
-        lookup(hostname, opts, callback) {
-          lookup(hostname, opts)
-            .then(({ address, family }) => callback(null, address, family))
-            .catch((err) => callback(err))
-        },
-        ...appConfig.esc.agent,
-      },
-    })
-    esc.on('error', (err) => {
-      if (err.code === 'ECONNREFUSED') {
-        dnsCache.clear()
-      }
-      logger.error({ err }, 'esc error')
-    })
-  }
-
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const leveldown = require('leveldown')
