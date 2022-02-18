@@ -554,7 +554,7 @@ module.exports = function (appConfig, onTerminate) {
     })
   }
 
-  if (Object.keys(monitorProviders).length) {
+  if (ds && Object.keys(monitorProviders).length) {
     const os = require('os')
 
     const containerId = appConfig.containerId ?? os.hostname()
