@@ -56,14 +56,14 @@ module.exports.createLogger = function (
     }
     called = true
 
-    logger.info(`${evt} caught`)
     if (err) {
-      logger.fatal({ err }, 'error caused exit')
+      logger.fatal({ err }, evt || 'error caused exit')
       if (stream?.flushSync) {
         stream.flushSync()
       }
       process.exit(1)
     } else {
+      logger.info(`${evt} caught`)
       let exitSignal
       try {
         exitSignal = onTerminate ? await onTerminate(logger) : null
@@ -83,8 +83,7 @@ module.exports.createLogger = function (
   process.on('SIGINT', () => finalHandler(null, 'SIGINT'))
   process.on('SIGQUIT', () => finalHandler(null, 'SIGQUIT'))
   process.on('SIGTERM', () => finalHandler(null, 'SIGTERM'))
-  process.on('uncaughtException', (err) => finalHandler(err, 'uncaughtException'))
-  process.on('unhandledRejection', (err) => finalHandler(err, 'unhandledRejection'))
+  process.on('uncaughtException', (err, origin) => finalHandler(err, origin))
 
   return logger
 }
