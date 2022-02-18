@@ -234,7 +234,7 @@ module.exports = ({ ds } = {}) => {
 
           return (value) =>
             value
-              ? ds.record.observe2(`${value}:asset.rawTypes`).pipe(
+              ? ds.record.observe2(`${value}:asset.rawTypes?`).pipe(
                   rx.map(({ state, data }) => ({
                     state,
                     data: fp.includes(type, data.value),
