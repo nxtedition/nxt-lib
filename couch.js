@@ -53,23 +53,23 @@ module.exports = function (opts) {
     Array.isArray(config.url) ? config.url[0] : config.url
   )
 
-  const defaultClient = new undici.Pool(dbOrigin, {
+  const defaultClientOpts = {
     keepAliveTimeout: 2 * 60e3,
     headersTimeout: 10 * 60e3,
     bodyTimeout: 2 * 60e3,
     connections: 256,
-  })
+  }
+
+  const defaultClient = new undici.Pool(dbOrigin, defaultClientOpts)
 
   const getClient =
     config.getClient ??
     makeWeak(
       () =>
         new undici.Pool(dbOrigin, {
+          ...defaultClientOpts,
           connections: 8, // TODO (fix): Global limit?
-          pipelining: 8, // TODO (perf): Allow pipelining?
-          keepAliveTimeout: 30e3,
-          headersTimeout: 10 * 60e3,
-          bodyTimeout: 2 * 60e3,
+          pipelining: 8,
         })
     )
 
