@@ -86,12 +86,44 @@ function stringifyFn(fn) {
   return typeof fn === 'function' ? fn.toString().match(/\{([\s\S]+)\}/m)[1] : fn
 }
 
+function observe(ds, name, ...args) {
+  let options = null
+
+  if (args[0] && typeof args[0] === 'object') {
+    options = JSON.parse(JSON.stringify(args.shift()))
+  }
+
+  return ds.record.observe(
+    `${name}${
+      options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''
+    }`,
+    ...args
+  )
+}
+
+function observe2(ds, name, ...args) {
+  let options = null
+
+  if (args[0] && typeof args[0] === 'object') {
+    options = JSON.parse(JSON.stringify(args.shift()))
+  }
+
+  return ds.record.observe2(
+    `${name}${
+      options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''
+    }`,
+    ...args
+  )
+}
+
 function init(ds) {
   const nxt = {
     ds,
     record: {
       query: (...args) => query(ds, ...args),
       provide: (...args) => provide(ds, ...args),
+      observe: (...args) => observe(ds, ...args),
+      observe2: (...args) => observe2(ds, ...args),
       set: (...args) => ds.set(...args),
       get: (...args) => ds.get(...args),
       update: (...args) => ds.update(...args),
@@ -104,8 +136,12 @@ function init(ds) {
 module.exports = Object.assign(init, {
   provide,
   query,
+  observe,
+  observe2,
   record: {
     query,
     provide,
+    observe,
+    observe2,
   },
 })
