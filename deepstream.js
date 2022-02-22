@@ -86,24 +86,12 @@ function stringifyFn(fn) {
   return typeof fn === 'function' ? fn.toString().match(/\{([\s\S]+)\}/m)[1] : fn
 }
 
-function observe(ds, name, options) {
-  const state = options?.state
-  const query = options?.query
-
-  return ds.record.observe2(
-    `${name}${query != null ? `?${querystring.stringify(query)}` : ''}`,
-    null,
-    state ?? (query != null ? ds.record.PROVIDER : ds.record.SERVER)
-  )
-}
-
 function init(ds) {
   const nxt = {
     ds,
     record: {
       query: (...args) => query(ds, ...args),
       provide: (...args) => provide(ds, ...args),
-      observe: (...args) => observe(ds, ...args),
       set: (...args) => ds.set(...args),
       get: (...args) => ds.get(...args),
       update: (...args) => ds.update(...args),
@@ -116,10 +104,8 @@ function init(ds) {
 module.exports = Object.assign(init, {
   provide,
   query,
-  observe,
   record: {
     query,
     provide,
-    observe,
   },
 })
