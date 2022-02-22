@@ -87,13 +87,12 @@ function stringifyFn(fn) {
 }
 
 function observe(ds, name, options) {
-  const path = options?.path
   const state = options?.state
   const query = options?.query
 
   return ds.record.observe2(
     `${name}${query != null ? `?${querystring.stringify(query)}` : ''}`,
-    path,
+    null,
     state ?? (query != null ? ds.record.PROVIDER : ds.record.SERVER)
   )
 }
