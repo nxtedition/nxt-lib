@@ -162,7 +162,7 @@ module.exports = ({ ds } = {}) => {
     ),
     // ds
     ...asFilter(null, (value) => value && (typeof value === 'string' || Array.isArray(value)), {
-      ds: (postfix, path, state) => {
+      ds: (postfix, path, state = ds.record.SERVER) => {
         // TODO (fix): Validate arguments...
         if (!ds) {
           throw new Error('invalid argument')
@@ -173,12 +173,7 @@ module.exports = ({ ds } = {}) => {
         }
 
         function observe(id) {
-          const name = (id || '') + (postfix || '')
-          return ds.record.observe(
-            name,
-            path,
-            state ?? (name.endsWith('?') ? ds.record.PROVIDER : ds.record.SERVER)
-          )
+          return ds.record.observe((id || '') + (postfix || ''), path, state)
         }
 
         return (value) => {
