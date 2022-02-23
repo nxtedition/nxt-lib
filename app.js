@@ -278,6 +278,8 @@ module.exports = function (appConfig, onTerminate) {
       })
 
     nxt = require('./deepstream')(ds)
+
+    globalThis.ds = ds
   }
 
   if (appConfig.compiler) {
