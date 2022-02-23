@@ -120,7 +120,7 @@ module.exports.request = async function request(ctx, next) {
     reqLogger = reqLogger.child({ res })
 
     if (req.aborted || err.name === 'AbortError') {
-      reqLogger.warn(
+      reqLogger.info(
         { err: err ?? createError(statusCode), statusCode, responseTime },
         'request aborted'
       )
