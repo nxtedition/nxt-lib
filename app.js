@@ -7,7 +7,6 @@ module.exports = function (appConfig, onTerminate) {
   let compiler
   let config
   let logger
-  let esc
 
   // Crash on unhandledRejection
   process.on('unhandledRejection', (err) => {
@@ -660,5 +659,5 @@ module.exports = function (appConfig, onTerminate) {
     }
   }
 
-  return { ds, nxt, logger, toobusy, destroyers, couch, server, config, esc, compiler }
+  return { ds, nxt, logger, toobusy, destroyers, couch, server, config, compiler }
 }
