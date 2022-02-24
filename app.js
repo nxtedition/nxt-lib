@@ -106,7 +106,6 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const leveldown = require('leveldown')
-    const encodingdown = require('encoding-down')
     const EE = require('events')
     const LRUCache = require('lru-cache')
 
@@ -129,16 +128,14 @@ module.exports = function (appConfig, onTerminate) {
     const dsCache =
       dsConfig.cache === undefined &&
       new (class Cache extends EE {
-        constructor({ cacheLocation, max = 8192, cacheFilter = defaultFilter }) {
+        constructor({ cacheLocation, max = 16e6, cacheFilter = defaultFilter }) {
           super()
 
           this._db = null
 
           this.location = cacheLocation ?? `./.nxt-${serviceName}`
 
-          const db = encodingdown(leveldown(this.location), {
-            valueEncoding: 'json',
-          })
+          const db = leveldown(this.location)
           db.open((err) => {
             if (err) {
               logger.debug({ err, path: this.location }, 'Deepstream Cache Failed.')
@@ -150,7 +147,12 @@ module.exports = function (appConfig, onTerminate) {
 
           logger.debug({ path: this.location }, 'Deepstream Cache Created.')
 
-          this._cache = new LRUCache({ max: 8192 })
+          this._cache = new LRUCache({
+            max,
+            sizeCalculation(value, key) {
+              return (value.length + key.length) * 2 // UTF16 is ~2 bytes per character.
+            },
+          })
           this._filter = cacheFilter
           this._batch = []
           this._interval = setInterval(() => {
@@ -185,7 +187,7 @@ module.exports = function (appConfig, onTerminate) {
                 err = null
                 value = null
               }
-              callback(err, value)
+              callback(err, JSON.parse(value))
             })
           } else {
             process.nextTick(callback, null, null)
@@ -201,7 +203,7 @@ module.exports = function (appConfig, onTerminate) {
           const value = [version, data]
 
           this._cache.set(key, value)
-          this._batch.push({ type: 'put', key, value })
+          this._batch.push({ type: 'put', key, value: JSON.stringify(value) })
           if (this._batch.length > 1024) {
             this._flush()
           }
