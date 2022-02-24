@@ -125,7 +125,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     class Cache extends EE {
-      constructor({ location, max = 1024 * 16, maxSize = 16e6, cacheFilter = defaultFilter }) {
+      constructor({ location, max = 1024 * 16, maxSize = 32e6, cacheFilter = defaultFilter }) {
         super()
 
         this._db = null
