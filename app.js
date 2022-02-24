@@ -187,7 +187,7 @@ module.exports = function (appConfig, onTerminate) {
 
             try {
               if (err) {
-                callback(err)
+                callback(err, null)
               } else {
                 callback(null, JSON.parse(value))
               }
