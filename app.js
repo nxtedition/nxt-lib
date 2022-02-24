@@ -106,7 +106,6 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
     const leveldown = require('leveldown')
-    const levelup = require('levelup')
     const encodingdown = require('encoding-down')
     const EE = require('events')
 
@@ -129,43 +128,28 @@ module.exports = function (appConfig, onTerminate) {
     const dsCache =
       dsConfig.cache === undefined &&
       new (class Cache extends EE {
-        constructor({ cacheLocation, cacheDb, cacheFilter = defaultFilter }) {
+        constructor({ cacheLocation, cacheFilter = defaultFilter }) {
           super()
 
-          if (!cacheDb) {
-            this.location = cacheLocation ?? `./.nxt-${serviceName}`
-            this._db = levelup(
-              encodingdown(leveldown(this.location), {
-                valueEncoding: 'json',
-              }),
-              (err) => {
-                if (err) {
-                  logger.debug({ err, path: this.location }, 'Deepstream Cache Failed.')
-                  throw err
-                }
-              }
-            )
-          } else {
-            this._db = cacheDb
-            this.location = this._db.location ?? cacheLocation
-          }
+          this._db = null
+
+          this.location = cacheLocation ?? `./.nxt-${serviceName}`
+
+          const db = encodingdown(leveldown(this.location), {
+            valueEncoding: 'json',
+          })
+          db.open((err) => {
+            if (err) {
+              logger.debug({ err, path: this.location }, 'Deepstream Cache Failed.')
+            } else {
+              logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
+              this._db = db
+            }
+          })
 
           logger.debug({ path: this.location }, 'Deepstream Cache Created.')
 
           this._cache = new Map()
-          this._db
-            .on('open', (err) => {
-              logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
-            })
-            .on('closed', (err) => {
-              logger.debug({ err, path: this.location }, 'Deepstream Cache Closed.')
-              this._db = null
-            })
-            .on('error', (err) => {
-              logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
-              // TODO: What happens with pending get requests?
-              this._db = null
-            })
           this._filter = cacheFilter
           this._batch = []
           this._registry = new FinalizationRegistry((key) => {
@@ -207,7 +191,13 @@ module.exports = function (appConfig, onTerminate) {
           }
 
           if (this._db) {
-            this._db.get(key, callback)
+            this._db.get(key, (err, val) => {
+              if (err && /notfound/i.test(err)) {
+                err = null
+                val = null
+              }
+              callback(err, val)
+            })
           } else {
             process.nextTick(callback, null, null)
           }
