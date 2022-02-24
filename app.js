@@ -125,107 +125,114 @@ module.exports = function (appConfig, onTerminate) {
       return (!name || name.charAt(0) !== '{') && (!version || version.charAt(0) !== '0')
     }
 
-    const dsCache =
-      dsConfig.cache === undefined &&
-      new (class Cache extends EE {
-        constructor({
-          cacheLocation,
-          max = 1024 * 16,
-          maxSize = 16e6,
-          cacheFilter = defaultFilter,
-        }) {
-          super()
+    class Cache extends EE {
+      constructor({ location, max = 1024 * 16, maxSize = 16e6, cacheFilter = defaultFilter }) {
+        super()
 
-          this._db = null
+        this._db = null
 
-          this.location = cacheLocation ?? `./.nxt-${serviceName}`
+        this.location = location ?? `./.nxt-${serviceName}`
 
-          const db = leveldown(this.location)
-          db.open((err) => {
-            if (err) {
-              logger.debug({ err, path: this.location }, 'Deepstream Cache Failed.')
-            } else {
-              logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
-              this._db = db
+        const db = leveldown(this.location)
+        db.open((err) => {
+          if (err) {
+            logger.debug({ err, path: this.location }, 'Deepstream Cache Failed.')
+          } else {
+            logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
+            this._db = db
+          }
+        })
+
+        logger.debug({ path: this.location }, 'Deepstream Cache Created.')
+
+        this._lru = new LRUCache({
+          max,
+          maxSize,
+          sizeCalculation(value, key) {
+            return (value.length + key.length) * 2 // UTF16 is ~2 bytes per character.
+          },
+        })
+        this._filter = cacheFilter
+        this._batch = []
+        this._interval = setInterval(() => {
+          this._flush()
+        }, 1e3).unref()
+
+        destroyers.push(
+          () =>
+            new Promise((resolve, reject) => {
+              if (this._db && this._db.close) {
+                this._db.close((err) => (err ? reject(err) : resolve()))
+              }
+              clearInterval(this._interval)
+            })
+        )
+      }
+
+      get(key, callback) {
+        if (this._filter && !this._filter(key)) {
+          process.nextTick(callback, null, null)
+          return
+        }
+
+        const value = this._lru.get(key)
+        if (value) {
+          process.nextTick(callback, null, value)
+        } else if (this._db) {
+          this._db.get(key, (err, value) => {
+            if (err && /notfound/i.test(err)) {
+              err = null
+              value = null
+            }
+
+            try {
+              if (err) {
+                callback(err)
+              } else {
+                callback(null, JSON.parse(value))
+              }
+            } catch (err) {
+              callback(err)
             }
           })
+        } else {
+          process.nextTick(callback, null, null)
+        }
+      }
 
-          logger.debug({ path: this.location }, 'Deepstream Cache Created.')
+      set(key, version, data) {
+        if (this._filter && !this._filter(key, version, data)) {
+          return
+        }
 
-          this._cache = new LRUCache({
-            max,
-            maxSize,
-            sizeCalculation(value, key) {
-              return (value.length + key.length) * 2 // UTF16 is ~2 bytes per character.
-            },
+        const value = [version, data]
+
+        this._lru.set(key, value)
+        this._batch.push({ type: 'put', key, value: JSON.stringify(value) })
+        if (this._batch.length > 1024) {
+          this._flush()
+        }
+      }
+
+      _flush() {
+        if (this._db) {
+          this._db.batch(this._batch, (err) => {
+            if (err) {
+              logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
+            }
           })
-          this._filter = cacheFilter
-          this._batch = []
-          this._interval = setInterval(() => {
-            this._flush()
-          }, 1e3).unref()
-
-          destroyers.push(
-            () =>
-              new Promise((resolve, reject) => {
-                if (this._db && this._db.close) {
-                  this._db.close((err) => (err ? reject(err) : resolve()))
-                }
-                clearInterval(this._interval)
-              })
-          )
         }
+        this._batch = []
+      }
+    }
 
-        get(name, callback) {
-          if (this._filter && !this._filter(name)) {
-            process.nextTick(callback, null, null)
-            return
-          }
+    let dsCache
 
-          const key = name
-
-          const value = this._cache.get(key)
-          if (value) {
-            process.nextTick(callback, null, value)
-          } else if (this._db) {
-            this._db.get(key, (err, value) => {
-              if (err && /notfound/i.test(err)) {
-                err = null
-                value = null
-              }
-              callback(err, JSON.parse(value))
-            })
-          } else {
-            process.nextTick(callback, null, null)
-          }
-        }
-
-        set(name, version, data) {
-          if (this._filter && !this._filter(name, version, data)) {
-            return
-          }
-
-          const key = name
-          const value = [version, data]
-
-          this._cache.set(key, value)
-          this._batch.push({ type: 'put', key, value: JSON.stringify(value) })
-          if (this._batch.length > 1024) {
-            this._flush()
-          }
-        }
-
-        _flush() {
-          if (this._db) {
-            this._db.batch(this._batch, (err) => {
-              if (err) {
-                logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
-              }
-            })
-          }
-          this._batch = []
-        }
-      })(dsConfig)
+    if (typeof dsConfig.cache === 'function') {
+      dsCache = dsConfig.cache()
+    } else if (dsConfig.cache === undefined || typeof dsConfig.cache === 'object') {
+      dsCache = new Cache(dsConfig.cache || {})
+    }
 
     dsConfig = {
       url: 'ws://127.0.0.1:6020/deepstream',
