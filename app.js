@@ -190,7 +190,10 @@ module.exports = function (appConfig, onTerminate) {
         }
 
         get(name, callback) {
-          // TODO (perf): Check filter.
+          if (this._filter && !this._filter(name)) {
+            process.nextTick(callback, null, null)
+            return
+          }
 
           const key = name
 
