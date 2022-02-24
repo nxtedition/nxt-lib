@@ -128,7 +128,12 @@ module.exports = function (appConfig, onTerminate) {
     const dsCache =
       dsConfig.cache === undefined &&
       new (class Cache extends EE {
-        constructor({ cacheLocation, max = 16e6, cacheFilter = defaultFilter }) {
+        constructor({
+          cacheLocation,
+          max = 1024 * 16,
+          maxSize = 16e6,
+          cacheFilter = defaultFilter,
+        }) {
           super()
 
           this._db = null
@@ -149,6 +154,7 @@ module.exports = function (appConfig, onTerminate) {
 
           this._cache = new LRUCache({
             max,
+            maxSize,
             sizeCalculation(value, key) {
               return (value.length + key.length) * 2 // UTF16 is ~2 bytes per character.
             },
