@@ -160,6 +160,7 @@ module.exports = function (appConfig, onTerminate) {
         destroyers.push(
           () =>
             new Promise((resolve, reject) => {
+              // TODO (fix): This needs to wait for open to finish...
               if (this._db && this._db.close) {
                 this._db.close((err) => (err ? reject(err) : resolve()))
               }
