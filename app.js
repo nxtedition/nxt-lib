@@ -108,6 +108,7 @@ module.exports = function (appConfig, onTerminate) {
     const leveldown = require('leveldown')
     const encodingdown = require('encoding-down')
     const EE = require('events')
+    const LRUCache = require('lru-cache')
 
     let dsConfig = { ...appConfig.deepstream, ...config.deepstream }
 
@@ -128,7 +129,7 @@ module.exports = function (appConfig, onTerminate) {
     const dsCache =
       dsConfig.cache === undefined &&
       new (class Cache extends EE {
-        constructor({ cacheLocation, cacheFilter = defaultFilter }) {
+        constructor({ cacheLocation, max = 8192, cacheFilter = defaultFilter }) {
           super()
 
           this._db = null
@@ -149,15 +150,9 @@ module.exports = function (appConfig, onTerminate) {
 
           logger.debug({ path: this.location }, 'Deepstream Cache Created.')
 
-          this._cache = new Map()
+          this._cache = new LRUCache({ max: 8192 })
           this._filter = cacheFilter
           this._batch = []
-          this._registry = new FinalizationRegistry((key) => {
-            const ref = this._cache.get(key)
-            if (ref !== undefined && ref.deref() === undefined) {
-              this._cache.delete(key)
-            }
-          })
           this._interval = setInterval(() => {
             this._flush()
           }, 1e3).unref()
@@ -181,22 +176,16 @@ module.exports = function (appConfig, onTerminate) {
 
           const key = name
 
-          const ref = this._cache.get(key)
-          if (ref !== undefined) {
-            const deref = ref.deref()
-            if (deref !== undefined) {
-              process.nextTick(callback, null, deref)
-              return
-            }
-          }
-
-          if (this._db) {
-            this._db.get(key, (err, val) => {
+          const value = this._cache.get(key)
+          if (value) {
+            process.nextTick(callback, null, value)
+          } else if (this._db) {
+            this._db.get(key, (err, value) => {
               if (err && /notfound/i.test(err)) {
                 err = null
-                val = null
+                value = null
               }
-              callback(err, val)
+              callback(err, value)
             })
           } else {
             process.nextTick(callback, null, null)
@@ -211,8 +200,7 @@ module.exports = function (appConfig, onTerminate) {
           const key = name
           const value = [version, data]
 
-          this._cache.set(key, new WeakRef(value))
-          this._registry.register(value, key)
+          this._cache.set(key, value)
           this._batch.push({ type: 'put', key, value })
           if (this._batch.length > 1024) {
             this._flush()
