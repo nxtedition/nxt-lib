@@ -148,7 +148,7 @@ module.exports = function (appConfig, onTerminate) {
           max,
           maxSize,
           sizeCalculation(value, key) {
-            return (value.length + key.length) * 2 // UTF16 is ~2 bytes per character.
+            return (value.length + key.length) * 2 + 32 // UTF16 is ~2 bytes per character.
           },
         })
         this._filter = cacheFilter
