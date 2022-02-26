@@ -125,7 +125,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     class Cache extends EE {
-      constructor({ location, max = 8 * 1024, maxSize = 32e6, cacheFilter = defaultFilter }) {
+      constructor({ location, max = 32 * 1024, maxSize = 32e6, cacheFilter = defaultFilter }) {
         super()
 
         this.db = null
@@ -222,7 +222,7 @@ module.exports = function (appConfig, onTerminate) {
         const json = JSON.stringify(value)
 
         this._lru.set(key, value, {
-          size: key.length * 2 + json.length * 2 // json.length is an inaccurate estimate.
+          size: key.length * 2 + json.length * 2, // json.length is an inaccurate estimate.
         })
         this._batch.push({ type: 'put', key, value: json })
         if (this._batch.length > 512) {
