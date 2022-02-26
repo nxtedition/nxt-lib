@@ -200,12 +200,30 @@ module.exports = function (appConfig, onTerminate) {
         }
       }
 
-      set(key, version, data) {
-        if (this._filter && !this._filter(key, version, data)) {
-          return
+      set(key, ...args) {
+        let value
+
+        if (args.length === 1 && Array.isArray(args[0])) {
+          value = args[0]
+        } else {
+          value = args
         }
 
-        const value = [version, data]
+        if (value.length !== 2) {
+          throw new Error('invalid argument')
+        }
+
+        if (typeof value[0] !== 'string') {
+          throw new Error('invalid argument')
+        }
+
+        if (!value[1] || typeof value[1] !== 'object') {
+          throw new Error('invalid argument')
+        }
+
+        if (this._filter && !this._filter(key, value[0], value[1])) {
+          return
+        }
 
         this._lru.set(key, value)
         this._batch.push({ type: 'put', key, value: JSON.stringify(value) })
