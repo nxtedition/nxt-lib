@@ -177,7 +177,7 @@ module.exports = function (appConfig, onTerminate) {
 
         const value = this._lru.get(key)
         if (value) {
-          process.nextTick(callback, null, value)
+          callback(null, value)
         } else if (this._db) {
           this._db.get(key, (err, value) => {
             if (err && /notfound/i.test(err)) {
