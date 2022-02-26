@@ -125,10 +125,10 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     class Cache extends EE {
-      constructor({ location, max = 1024 * 16, maxSize = 32e6, cacheFilter = defaultFilter }) {
+      constructor({ location, max = 8 * 1024, cacheFilter = defaultFilter }) {
         super()
 
-        this._db = null
+        this.db = null
 
         this.location = location ?? `./.nxt-${serviceName}`
 
@@ -138,19 +138,13 @@ module.exports = function (appConfig, onTerminate) {
             logger.debug({ err, path: this.location }, 'Deepstream Cache Failed.')
           } else {
             logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
-            this._db = db
+            this.db = db
           }
         })
 
         logger.debug({ path: this.location }, 'Deepstream Cache Created.')
 
-        this._lru = new LRUCache({
-          max,
-          maxSize,
-          sizeCalculation(value, key) {
-            return (value.length + key.length) * 2 + 32 // UTF16 is ~2 bytes per character.
-          },
-        })
+        this._lru = new LRUCache({ max })
         this._filter = cacheFilter
         this._batch = []
         this._interval = setInterval(() => {
@@ -161,8 +155,8 @@ module.exports = function (appConfig, onTerminate) {
           () =>
             new Promise((resolve, reject) => {
               // TODO (fix): This needs to wait for open to finish...
-              if (this._db && this._db.close) {
-                this._db.close((err) => (err ? reject(err) : resolve()))
+              if (this.db && this.db.close) {
+                this.db.close((err) => (err ? reject(err) : resolve()))
               }
               clearInterval(this._interval)
             })
@@ -178,8 +172,8 @@ module.exports = function (appConfig, onTerminate) {
         const value = this._lru.get(key)
         if (value) {
           callback(null, value)
-        } else if (this._db) {
-          this._db.get(key, (err, value) => {
+        } else if (this.db) {
+          this.db.get(key, (err, value) => {
             if (err && /notfound/i.test(err)) {
               err = null
               value = null
@@ -227,14 +221,14 @@ module.exports = function (appConfig, onTerminate) {
 
         this._lru.set(key, value)
         this._batch.push({ type: 'put', key, value: JSON.stringify(value) })
-        if (this._batch.length > 1024) {
+        if (this._batch.length > 512) {
           this._flush()
         }
       }
 
       _flush() {
-        if (this._db) {
-          this._db.batch(this._batch, (err) => {
+        if (this.db) {
+          this.db.batch(this._batch, (err) => {
             if (err) {
               logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
             }
