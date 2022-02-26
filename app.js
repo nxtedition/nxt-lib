@@ -125,7 +125,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     class Cache extends EE {
-      constructor({ location, max = 8 * 1024, cacheFilter = defaultFilter }) {
+      constructor({ location, max = 8 * 1024, maxSize = 32e6, cacheFilter = defaultFilter }) {
         super()
 
         this.db = null
@@ -144,7 +144,7 @@ module.exports = function (appConfig, onTerminate) {
 
         logger.debug({ path: this.location }, 'Deepstream Cache Created.')
 
-        this._lru = new LRUCache({ max })
+        this._lru = new LRUCache({ max, maxSize })
         this._filter = cacheFilter
         this._batch = []
         this._interval = setInterval(() => {
@@ -219,8 +219,12 @@ module.exports = function (appConfig, onTerminate) {
           return
         }
 
-        this._lru.set(key, value)
-        this._batch.push({ type: 'put', key, value: JSON.stringify(value) })
+        const json = JSON.stringify(value)
+
+        this._lru.set(key, value, {
+          size: key.length * 2 + json.length * 2 // json.length is an inaccurate estimate.
+        })
+        this._batch.push({ type: 'put', key, value: json })
         if (this._batch.length > 512) {
           this._flush()
         }
