@@ -122,9 +122,6 @@ module.exports = function (appConfig, onTerminate) {
     class Cache extends EE {
       constructor({ max = 16 * 1024 }) {
         super()
-
-        logger.debug({ path: this.location }, 'Deepstream Cache Created.')
-
         this._lru = new LRUCache({ max })
       }
 
@@ -158,10 +155,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     let dsCache
-
-    if (typeof dsConfig.cache === 'function') {
-      dsCache = dsConfig.cache()
-    } else if (dsConfig.cache === undefined || typeof dsConfig.cache === 'object') {
+    if (dsConfig.cache === undefined || typeof dsConfig.cache === 'object') {
       dsCache = new Cache(dsConfig.cache || {})
     }
 
