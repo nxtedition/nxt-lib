@@ -3742,6 +3742,11 @@ xuid@^4.0.10:
   resolved "https://registry.yarnpkg.com/xuid/-/xuid-4.0.10.tgz#21148c3b714e655ca1060d82b4ecde4bdbdf5fb9"
   integrity sha512-vh3eebXL/A5sEZvrxxxrtO4w1MVqYqDnNDkKw1rexE07I3L1Ds/5+WwBRNIEK9njWVtBU0rwG77i+0qRV1JplA==
 
+xxhash-wasm@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/xxhash-wasm/-/xxhash-wasm-1.0.1.tgz#8a0f0eeb3ab76c16bbb889f5acca286b62d98626"
+  integrity sha512-Lc9CTvDrH2vRoiaUzz25q7lRaviMhz90pkx6YxR9EPYtF99yOJnv2cB+CQ0hp/TLoqrUsk8z/W2EN31T568Azw==
+
 y18n@^5.0.5:
   version "5.0.8"
   resolved "https://registry.yarnpkg.com/y18n/-/y18n-5.0.8.tgz#7f4934d0f7ca8c56f95314939ddcd2dd91ce1d55"

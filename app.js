@@ -198,7 +198,12 @@ module.exports = function (appConfig, onTerminate) {
     const rx = require('rxjs/operators')
     const undici = require('undici')
     const fp = require('lodash/fp')
-    const hashString = require('./hash')
+    const xxhash = require('xxhash-wasm')
+
+    let hasher
+    xxhash().then((x) => {
+      hasher = x
+    })
 
     let status$
     if (appConfig.status.subscribe) {
@@ -357,7 +362,7 @@ module.exports = function (appConfig, onTerminate) {
                 ? message
                 : {
                     ...message,
-                    id: hashString(message.msg ?? message ?? ''),
+                    id: hasher.h32ToString(message.msg ?? message ?? ''),
                   }
             )
 

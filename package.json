@@ -80,7 +80,8 @@
     "toobusy-js": "^0.5.1",
     "undici": "^4.14.0",
     "url-join": "^4.0.1",
-    "xuid": "^4.0.10"
+    "xuid": "^4.0.10",
+    "xxhash-wasm": "^1.0.1"
   },
   "devDependencies": {
     "eslint": "^8.8.0",
