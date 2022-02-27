@@ -15,7 +15,6 @@
     "destroy.js",
     "deepstream.js",
     "logger.js",
-    "level-party.js",
     "mime.js",
     "weakCache.js",
     "couch.js",
@@ -73,7 +72,6 @@
     "http-errors": "^2.0.0",
     "json5": "^2.2.0",
     "koa-compose": "^4.1.0",
-    "leveldown": "^6.1.0",
     "lodash": "^4.17.21",
     "lru-cache": "^7.4.0",
     "mime": "^3.0.0",
@@ -103,7 +101,7 @@
     "prettier": "^2.4.1"
   },
   "peerDependencies": {
-    "@nxtedition/deepstream.io-client-js": ">=14.1.0",
+    "@nxtedition/deepstream.io-client-js": ">=v18.0.27",
     "pino": ">=7.0.0",
     "pino-pretty": ">=7.1.0",
     "rxjs": ">=6.0.0"

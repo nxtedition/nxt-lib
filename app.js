@@ -104,7 +104,6 @@ module.exports = function (appConfig, onTerminate) {
 
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
-    const leveldown = require('leveldown')
     const EE = require('events')
     const LRUCache = require('lru-cache')
 
@@ -120,125 +119,18 @@ module.exports = function (appConfig, onTerminate) {
       dsConfig.credentials.user ||
       serviceName
 
-    function defaultFilter(name, version, data) {
-      return (!name || name.charAt(0) !== '{') && (!version || version.charAt(0) !== '0')
-    }
-
     class Cache extends EE {
-      constructor({ location, max = 32 * 1024, maxSize = 32e6, cacheFilter = defaultFilter }) {
+      constructor({ max = 32 * 1024 }) {
         super()
-
-        this.db = null
-
-        this.location = location ?? `./.nxt-${serviceName}`
-
-        const db = leveldown(this.location)
-        db.open((err) => {
-          if (err) {
-            logger.debug({ err, path: this.location }, 'Deepstream Cache Failed.')
-          } else {
-            logger.debug({ err, path: this.location }, 'Deepstream Cache Open.')
-            this.db = db
-          }
-        })
-
-        logger.debug({ path: this.location }, 'Deepstream Cache Created.')
-
-        this._lru = new LRUCache({ max, maxSize })
-        this._filter = cacheFilter
-        this._batch = []
-        this._interval = setInterval(() => {
-          this._flush()
-        }, 1e3).unref()
-
-        destroyers.push(
-          () =>
-            new Promise((resolve, reject) => {
-              // TODO (fix): This needs to wait for open to finish...
-              if (this.db && this.db.close) {
-                this.db.close((err) => (err ? reject(err) : resolve()))
-              }
-              clearInterval(this._interval)
-            })
-        )
+        this._lru = new LRUCache({ max })
       }
 
       get(key, callback) {
-        if (this._filter && !this._filter(key)) {
-          process.nextTick(callback, null, null)
-          return
-        }
-
-        const value = this._lru.get(key)
-        if (value) {
-          callback(null, value)
-        } else if (this.db) {
-          this.db.get(key, (err, value) => {
-            if (err && /notfound/i.test(err)) {
-              err = null
-              value = null
-            }
-
-            try {
-              if (err) {
-                callback(err, null)
-              } else {
-                callback(null, JSON.parse(value))
-              }
-            } catch (err) {
-              callback(err)
-            }
-          })
-        } else {
-          process.nextTick(callback, null, null)
-        }
+        callback(null, this._lru.get(key))
       }
 
-      set(key, ...args) {
-        let value
-
-        if (args.length === 1 && Array.isArray(args[0])) {
-          value = args[0]
-        } else {
-          value = args
-        }
-
-        if (value.length !== 2) {
-          throw new Error('invalid argument')
-        }
-
-        if (typeof value[0] !== 'string') {
-          throw new Error('invalid argument')
-        }
-
-        if (!value[1] || typeof value[1] !== 'object') {
-          throw new Error('invalid argument')
-        }
-
-        if (this._filter && !this._filter(key, value[0], value[1])) {
-          return
-        }
-
-        const json = JSON.stringify(value)
-
-        this._lru.set(key, value, {
-          size: key.length * 2 + json.length * 2, // json.length is an inaccurate estimate.
-        })
-        this._batch.push({ type: 'put', key, value: json })
-        if (this._batch.length > 512) {
-          this._flush()
-        }
-      }
-
-      _flush() {
-        if (this.db) {
-          this.db.batch(this._batch, (err) => {
-            if (err) {
-              logger.error({ err, path: this.location }, 'Deepstream Cache Error.')
-            }
-          })
-        }
-        this._batch = []
+      set(key, value) {
+        this._lru.set(key, value)
       }
     }
 
