@@ -120,8 +120,11 @@ module.exports = function (appConfig, onTerminate) {
       serviceName
 
     class Cache extends EE {
-      constructor({ max = 32 * 1024 }) {
+      constructor({ max = 16 * 1024 }) {
         super()
+
+        logger.debug({ path: this.location }, 'Deepstream Cache Created.')
+
         this._lru = new LRUCache({ max })
       }
 
@@ -129,7 +132,31 @@ module.exports = function (appConfig, onTerminate) {
         callback(null, this._lru.get(key))
       }
 
-      set(key, value) {
+      set(key, ...args) {
+        let value
+
+        if (args.length === 1 && Array.isArray(args[0])) {
+          value = args[0]
+        } else {
+          value = args
+        }
+
+        if (value.length !== 2) {
+          throw new Error('invalid argument')
+        }
+
+        if (typeof value[0] !== 'string') {
+          throw new Error('invalid argument')
+        }
+
+        if (!value[1] || typeof value[1] !== 'object') {
+          throw new Error('invalid argument')
+        }
+
+        if (this._filter && !this._filter(key, value[0], value[1])) {
+          return
+        }
+
         this._lru.set(key, value)
       }
     }
@@ -198,12 +225,7 @@ module.exports = function (appConfig, onTerminate) {
     const rx = require('rxjs/operators')
     const undici = require('undici')
     const fp = require('lodash/fp')
-    const xxhash = require('xxhash-wasm')
-
-    let hasher
-    xxhash().then((x) => {
-      hasher = x
-    })
+    const hashString = require('./hash')
 
     let status$
     if (appConfig.status.subscribe) {
@@ -362,7 +384,7 @@ module.exports = function (appConfig, onTerminate) {
                 ? message
                 : {
                     ...message,
-                    id: hasher.h32ToString(message.msg ?? message ?? ''),
+                    id: hashString(message.msg ?? message ?? ''),
                   }
             )
 

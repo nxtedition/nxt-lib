@@ -4,6 +4,7 @@
   "license": "UNLICENSED",
   "author": "Robert Nagy <robert.nagy@boffins.se>",
   "files": [
+    "hash.js",
     "ass.js",
     "rxjs/*",
     "util/*",
@@ -80,8 +81,7 @@
     "toobusy-js": "^0.5.1",
     "undici": "^4.14.0",
     "url-join": "^4.0.1",
-    "xuid": "^4.0.10",
-    "xxhash-wasm": "^1.0.1"
+    "xuid": "^4.0.10"
   },
   "devDependencies": {
     "eslint": "^8.8.0",
@@ -98,7 +98,7 @@
     "prettier": "^2.4.1"
   },
   "peerDependencies": {
-    "@nxtedition/deepstream.io-client-js": ">=v18.0.27",
+    "@nxtedition/deepstream.io-client-js": ">=14.1.0",
     "pino": ">=7.0.0",
     "pino-pretty": ">=7.1.0",
     "rxjs": ">=6.0.0"
