@@ -153,10 +153,6 @@ module.exports = function (appConfig, onTerminate) {
           throw new Error('invalid argument')
         }
 
-        if (this._filter && !this._filter(key, value[0], value[1])) {
-          return
-        }
-
         this._lru.set(key, value)
       }
     }
