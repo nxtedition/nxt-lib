@@ -4,7 +4,6 @@
   "license": "UNLICENSED",
   "author": "Robert Nagy <robert.nagy@boffins.se>",
   "files": [
-    "hash.js",
     "ass.js",
     "rxjs/*",
     "util/*",
@@ -12,16 +11,13 @@
     "serializers.js",
     "merge-ranges.js",
     "http.js",
-    "destroy.js",
     "deepstream.js",
     "logger.js",
     "mime.js",
     "weakCache.js",
     "couch.js",
     "app.js",
-    "errors.js",
-    "fs.js",
-    "utilization.js"
+    "errors.js"
   ],
   "scripts": {
     "prepare": "husky install",
