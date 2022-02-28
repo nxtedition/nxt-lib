@@ -129,6 +129,11 @@ module.exports = function (appConfig, onTerminate) {
         callback(null, this._lru.get(key))
       }
 
+      put(key, value) {
+        this._lru.set(key, value)
+      }
+
+      // Legacy compat.
       set(key, ...args) {
         let value
 
