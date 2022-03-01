@@ -51,8 +51,8 @@ function parseKey(key) {
   return [
     id || '',
     {
-      ...(json ? JSON.parse(json) : null),
       ...(query ? qs.parse(query) : null),
+      ...(json ? JSON.parse(json) : null),
     },
   ]
 }
