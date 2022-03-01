@@ -177,7 +177,8 @@ module.exports = ({ ds } = {}) => {
           return ds.record.observe(
             name,
             path,
-            state ?? (name.endsWith('?') ? ds.record.PROVIDER : ds.record.SERVER)
+            state ??
+              (name.startsWith('{') || name.endsWith('?') ? ds.record.PROVIDER : ds.record.SERVER)
           )
         }
 
