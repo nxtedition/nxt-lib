@@ -1,4 +1,4 @@
-const querystring = require('querystring')
+const qs = require('qs')
 const objectHash = require('object-hash')
 const cached = require('./util/cached')
 const rx = require('rxjs/operators')
@@ -51,8 +51,8 @@ function parseKey(key) {
   return [
     id || '',
     {
-      ...(query ? querystring.parse(query) : null),
       ...(json ? JSON.parse(json) : null),
+      ...(query ? qs.parse(query) : null),
     },
   ]
 }
@@ -68,9 +68,9 @@ function query(ds, { view, filter, state = ds.record.PROVIDER, ...options }, sta
 
     const id = objectHash({ view, filter })
     ds.record.set(`${id}:_query`, { view, filter })
-    x$ = ds.record.observe2(`${id}:query?${querystring.stringify(options)}`)
+    x$ = ds.record.observe2(`${id}:query?${qs.stringify(options)}`)
   } else {
-    x$ = ds.record.observe2(`query?${querystring.stringify(options)}`)
+    x$ = ds.record.observe2(`query?${qs.stringify(options)}`)
   }
   return x$.pipe(
     rx.filter((x) => !state || x.state >= state),
@@ -94,9 +94,7 @@ function observe(ds, name, ...args) {
   }
 
   return ds.record.observe(
-    `${name}${
-      options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''
-    }`,
+    `${name}${options && Object.keys(options).length > 0 ? `?${qs.stringify(options)}` : ''}`,
     ...args
   )
 }
@@ -109,9 +107,7 @@ function observe2(ds, name, ...args) {
   }
 
   return ds.record.observe2(
-    `${name}${
-      options && Object.keys(options).length > 0 ? `?${querystring.stringify(options)}` : ''
-    }`,
+    `${name}${options && Object.keys(options).length > 0 ? `?${qs.stringify(options)}` : ''}`,
     ...args
   )
 }
