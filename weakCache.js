@@ -17,7 +17,7 @@ module.exports = function weakCache(valueSelector, keySelector) {
         return deref
       }
     }
-    const value = valueSelector(key)
+    const value = valueSelector(...args)
     cache.set(key, new WeakRef(value))
     finalizationRegistry.register(value, key)
     return value
