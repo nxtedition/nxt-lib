@@ -80,7 +80,7 @@ module.exports.request = async function request(ctx, next) {
 
     const responseTime = Math.round(performance.now() - startTime)
 
-    reqLogger = reqLogger.child({ res })
+    reqLogger = reqLogger.child({ req, res })
 
     if (res.statusCode >= 500) {
       reqLogger.error({ responseTime }, 'request error')
@@ -117,7 +117,7 @@ module.exports.request = async function request(ctx, next) {
       res.destroy(err)
     }
 
-    reqLogger = reqLogger.child({ res })
+    reqLogger = reqLogger.child({ req, res })
 
     if (req.aborted || err.name === 'AbortError') {
       reqLogger.info(
