@@ -172,9 +172,10 @@ module.exports = ({ ds } = {}) => {
           state = ds.record.STATE[state.toUpperCase()]
         }
 
-        function observe(id) {
+        function observe(id, options) {
+          const observe = options?.observe ?? options?.ds.record.observe ?? ds.record.observe
           const name = (id || '') + (postfix || '')
-          return ds.record.observe(
+          return observe(
             name,
             path,
             state ??
@@ -182,15 +183,15 @@ module.exports = ({ ds } = {}) => {
           )
         }
 
-        return (value) => {
+        return (value, options) => {
           if (value && fp.isString(value)) {
-            return observe(value)
+            return observe(value, options)
           }
 
           if (Array.isArray(value)) {
             value = value.filter((x) => x && fp.isString(x))
             return value.length
-              ? Observable.combineLatest(value.map((id) => observe(id)))
+              ? Observable.combineLatest(value.map((id) => observe(id, options)))
               : Observable.of([])
           }
 
@@ -514,13 +515,13 @@ module.exports = ({ ds } = {}) => {
     }
   }
 
-  const reduceValue = (value, index, filters) => {
+  const reduceValue = (value, index, filters, options) => {
     if (value === RETURN) {
       return Observable.of(null)
     }
 
     while (index < filters.length) {
-      value = filters[index++](value)
+      value = filters[index++](value, options)
 
       if (value === RETURN) {
         return Observable.of(null)
@@ -528,7 +529,7 @@ module.exports = ({ ds } = {}) => {
 
       if (Observable.isObservable(value)) {
         return value.pipe(
-          rx.switchMap((value) => reduceValue(value, index, filters)),
+          rx.switchMap((value) => reduceValue(value, index, filters, options)),
           rx.distinctUntilChanged(),
           // TODO (fix): better error handling...
           rx.catchError(() => Observable.of(null))
@@ -549,9 +550,9 @@ module.exports = ({ ds } = {}) => {
       const filters = tokens.map(getFilter)
       const basePath = fp.toPath(basePathStr)
 
-      return (context) =>
+      return (context, options) =>
         getValue(context, basePath).pipe(
-          rx.switchMap((value) => reduceValue(value, 0, filters)),
+          rx.switchMap((value) => reduceValue(value, 0, filters, options)),
           rx.distinctUntilChanged(),
           // TODO (fix): better error handling...
           rx.catchError(() => Observable.of(null))

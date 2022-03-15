@@ -8,13 +8,15 @@ const JSON5 = require('json5')
 module.exports = ({ ds } = {}) => {
   const compileExpression = getExpressionCompiler({ ds })
 
-  async function resolveObjectTemplate(obj, context) {
-    return resolveObjectTemplate(obj, context).pipe(rx.first()).toPromise()
+  async function resolveObjectTemplate(...args) {
+    return resolveObjectTemplate(...args)
+      .pipe(rx.first())
+      .toPromise()
   }
 
-  function onResolveObjectTemplate(obj, context) {
+  function onResolveObjectTemplate(obj, ...args) {
     try {
-      return compileObjectTemplate(obj)(context)
+      return compileObjectTemplate(obj)(...args)
     } catch (err) {
       return Observable.throwError(err)
     }
@@ -32,7 +34,7 @@ module.exports = ({ ds } = {}) => {
 
     const resolvers = arr.map((template) => compileTemplate(template))
 
-    return (context) => Observable.combineLatest(resolvers.map((resolver) => resolver(context)))
+    return (...args) => Observable.combineLatest(resolvers.map((resolver) => resolver(...args)))
   }
 
   // TODO (perf): Optimize...
@@ -49,8 +51,8 @@ module.exports = ({ ds } = {}) => {
 
     const resolvers = Object.values(obj).map((template) => compileTemplate(template))
 
-    return (context) =>
-      Observable.combineLatest(resolvers.map((resolver) => resolver(context))).pipe(
+    return (...args) =>
+      Observable.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
         rx.map((values) => {
           const ret = {}
           for (let n = 0; n < values.length; ++n) {
@@ -97,9 +99,9 @@ module.exports = ({ ds } = {}) => {
       return expr
     }
 
-    return (context) =>
-      expr(context).pipe(
-        rx.switchMap((body) => compileTemplate(`${pre}${stringify(body)}${post}`)(context))
+    return (...args) =>
+      expr(...args).pipe(
+        rx.switchMap((body) => compileTemplate(`${pre}${stringify(body)}${post}`)(...args))
       )
   })
 
@@ -130,17 +132,19 @@ module.exports = ({ ds } = {}) => {
     }
   }
 
-  async function resolveTemplate(template, context) {
-    return onResolveTemplate(template, context).pipe(rx.first()).toPromise()
+  async function resolveTemplate(template, ...args) {
+    return onResolveTemplate(template, ...args)
+      .pipe(rx.first())
+      .toPromise()
   }
 
-  function onResolveTemplate(str, context) {
+  function onResolveTemplate(str, ...args) {
     if (fp.isString(str) && str.lastIndexOf('{{') === -1) {
       return Observable.of(str)
     }
 
     try {
-      return compileTemplate(str)(context)
+      return compileTemplate(str)(...args)
     } catch (err) {
       return Observable.throwError(err)
     }
