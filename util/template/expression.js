@@ -173,13 +173,17 @@ module.exports = ({ ds } = {}) => {
         }
 
         function observe(id, options) {
-          const observe = options?.observe ?? options?.ds.record.observe ?? ds.record.observe
+          const observe = options?.observe ?? ds.record.observe
           const name = (id || '') + (postfix || '')
           return observe(
             name,
             path,
-            state ??
-              (name.startsWith('{') || name.endsWith('?') ? ds.record.PROVIDER : ds.record.SERVER)
+            options?.observe
+              ? state
+              : state ??
+                  (name.startsWith('{') || name.endsWith('?')
+                    ? ds.record.PROVIDER
+                    : ds.record.SERVER)
           )
         }
 
