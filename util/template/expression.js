@@ -559,7 +559,10 @@ module.exports = ({ ds } = {}) => {
           rx.switchMap((value) => reduceValue(value, 0, filters, options)),
           rx.distinctUntilChanged(),
           rx.catchError((err) => {
-            options?.logger?.error({ err, expression }, 'expression failed')
+            options?.logger?.error(
+              { err, expression: { expression, context: JSON.stringify(context) } },
+              'expression failed'
+            )
             return Observable.of(null)
           })
         )
