@@ -14,10 +14,10 @@ function asFilter(transform, predicate, obj) {
     (factory) =>
       (...args) => {
         const filter = factory(...args)
-        return (value) => {
+        return (value, options) => {
           try {
-            value = transform ? transform(value) : value
-            return !predicate || predicate(value) ? filter(value) : null
+            value = transform ? transform(value, options) : value
+            return !predicate || predicate(value, options) ? filter(value, options) : null
           } catch (err) {
             return null
           }
@@ -558,8 +558,10 @@ module.exports = ({ ds } = {}) => {
         getValue(context, basePath).pipe(
           rx.switchMap((value) => reduceValue(value, 0, filters, options)),
           rx.distinctUntilChanged(),
-          // TODO (fix): better error handling...
-          rx.catchError(() => Observable.of(null))
+          rx.catchError((err) => {
+            options?.logger?.error({ err, expression }, 'expression failed')
+            return Observable.of(null)
+          })
         )
     } catch (err) {
       throw new NestedError(`failed to parse expression ${expression}`, err)
