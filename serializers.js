@@ -1,11 +1,7 @@
-const seen = Symbol('circular-ref-tag')
+const serializers = require('pino-std-serializers')
 
 function getHeader(obj, key) {
-  return (
-    obj?.headers?.get?.('request-id') ||
-    obj?.getHeader?.('request-id') ||
-    obj?.headers?.['request-id']
-  )
+  return obj?.headers?.get?.(key) || obj?.getHeader?.(key) || obj?.headers?.[key]
 }
 
 function getHeaders(obj) {
@@ -61,7 +57,7 @@ module.exports = {
       : undefined
 
     return {
-      id: ureq.id || (typeof ureq?.headers === 'object' && ureq.headers['request-id']),
+      id: ureq.id || getHeader(ureq, 'request-id'),
       method: ureq.method,
       url,
       bytesWritten: ureq.bytesWritten,
@@ -89,33 +85,5 @@ function serializeError(err) {
     }
   }
 
-  /* eslint-disable no-prototype-builtins */
-  if (err.hasOwnProperty(seen)) {
-    return
-  }
-
-  err[seen] = undefined // tag to prevent re-looking at this
-
-  const obj = {
-    type: err.constructor?.toString() === '[object Function]' ? err.constructor.name : err.name,
-    message: err.message,
-    stack: err.stack,
-    data: err.data != null ? JSON.stringify(err.data, undefined, 2) : undefined,
-  }
-
-  if (Array.isArray(obj.errors)) {
-    obj.errors = obj.errors.map((err) => serializeError(err)).filter(Boolean)
-  }
-
-  for (const key in err) {
-    if (obj[key] !== undefined) {
-      continue
-    }
-
-    obj[key] = err[key] instanceof Error ? serializeError(err[key]) : err[key]
-  }
-
-  delete err[seen]
-
-  return obj
+  return serializers.err(err)
 }
