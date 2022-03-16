@@ -70,7 +70,7 @@
     "json5": "^2.2.0",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
-    "lru-cache": "^7.4.0",
+    "lru-cache": "^6.0.0",
     "mime": "^3.0.0",
     "moment-timezone": "^0.5.34",
     "nconf": "^0.11.3",
