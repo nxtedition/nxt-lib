@@ -76,7 +76,7 @@ function serializeError(err) {
   } else if (Array.isArray(err)) {
     err = new AggregateError(err)
   } else if (typeof err !== 'object') {
-    err = Object.assign(new Error(err), { data: JSON.stringify(err) })
+    err = Object.assign(new Error('invalid error object'), { data: JSON.stringify(err) })
   }
 
   return serializers.err(err)
