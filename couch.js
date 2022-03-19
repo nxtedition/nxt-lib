@@ -68,8 +68,8 @@ module.exports = function (opts) {
       () =>
         new undici.Pool(dbOrigin, {
           ...defaultClientOpts,
-          connections: 8, // TODO (fix): Global limit?
-          pipelining: 8,
+          connections: 4, // TODO (fix): Global limit?
+          pipelining: 4,
         })
     )
 
