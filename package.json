@@ -1,6 +1,6 @@
 {
   "name": "@nxtedition/lib",
-  "version": "7.3.3",
+  "version": "7.3.4",
   "license": "UNLICENSED",
   "author": "Robert Nagy <robert.nagy@boffins.se>",
   "files": [
@@ -70,7 +70,7 @@
     "json5": "^2.2.0",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
-    "lru-cache": "^7.6.0",
+    "lru-cache": "^7.7.1",
     "mime": "^3.0.0",
     "moment-timezone": "^0.5.34",
     "nconf": "^0.11.3",
@@ -81,7 +81,7 @@
     "request-target": "^1.0.2",
     "split-string": "^6.0.0",
     "toobusy-js": "^0.5.1",
-    "undici": "^4.15.1",
+    "undici": "^4.16.0",
     "url-join": "^4.0.1",
     "xuid": "^4.0.10"
   },
@@ -95,7 +95,7 @@
     "eslint-plugin-standard": "^5.0.0",
     "husky": "^7.0.4",
     "jest": "^27.5.1",
-    "lint-staged": "^12.3.6",
+    "lint-staged": "^12.3.7",
     "pinst": "^2.1.6",
     "prettier": "^2.6.0"
   },
