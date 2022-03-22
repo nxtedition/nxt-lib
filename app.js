@@ -176,6 +176,7 @@ module.exports = function (appConfig, onTerminate) {
       },
     }
 
+    let prevConnectionState
     ds = deepstream(dsConfig.url, dsConfig)
       .login(dsConfig.credentials, (success, authData) => {
         if (!success) {
@@ -191,16 +192,23 @@ module.exports = function (appConfig, onTerminate) {
             AWAITING_AUTHENTICATION: 'debug',
             AUTHENTICATING: 'debug',
             OPEN: 'info',
-            ERROR: 'error',
+            ERROR: prevConnectionState === 'RECONNECTING' ? 'warn' : 'error',
             RECONNECTING: 'warn',
           }[connectionState] || 'info'
+
         logger[level](
           { connectionState, username: userName, url: dsConfig.url },
           'Deepstream Connection State Changed.'
         )
+
+        prevConnectionState = connectionState
       })
       .on('error', (err) => {
-        logger.error({ err }, 'Deepstream Error.')
+        if (prevConnectionState !== 'OPEN' && /timeout/i.test(err)) {
+          logger.warn({ err }, 'Deepstream Error.')
+        } else {
+          logger.error({ err }, 'Deepstream Error.')
+        }
       })
 
     nxt = require('./deepstream')(ds)
