@@ -192,7 +192,7 @@ module.exports = function (appConfig, onTerminate) {
             AWAITING_AUTHENTICATION: 'debug',
             AUTHENTICATING: 'debug',
             OPEN: 'info',
-            ERROR: prevConnectionState === 'RECONNECTING' ? 'warn' : 'error',
+            ERROR: 'debug', // We get 'error' event anyway...
             RECONNECTING: 'warn',
           }[connectionState] || 'info'
 
