@@ -218,6 +218,7 @@ module.exports = function (opts) {
         method,
         body,
         signal: ac.signal,
+        highWaterMark: 128 * 1024, // TODO (fix): Needs support in undici...
       }
       const res = await client.request(req)
 
