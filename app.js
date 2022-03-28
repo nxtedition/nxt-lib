@@ -186,7 +186,7 @@ module.exports = function (appConfig, onTerminate) {
       .on('connectionStateChanged', (connectionState) => {
         const level =
           {
-            CLOSED: 'error',
+            CLOSED: 'info',
             AWAITING_CONNECTION: 'debug',
             CHALLENGING: 'debug',
             AWAITING_AUTHENTICATION: 'debug',
