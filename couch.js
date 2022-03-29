@@ -749,7 +749,7 @@ module.exports = function (opts) {
 
       const newDoc = diffFun(doc)
 
-      if (!newDoc) {
+      if (!newDoc || (!docRev && newDoc._deleted)) {
         return { updated: false, rev: docRev, id: docId, doc }
       }
 
