@@ -268,7 +268,7 @@ module.exports = function (opts) {
               ...params,
               ...options.query,
               limit: Math.min(remaining, batchSize),
-              feed: live ? 'continuous' : 'normal',
+              feed: live ? 'polling' : 'normal',
             })}`,
           idempotent: true,
           blocking: live,
@@ -292,7 +292,7 @@ module.exports = function (opts) {
         params.since = seq
         remaining -= results.length
 
-        if (results.length === 0) {
+        if (!live && results.length === 0) {
           return
         }
 
@@ -307,7 +307,7 @@ module.exports = function (opts) {
     try {
       while (true) {
         try {
-          if (live) {
+          if (live && !batchSize) {
             yield* continuous()
           } else {
             yield* normal()
