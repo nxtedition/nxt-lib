@@ -268,7 +268,7 @@ module.exports = function (opts) {
               ...params,
               ...options.query,
               limit: Math.min(remaining, batchSize),
-              feed: live ? 'polling' : 'normal',
+              feed: live ? 'longpoll' : 'normal',
             })}`,
           idempotent: true,
           blocking: live,
