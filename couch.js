@@ -293,6 +293,8 @@ module.exports = function (opts) {
         }
       }
 
+      const noop = () => {}
+
       let promise
       while (remaining) {
         const { last_seq: seq, results, err } = await (promise ?? next())
@@ -312,6 +314,7 @@ module.exports = function (opts) {
         }
 
         promise = next()
+        promise.catch(noop)
 
         if (batched) {
           yield results
