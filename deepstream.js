@@ -1,9 +1,13 @@
 const qs = require('qs')
-const objectHash = require('object-hash')
 const cached = require('./util/cached')
-const rx = require('rxjs/operators')
 
 function provide(ds, domain, callback, options) {
+  if (domain instanceof RegExp) {
+    domain = domain.source
+  } else {
+    domain = domain.replace('.', '\\.')
+  }
+
   if (!options || typeof options !== 'object') {
     options = {
       recursive: options === true,
@@ -34,7 +38,7 @@ function provide(ds, domain, callback, options) {
   }
 
   return ds.record.provide(
-    `^${idExpr}${domain.replace('.', '\\.')}(?:\\?.*)?$`,
+    `^${idExpr}${domain}(?:\\?.*)?$`,
     (key) => {
       const [id, options] = parseKey(key)
       return callback(id, options, key)
@@ -55,35 +59,6 @@ function parseKey(key) {
       ...(json ? JSON.parse(json) : null),
     },
   ]
-}
-
-function query(ds, { view, filter, state = ds.record.PROVIDER, ...options }, state2) {
-  let x$
-  if (!state && state2) {
-    state = state2
-  }
-  if (view || filter) {
-    view = stringifyFn(view)
-    filter = stringifyFn(filter)
-
-    const id = objectHash({ view, filter })
-    ds.record.set(`${id}:_query`, { view, filter })
-    x$ = ds.record.observe2(`${id}:query?${qs.stringify(options)}`)
-  } else {
-    x$ = ds.record.observe2(`query?${qs.stringify(options)}`)
-  }
-  return x$.pipe(
-    rx.filter((x) => !state || x.state >= state),
-    rx.map(({ data, state }) => ({
-      ...data,
-      state,
-      rows: Array.isArray(data && data.rows) ? data.rows : [],
-    }))
-  )
-}
-
-function stringifyFn(fn) {
-  return typeof fn === 'function' ? fn.toString().match(/\{([\s\S]+)\}/m)[1] : fn
 }
 
 function observe(ds, name, ...args) {
@@ -129,7 +104,6 @@ function init(ds) {
   const nxt = {
     ds,
     record: {
-      query: (...args) => query(ds, ...args),
       provide: (...args) => provide(ds, ...args),
       observe: (...args) => observe(ds, ...args),
       observe2: (...args) => observe2(ds, ...args),
@@ -144,13 +118,13 @@ function init(ds) {
 
 module.exports = Object.assign(init, {
   provide,
-  query,
   observe,
   observe2,
+  get,
   record: {
-    query,
     provide,
     observe,
     observe2,
+    get,
   },
 })
