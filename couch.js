@@ -277,7 +277,7 @@ module.exports = function (opts) {
             body,
             signal: ac.signal,
           }
-          const res = client.request(req)
+          const res = await client.request(req)
 
           if (res.statusCode < 200 || res.statusCode >= 300) {
             throw makeError(req, {
