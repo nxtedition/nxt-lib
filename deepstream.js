@@ -120,9 +120,9 @@ function init(ds) {
       provide: (...args) => provide(ds, ...args),
       observe: (...args) => observe(ds, ...args),
       observe2: (...args) => observe2(ds, ...args),
-      set: (...args) => ds.set(...args),
-      get: (...args) => ds.get(...args),
-      update: (...args) => ds.update(...args),
+      set: (...args) => ds.record.set(...args),
+      get: (...args) => ds.record.get(...args),
+      update: (...args) => ds.record.update(...args),
     },
   }
   ds.nxt = nxt
