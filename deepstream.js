@@ -112,6 +112,19 @@ function observe2(ds, name, ...args) {
   )
 }
 
+function get(ds, name, ...args) {
+  let options = null
+
+  if (args[0] && typeof args[0] === 'object') {
+    options = JSON.parse(JSON.stringify(args.shift()))
+  }
+
+  return ds.record.get(
+    `${name}${options && Object.keys(options).length > 0 ? `?${qs.stringify(options)}` : ''}`,
+    ...args
+  )
+}
+
 function init(ds) {
   const nxt = {
     ds,
@@ -121,7 +134,7 @@ function init(ds) {
       observe: (...args) => observe(ds, ...args),
       observe2: (...args) => observe2(ds, ...args),
       set: (...args) => ds.record.set(...args),
-      get: (...args) => ds.record.get(...args),
+      get: (...args) => get(ds, ...args),
       update: (...args) => ds.record.update(...args),
     },
   }
