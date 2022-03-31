@@ -259,34 +259,49 @@ module.exports = function (opts) {
     }
 
     async function* normal() {
+      const next = async () => {
+        try {
+          const req = {
+            path:
+              dbPathname +
+              '/_changes' +
+              `?${new URLSearchParams({
+                ...params,
+                ...options.query,
+                limit: Math.min(remaining, batchSize),
+                feed: live ? 'longpoll' : 'normal',
+              })}`,
+            idempotent: true,
+            blocking: live,
+            method,
+            body,
+            signal: ac.signal,
+          }
+          const res = client.request(req)
+
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            throw makeError(req, {
+              status: res.statusCode,
+              headers: res.headers,
+              data: await res.body.text(),
+            })
+          }
+
+          return await res.body.json()
+        } catch (err) {
+          return { err }
+        }
+      }
+
+      let promise
       while (remaining) {
-        const req = {
-          path:
-            dbPathname +
-            '/_changes' +
-            `?${new URLSearchParams({
-              ...params,
-              ...options.query,
-              limit: Math.min(remaining, batchSize),
-              feed: live ? 'longpoll' : 'normal',
-            })}`,
-          idempotent: true,
-          blocking: live,
-          method,
-          body,
-          signal: ac.signal,
-        }
-        const res = await client.request(req)
+        const { last_seq: seq, results, err } = await (promise ?? next())
+        promise = null
 
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          throw makeError(req, {
-            status: res.statusCode,
-            headers: res.headers,
-            data: await res.body.text(),
-          })
+        if (err) {
+          throw err
         }
 
-        const { last_seq: seq, results } = await res.body.json()
         retryCount = 0
 
         params.since = seq
@@ -295,6 +310,8 @@ module.exports = function (opts) {
         if (!live && results.length === 0) {
           return
         }
+
+        promise = next()
 
         if (batched) {
           yield results
