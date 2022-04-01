@@ -83,6 +83,41 @@ module.exports = function (appConfig, onTerminate) {
     )
   }
 
+  const perfName =
+    typeof appConfig.perf === 'string'
+      ? typeof appConfig.perf === 'string'
+      : appConfig.perf === true && serviceName
+      ? serviceName
+      : false
+
+  if (perfName && process.platform === 'linux') {
+    try {
+      const linuxPerf = require('linux-perf')
+
+      let started = false
+      ds.rpc.provide(`${perfName}:perf.start`, () => {
+        if (started) {
+          return
+        }
+        linuxPerf.start()
+        started = true
+        logger.debug('started linux perf')
+      })
+      ds.rpc.provide(`${perfName}:perf.stop`, () => {
+        if (!started) {
+          return
+        }
+        linuxPerf.stop()
+        started = false
+        logger.debug('stopped linux perf')
+      })
+
+      logger.info({ perfName }, 'initialized linux perf')
+    } catch (err) {
+      logger.error('could not initialize linux perf')
+    }
+  }
+
   if (appConfig.toobusy) {
     toobusy = require('toobusy-js')
     toobusy.onLag((currentLag) => {

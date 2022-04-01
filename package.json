@@ -69,6 +69,7 @@
     "http-errors": "^2.0.0",
     "json5": "^2.2.0",
     "koa-compose": "^4.1.0",
+    "linux-perf": "^0.3.1",
     "lodash": "^4.17.21",
     "lru-cache": "^7.7.1",
     "mime": "^3.0.0",
