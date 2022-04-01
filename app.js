@@ -83,14 +83,14 @@ module.exports = function (appConfig, onTerminate) {
     )
   }
 
-  const perfName =
-    typeof appConfig.perf === 'string'
-      ? typeof appConfig.perf === 'string'
-      : appConfig.perf === true && serviceName
-      ? serviceName
-      : false
+  if (appConfig.perf && process.platform === 'linux') {
+    const os = require('os')
 
-  if (perfName && process.platform === 'linux') {
+    const containerId = appConfig.containerId ?? os.hostname()
+    const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
+
+    const perfName = typeof appConfig.perf === 'string' ? appConfig.perf : hostname
+
     try {
       const linuxPerf = require('linux-perf')
 
