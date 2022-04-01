@@ -5,6 +5,12 @@ function getHeader(obj, key) {
 }
 
 function getHeaders(obj) {
+  if (Array.isArray(obj)) {
+    const headers = {}
+    for (let n = 0; n < obj.length; n += 2) {
+      headers[obj[n + 0]] = obj[n + 1]
+    }
+  }
   return (
     (obj.headers?.entries && Object.fromEntries(obj.headers.entries())) ||
     obj.headers ||
