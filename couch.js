@@ -180,10 +180,6 @@ module.exports = function (opts) {
     const live = options.live == null || !!options.live
     const retry = options.retry
 
-    // 'normal' feed options
-    const batchSize = options.batch_size ?? options.batchSize ?? (params.include_docs ? 256 : 1024)
-    let remaining = parseInt(options.limit) || Infinity
-
     let retryCount = 0
 
     const ac = new AbortController()
@@ -259,6 +255,10 @@ module.exports = function (opts) {
     }
 
     async function* normal() {
+      const batchSize =
+        options.batch_size ?? options.batchSize ?? (params.include_docs ? 256 : 1024)
+      let remaining = parseInt(options.limit) || Infinity
+
       const next = async () => {
         try {
           const req = {
@@ -327,7 +327,7 @@ module.exports = function (opts) {
     try {
       while (true) {
         try {
-          if (live && !batchSize) {
+          if (live && !options.batchSize && !options.batch_size) {
             yield* continuous()
           } else {
             yield* normal()
