@@ -211,8 +211,17 @@ module.exports = function (appConfig, onTerminate) {
       },
     }
 
+    const url = new URL(dsConfig.url)
+    if (!url.pathname) {
+      url.pathname = '/deepstream'
+    }
+
+    if (!url.port) {
+      url.port = 6020
+    }
+
     let prevConnectionState
-    ds = deepstream(dsConfig.url, dsConfig)
+    ds = deepstream(url.toString(), dsConfig)
       .login(dsConfig.credentials, (success, authData) => {
         if (!success) {
           throw new Error('deepstream authentication failed.')
