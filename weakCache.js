@@ -13,7 +13,7 @@ module.exports = function weakCache(valueSelector, keySelector) {
     const ref = cache.get(key)
     if (ref != null) {
       const deref = ref.deref()
-      if (deref !== undefined) {
+      if (deref != null) {
         return deref
       }
     }
