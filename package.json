@@ -70,10 +70,10 @@
     "json5": "^2.2.1",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
-    "lru-cache": "^7.8.0",
+    "lru-cache": "^7.8.1",
     "mime": "^3.0.0",
     "moment-timezone": "^0.5.34",
-    "nconf": "^0.11.3",
+    "nconf": "^0.11.4",
     "nested-error-stacks": "^2.1.1",
     "object-hash": "^3.0.0",
     "pino-std-serializers": "^5.2.0",
@@ -86,7 +86,7 @@
     "xuid": "^4.0.10"
   },
   "devDependencies": {
-    "eslint": "^8.12.0",
+    "eslint": "^8.13.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-config-standard": "^16.0.3",
     "eslint-plugin-import": "^2.26.0",
