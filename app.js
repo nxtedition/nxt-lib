@@ -380,31 +380,15 @@ module.exports = function (appConfig, onTerminate) {
                 subscription.unsubscribe()
               }
             }).pipe(rx.startWith(null)),
-          ds &&
-            new rxjs.Observable((o) => {
-              const _next = (state) => {
-                o.next({
-                  id: 'app:ds_connection',
-                  level: state !== 'OPEN' ? 50 : 30,
-                  code: `NXT_DEEPSTREAM_${state}`,
-                  msg: `deepstream connection state is ${state}`,
-                })
-              }
-              ds.on('connectionStateChanged', _next)
-              return () => {
-                ds.off('connectionStateChanged', _next)
-              }
-            }).pipe(rx.startWith(null)),
         ].filter(Boolean)
       )
       .pipe(
         rx.auditTime(1e3),
-        rx.map(([status, lag, couch, ds, dsConnected]) => {
+        rx.map(([status, lag, couch, ds]) => {
           const messages = [
             lag,
             couch,
             ds,
-            dsConnected,
             [status?.messages, status] // Compat
               .find(Array.isArray)
               ?.flat()
