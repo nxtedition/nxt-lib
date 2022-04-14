@@ -15,7 +15,7 @@ module.exports = function compareRev(a, b) {
   const bv = b[0] === 'I' ? Infinity : parseInt(b)
 
   if (av !== bv) {
-    return av < bv ? -1 : 1
+    return av > bv ? 1 : -1
   }
 
   const ar = a.slice(a.indexOf('-') + 1)
