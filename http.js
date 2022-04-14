@@ -19,7 +19,7 @@ const maxInt = 2147483647
 let nextReqId = Math.floor(Math.random() * maxInt)
 function genReqId() {
   nextReqId = (nextReqId + 1) & maxInt
-  return nextReqId.toString(36)
+  return `req-${nextReqId.toString(36)}`
 }
 
 module.exports.request = async function request(ctx, next) {
