@@ -13,6 +13,8 @@ module.exports = function mergeRanges(ranges) {
     return []
   }
 
+  ranges = JSON.parse(JSON.stringify(ranges))
+
   // Add first range to stack
   stack.push(ranges[0])
 
