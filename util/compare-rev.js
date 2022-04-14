@@ -21,5 +21,9 @@ module.exports = function compareRev(a, b) {
   const ar = a.slice(a.indexOf('-') + 1)
   const br = b.slice(b.indexOf('-') + 1)
 
-  return ar < br ? -1 : 1
+  if (ar !== br) {
+    return ar > br ? 1 : -1
+  }
+
+  return 0
 }
