@@ -298,12 +298,12 @@ module.exports = function (appConfig, onTerminate) {
             rx.filter(Boolean),
             rx.catchError((err) => {
               logger.error({ err }, 'monitor.status')
-              return rxjs.of({
+              return rxjs.of([{
                 id: 'app:user_monitor_status',
                 level: 50,
                 code: err.code,
                 msg: err.message,
-              })
+              }])
             }),
             rx.distinctUntilChanged(fp.isEqual),
             rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
@@ -389,11 +389,8 @@ module.exports = function (appConfig, onTerminate) {
             lag,
             couch,
             ds,
-            [status?.messages, status] // Compat
-              .find(Array.isArray)
-              ?.flat()
-              .filter(fp.isPlainObject),
-            [status?.warnings, status] // Compat
+            status?.messages ?? status, // Compat
+            [status?.warnings] // Compat
               .find(Array.isArray)
               ?.flat()
               .filter(fp.isString)
@@ -423,7 +420,9 @@ module.exports = function (appConfig, onTerminate) {
         }),
         rx.catchError((err) => {
           logger.error({ err }, 'monitor.status')
-          return rxjs.of({ id: 'app:monitor_status', level: 50, code: err.code, msg: err.message })
+          return rxjs.of({
+            messages: [{ id: 'app:monitor_status', level: 50, code: err.code, msg: err.message }],
+          })
         }),
         rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
         rx.startWith({}),
