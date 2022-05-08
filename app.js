@@ -135,6 +135,7 @@ module.exports = function (appConfig, onTerminate) {
       ...(config.couchdb ?? config.couch),
     }
     couch = require('./couch')(couchConfig)
+    destroyers.push(() => couch.close())
   }
 
   if (appConfig.deepstream) {
@@ -298,12 +299,14 @@ module.exports = function (appConfig, onTerminate) {
             rx.filter(Boolean),
             rx.catchError((err) => {
               logger.error({ err }, 'monitor.status')
-              return rxjs.of([{
-                id: 'app:user_monitor_status',
-                level: 50,
-                code: err.code,
-                msg: err.message,
-              }])
+              return rxjs.of([
+                {
+                  id: 'app:user_monitor_status',
+                  level: 50,
+                  code: err.code,
+                  msg: err.message,
+                },
+              ])
             }),
             rx.distinctUntilChanged(fp.isEqual),
             rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),

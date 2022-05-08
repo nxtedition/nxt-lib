@@ -790,6 +790,11 @@ module.exports = function (opts) {
     }
   }
 
+  async function close() {
+    await defaultClient.close()
+    // TODO (fix): Close other clients.
+  }
+
   return {
     request,
     bulkDocs,
@@ -802,5 +807,6 @@ module.exports = function (opts) {
     info,
     changes,
     onChanges, // TODO: deprecate
+    close,
   }
 }
