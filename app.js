@@ -259,6 +259,8 @@ module.exports = function (appConfig, onTerminate) {
     nxt = require('./deepstream')(ds)
 
     globalThis.ds = ds
+
+    destroyers.push(() => ds.close())
   }
 
   if (appConfig.compiler) {
