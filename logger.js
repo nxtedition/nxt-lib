@@ -74,6 +74,7 @@ module.exports.createLogger = function (
       if (stream?.flushSync) {
         stream.flushSync()
       }
+      logger.info({ exitSignal }, 'exit')
       process.exit(!exitSignal ? 0 : exitSignal)
     }
   }
