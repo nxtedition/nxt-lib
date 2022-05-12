@@ -30,7 +30,7 @@ module.exports.request = async function request(ctx, next) {
   const signal = ac.signal
 
   ctx.id = req.id = req.headers['request-id'] || genReqId()
-  ctx.logger = req.log = logger.child({ req: { id: req.id, method: req.method, url: req.url } })
+  ctx.logger = req.log = logger.child({ req })
   ctx.signal = signal
   ctx.method = req.method
   ctx.url = requestTarget(req)
@@ -40,7 +40,7 @@ module.exports.request = async function request(ctx, next) {
 
   let reqLogger = ctx.logger
   try {
-    reqLogger.debug({ req }, 'request started')
+    reqLogger.debug('request started')
 
     if (!ctx.url) {
       throw new createError.BadRequest()
@@ -80,7 +80,7 @@ module.exports.request = async function request(ctx, next) {
 
     const responseTime = Math.round(performance.now() - startTime)
 
-    reqLogger = reqLogger.child({ req, res })
+    reqLogger = reqLogger.child({ res })
 
     if (res.statusCode >= 500) {
       reqLogger.error({ responseTime }, 'request error')
