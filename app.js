@@ -417,7 +417,9 @@ module.exports = function (appConfig, onTerminate) {
                 ? message
                 : {
                     ...message,
-                    id: hashString(message.msg ?? message ?? ''),
+                    id: hashString(
+                      [message.msg, message].find(fp.isString) ?? JSON.stringify(message)
+                    ),
                   }
             )
 
