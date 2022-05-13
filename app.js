@@ -402,7 +402,7 @@ module.exports = function (appConfig, onTerminate) {
               .map((warning) => ({ level: 40, msg: warning })),
           ]
             .flat()
-            .filter(fp.isPlainObject)
+            .filter((x) => fp.isPlainObject(x) && !fp.isEmpty(x))
             .map((message) =>
               message.msg || !message.message
                 ? message
