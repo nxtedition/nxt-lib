@@ -411,7 +411,7 @@ module.exports = function (appConfig, onTerminate) {
                 : {
                     ...message,
                     message: undefined,
-                    msg: message.msg,
+                    msg: message.message,
                   }
             )
             .map((message) =>
