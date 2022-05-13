@@ -310,24 +310,26 @@ module.exports = function (appConfig, onTerminate) {
                 },
               ])
             }),
+            rx.startWith([]),
             rx.distinctUntilChanged(fp.isEqual),
-            rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
-            rx.startWith(null)
+            rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
           ),
           toobusy &&
             rxjs.timer(0, 1e3).pipe(
               rx.map(() =>
                 toobusy.lag() > 1e3
-                  ? {
-                      id: 'app:toobusy_lag',
-                      level: 40,
-                      code: 'NXT_LAG',
-                      msg: `lag: ${toobusy.lag()}`,
-                    }
-                  : null
+                  ? [
+                      {
+                        id: 'app:toobusy_lag',
+                        level: 40,
+                        code: 'NXT_LAG',
+                        msg: `lag: ${toobusy.lag()}`,
+                      },
+                    ]
+                  : []
               ),
-              rx.distinctUntilChanged(fp.isEqual),
-              rx.startWith(null)
+              rx.startWith([]),
+              rx.distinctUntilChanged(fp.isEqual)
             ),
           couch &&
             rxjs.timer(0, 10e3).pipe(
@@ -335,16 +337,18 @@ module.exports = function (appConfig, onTerminate) {
                 try {
                   await couch.info()
                 } catch (err) {
-                  return {
-                    id: 'app:couch',
-                    level: 40,
-                    code: err.code,
-                    msg: 'couch: ' + err.message,
-                  }
+                  return [
+                    {
+                      id: 'app:couch',
+                      level: 40,
+                      code: err.code,
+                      msg: 'couch: ' + err.message,
+                    },
+                  ]
                 }
               }),
-              rx.distinctUntilChanged(fp.isEqual),
-              rx.startWith(null)
+              rx.startWith([]),
+              rx.distinctUntilChanged(fp.isEqual)
             ),
           ds &&
             new rxjs.Observable((o) => {
@@ -375,8 +379,7 @@ module.exports = function (appConfig, onTerminate) {
                         }
                       }
                     }
-                  }),
-                  rx.distinctUntilChanged(fp.isEqual)
+                  })
                 )
                 .subscribe(o)
 
@@ -384,7 +387,7 @@ module.exports = function (appConfig, onTerminate) {
                 client.destroy()
                 subscription.unsubscribe()
               }
-            }).pipe(rx.startWith(null)),
+            }).pipe(rx.startWith([]), rx.distinctUntilChanged(fp.isEqual)),
         ].filter(Boolean)
       )
       .pipe(
@@ -394,12 +397,11 @@ module.exports = function (appConfig, onTerminate) {
             lag,
             couch,
             ds,
-            status?.messages ?? status, // Compat
-            [status?.warnings] // Compat
-              .find(Array.isArray)
-              ?.flat()
-              .filter(fp.isString)
-              .map((warning) => ({ level: 40, msg: warning })),
+            [
+              status?.messages,
+              fp.map((x) => (fp.isString(x) ? { msg: x, level: 40 } : x), status?.warnings),
+              status,
+            ].find((x) => fp.isArray(x) && !fp.isEmpty(x)) ?? [],
           ]
             .flat()
             .filter((x) => fp.isPlainObject(x) && !fp.isEmpty(x))
@@ -409,7 +411,7 @@ module.exports = function (appConfig, onTerminate) {
                 : {
                     ...message,
                     message: undefined,
-                    msg: message,
+                    msg: message.msg,
                   }
             )
             .map((message) =>
@@ -423,7 +425,11 @@ module.exports = function (appConfig, onTerminate) {
                   }
             )
 
-          return { ...status, messages }
+          status = { ...status, messages }
+
+          logger.trace({ status }, 'status')
+
+          return status
         }),
         rx.catchError((err) => {
           logger.error({ err }, 'monitor.status')
