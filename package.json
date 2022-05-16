@@ -82,7 +82,7 @@
     "split-string": "^6.0.0",
     "toobusy-js": "^0.5.1",
     "undici": "^5.2.0",
-    "url-join": "^5.0.0",
+    "url-join": "^4.0.1",
     "xuid": "^4.0.10"
   },
   "devDependencies": {
