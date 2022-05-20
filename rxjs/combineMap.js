@@ -4,13 +4,21 @@ function combineMap(resolver) {
   const self = this
   return new rxjs.Observable((o) => {
     let curr = []
-    let updating = false
+    let scheduled = false
+    let pending = false
+    let completed = false
 
     const onError = (err) => o.error(err)
 
     function _update() {
-      if (updating) {
-        updating = false
+      if (!scheduled) {
+        return
+      }
+
+      scheduled = false
+
+      if (pending) {
+        pending = false
 
         const values = []
         for (const { value, hasValue } of curr) {
@@ -22,11 +30,15 @@ function combineMap(resolver) {
 
         o.next(values)
       }
+
+      if (completed) {
+        o.complete()
+      }
     }
 
     function update() {
-      if (updating === false) {
-        updating = true
+      if (scheduled === false) {
+        scheduled = true
         process.nextTick(_update)
       }
     }
@@ -63,10 +75,7 @@ function combineMap(resolver) {
 
               let observable
               try {
-                observable = resolver(xs[n])
-                if (!rxjs.isObservable(observable)) {
-                  throw new Error('expected observable')
-                }
+                observable = rxjs.from(resolver(xs[n]))
               } catch (err) {
                 observable = rxjs.throwError(() => err)
               }
@@ -75,13 +84,17 @@ function combineMap(resolver) {
                 next(val) {
                   context.value = val
                   context.hasValue = true
+
+                  pending = true
                   update()
                 },
                 error: onError,
               })
+
               curr.push(context)
             }
 
+            pending = true
             update()
           }
         }
@@ -89,19 +102,21 @@ function combineMap(resolver) {
         for (const context of prev) {
           if (context) {
             context.subscription.unsubscribe()
+
+            pending = true
             update()
           }
         }
       },
       error: onError,
       complete() {
-        _update()
-        o.complete()
+        completed = true
+        update()
       },
     })
 
     return () => {
-      updating = null
+      scheduled = null
       for (const context of curr) {
         context.subscription.unsubscribe()
       }
