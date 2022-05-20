@@ -2,7 +2,7 @@ const { test } = require('tap')
 const combineMap = require('../../rxjs/combineMap')
 const rxjs = require('rxjs')
 
-test('combineMap', (t) => {
+test('combineMap basic', (t) => {
   t.plan(1)
   rxjs
     .of([1, 2, 3])
