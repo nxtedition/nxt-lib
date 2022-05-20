@@ -7,6 +7,9 @@ function combineMap(resolver) {
     let updating = false
 
     function _update() {
+      if (!updating) {
+        return
+      }
       updating = false
 
       const values = []
@@ -54,17 +57,18 @@ function combineMap(resolver) {
                 key,
                 value: null,
                 hasValue: false,
-                subscription: resolver(xs[n]).subscribe({
-                  next(val) {
-                    context.value = val
-                    context.hasValue = true
-                    update()
-                  },
-                  error(err) {
-                    o.error(err)
-                  },
-                }),
+                subscription: null,
               }
+              context.subscription = resolver(xs[n]).subscribe({
+                next(val) {
+                  context.value = val
+                  context.hasValue = true
+                  update()
+                },
+                error(err) {
+                  o.error(err)
+                },
+              })
               curr.push(context)
             }
 
@@ -83,6 +87,7 @@ function combineMap(resolver) {
         o.error(err)
       },
       complete() {
+        _update()
         o.complete()
       },
     })
