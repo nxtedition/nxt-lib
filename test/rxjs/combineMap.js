@@ -11,3 +11,20 @@ test('combineMap', (t) => {
       t.same(val, [2, 4, 6])
     })
 })
+
+test('combineMap throw in resolver', (t) => {
+  t.plan(1)
+  const _err = new Error('asd')
+  rxjs
+    .of([1, 2, 3])
+    .pipe(
+      combineMap((val) => {
+        throw _err
+      })
+    )
+    .subscribe({
+      error: (err) => {
+        t.same(err, _err)
+      },
+    })
+})

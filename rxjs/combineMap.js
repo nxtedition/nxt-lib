@@ -60,7 +60,15 @@ function combineMap(resolver) {
                 hasValue: false,
                 subscription: null,
               }
-              context.subscription = resolver(xs[n]).subscribe({
+
+              let observable
+              try {
+                observable = resolver(xs[n])
+              } catch (err) {
+                observable = rxjs.throwError(() => err)
+              }
+
+              context.subscription = observable.subscribe({
                 next(val) {
                   context.value = val
                   context.hasValue = true
