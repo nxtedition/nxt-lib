@@ -2,8 +2,9 @@ const rxjs = require('rxjs')
 
 function combineMap(
   resolver,
-  config = {
-    equals: (a, b) => a === b,
+  { keyEquals, valueEquals } = {
+    keyEquals: (a, b) => a === b,
+    valueEquals: (a, b) => a === b,
   }
 ) {
   const self = this
@@ -63,7 +64,7 @@ function combineMap(
         for (let n = 0; n < len; ++n) {
           const key = xs[n]
 
-          if (n < prev.length && prev[n].key === key) {
+          if (n < prev.length && keyEquals(prev[n].key, key)) {
             curr.push(prev[n])
             prev[n] = null
             continue
@@ -71,7 +72,7 @@ function combineMap(
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
-          const idx = prev.findIndex((context) => context && context.key === key)
+          const idx = prev.findIndex((context) => context && keyEquals(context.key, key))
 
           if (idx !== -1) {
             curr.push(prev[idx])
@@ -94,7 +95,7 @@ function combineMap(
 
             context.subscription = observable.subscribe({
               next(value) {
-                if (config.equals && context.hasValue && config.equals(context.value, value)) {
+                if (valueEquals && context.hasValue && valueEquals(context.value, value)) {
                   return
                 }
 
