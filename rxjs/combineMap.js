@@ -1,5 +1,7 @@
 const rxjs = require('rxjs')
 
+const EMPTY = {}
+
 function combineMap(
   resolver,
   { keyEquals, valueEquals } = {
@@ -26,11 +28,10 @@ function combineMap(
         const values = new Array(len)
 
         for (let n = 0; n < len; ++n) {
-          const context = curr[n]
-          if (!context.hasValue) {
+          if (curr[n].value === EMPTY) {
             return
           }
-          values[n] = context.value
+          values[n] = curr[n].value
         }
 
         o.next(values)
@@ -76,8 +77,7 @@ function combineMap(
           } else {
             const context = {
               key,
-              value: null,
-              hasValue: false,
+              value: EMPTY,
               subscription: null,
             }
 
@@ -91,12 +91,11 @@ function combineMap(
             active += 1
             context.subscription = observable.subscribe({
               next(value) {
-                if (valueEquals && context.hasValue && valueEquals(context.value, value)) {
+                if (valueEquals && context.value !== EMPTY && valueEquals(context.value, value)) {
                   return
                 }
 
                 context.value = value
-                context.hasValue = true
 
                 updated = true
                 update()
