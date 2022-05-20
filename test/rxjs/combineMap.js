@@ -84,7 +84,7 @@ test('combineMap combine in single tick', (t) => {
       rxjs.timer(10).pipe(rxjs.map(() => [1, 2, 3])),
       rxjs.timer(10).pipe(rxjs.map(() => [4, 5, 6]))
     )
-    .pipe(combineMap((val) => rxjs.of(val * 2)))
+    .pipe(combineMap((val) => rxjs.from([val * 2, val * 2])))
     .subscribe(() => {
       t.pass()
     })

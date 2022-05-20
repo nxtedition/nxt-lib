@@ -85,6 +85,10 @@ function combineMap(resolver) {
 
               context.subscription = observable.subscribe({
                 next(val) {
+                  if (context.hasValue && context.value === val) {
+                    return
+                  }
+
                   context.value = val
                   context.hasValue = true
 
