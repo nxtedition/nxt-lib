@@ -24,7 +24,7 @@
     "prepare": "husky install",
     "prepublishOnly": "pinst --disable",
     "postpublish": "pinst --enable",
-    "test": "jest --bail --watchAll"
+    "test": "npx jest && npx tap test"
   },
   "lint-staged": {
     "*.{js,jsx,md,ts}": [
@@ -96,7 +96,6 @@
     "eslint-plugin-promise": "^6.0.0",
     "eslint-plugin-standard": "^5.0.0",
     "husky": "^8.0.1",
-    "jest": "^28.1.0",
     "lint-staged": "^12.4.1",
     "pinst": "^3.0.0",
     "prettier": "^2.6.2",
