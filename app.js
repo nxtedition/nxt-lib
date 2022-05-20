@@ -469,7 +469,7 @@ module.exports = function (appConfig, onTerminate) {
     const { eventLoopUtilization } = require('perf_hooks').performance
 
     let stats$
-    if (appConfig.stats.subscribe) {
+    if (typeof appConfig.stats.subscribe === 'function') {
       stats$ = appConfig.stats
     } else if (typeof appConfig.stats === 'function') {
       stats$ = rxjs.timer(0, 10e3).pipe(
