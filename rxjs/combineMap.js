@@ -89,12 +89,12 @@ function combineMap(
               }
 
               context.subscription = observable.subscribe({
-                next(val) {
-                  if (config.equals && context.hasValue && config.equals(context.value, val)) {
+                next(value) {
+                  if (config.equals && context.hasValue && config.equals(context.value, value)) {
                     return
                   }
 
-                  context.value = val
+                  context.value = value
                   context.hasValue = true
 
                   changed = true
