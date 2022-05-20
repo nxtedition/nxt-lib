@@ -20,12 +20,15 @@ function combineMap(resolver) {
       if (updated) {
         updated = false
 
-        const values = []
-        for (const { value, hasValue } of curr) {
-          if (!hasValue) {
+        const len = curr.length
+        const values = new Array(len)
+
+        for (let n = 0; n < len; ++n) {
+          const context = curr[n]
+          if (!context.hasValue) {
             return
           }
-          values.push(value)
+          values[n] = context.value
         }
 
         o.next(values)
