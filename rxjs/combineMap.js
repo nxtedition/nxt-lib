@@ -92,6 +92,7 @@ function combineMap(resolver) {
     })
 
     return () => {
+      updating = false
       for (const context of curr) {
         context.subscription.unsubscribe()
       }
