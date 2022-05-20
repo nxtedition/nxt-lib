@@ -99,6 +99,10 @@ function combineMap(
               },
               error: onError,
               complete: () => {
+                if (context.value === EMPTY) {
+                  empty -= 1
+                }
+
                 active -= 1
                 if (!active) {
                   update()

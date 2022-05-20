@@ -141,3 +141,24 @@ test('combineMap no completion', (t) => {
     })
   t.teardown(() => subscription.unsubscribe())
 })
+
+test('combineLatest no value', (t) => {
+  t.plan(1)
+  rxjs.combineLatest([1, 2, 3].map((x) => rxjs.EMPTY)).subscribe({
+    complete: () => {
+      t.pass()
+    },
+  })
+})
+
+test('combineMap no value', (t) => {
+  t.plan(1)
+  rxjs
+    .of([1, 2, 3])
+    .pipe(combineMap((x) => rxjs.EMPTY))
+    .subscribe({
+      complete: () => {
+        t.pass()
+      },
+    })
+})
