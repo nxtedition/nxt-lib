@@ -1,6 +1,7 @@
 const createError = require('http-errors')
 const makeWeak = require('./weakCache')
 const tp = require('timers/promises')
+const AbortController = require('abort-controller')
 
 let rxjs
 
