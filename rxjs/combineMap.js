@@ -33,7 +33,7 @@ function combineMap(resolver) {
 
     const subscription = self.subscribe({
       next(xs) {
-        // TODO (perf): Avoid array allocation if nothing has changed.
+        // TODO (perf): Avoid array allocation & copy if nothing has changed.
 
         const prev = curr
         curr = []
