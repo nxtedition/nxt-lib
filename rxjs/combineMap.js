@@ -29,6 +29,8 @@ function combineMap(resolver) {
 
     const subscription = self.subscribe({
       next(xs) {
+        // TODO (perf): We can avoid array allocation if nothing has changed.
+
         const prev = curr
         curr = []
 
