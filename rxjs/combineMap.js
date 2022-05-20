@@ -15,26 +15,20 @@ function combineMap(
     let scheduled = false
     let updated = false
     let active = 0
+    let empty = 0
 
     const onError = (err) => o.error(err)
 
     function _update() {
       scheduled = false
 
+      if (empty) {
+        return
+      }
+
       if (updated) {
         updated = false
-
-        const len = curr.length
-        const values = new Array(len)
-
-        for (let n = 0; n < len; ++n) {
-          if (curr[n].value === EMPTY) {
-            return
-          }
-          values[n] = curr[n].value
-        }
-
-        o.next(values)
+        o.next(curr.map((context) => context.value))
       }
 
       if (!active) {
@@ -89,9 +83,12 @@ function combineMap(
             }
 
             active += 1
+            empty += 1
             context.subscription = observable.subscribe({
               next(value) {
-                if (valueEquals && context.value !== EMPTY && valueEquals(context.value, value)) {
+                if (context.value === EMPTY) {
+                  empty -= 1
+                } else if (valueEquals && valueEquals(context.value, value)) {
                   return
                 }
 
@@ -118,6 +115,9 @@ function combineMap(
 
         for (const context of prev) {
           if (context) {
+            if (context.value === EMPTY) {
+              empty -= 1
+            }
             active -= 1
             context.subscription.unsubscribe()
 
