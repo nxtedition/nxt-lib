@@ -7,20 +7,19 @@ function combineMap(resolver) {
     let updating = false
 
     function _update() {
-      if (!updating) {
-        return
-      }
-      updating = false
+      if (updating) {
+        updating = false
 
-      const values = []
-      for (const { value, hasValue } of curr) {
-        if (!hasValue) {
-          return
+        const values = []
+        for (const { value, hasValue } of curr) {
+          if (!hasValue) {
+            return
+          }
+          values.push(value)
         }
-        values.push(value)
-      }
 
-      o.next(values)
+        o.next(values)
+      }
     }
 
     function update() {
