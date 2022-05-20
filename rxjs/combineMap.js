@@ -12,7 +12,7 @@ function combineMap(
     let curr = []
     let scheduled = false
     let changed = false
-    let completed = false
+    let active = 1
 
     const onError = (err) => o.error(err)
 
@@ -36,12 +36,7 @@ function combineMap(
         o.next(values)
       }
 
-      if (completed) {
-        for (const context of curr) {
-          if (!context.hasCompleted) {
-            return
-          }
-        }
+      if (!active) {
         o.complete()
       }
     }
@@ -82,7 +77,6 @@ function combineMap(
               key,
               value: null,
               hasValue: false,
-              hasCompleted: false,
               subscription: null,
             }
 
@@ -93,6 +87,7 @@ function combineMap(
               observable = rxjs.throwError(() => err)
             }
 
+            active += 1
             context.subscription = observable.subscribe({
               next(value) {
                 if (valueEquals && context.hasValue && valueEquals(context.value, value)) {
@@ -107,8 +102,8 @@ function combineMap(
               },
               error: onError,
               complete: () => {
-                context.hasCompleted = true
-                if (completed) {
+                active -= 1
+                if (!active) {
                   update()
                 }
               },
@@ -123,6 +118,7 @@ function combineMap(
 
         for (const context of prev) {
           if (context) {
+            active -= 1
             context.subscription.unsubscribe()
 
             changed = true
@@ -132,8 +128,10 @@ function combineMap(
       },
       error: onError,
       complete() {
-        completed = true
-        update()
+        active -= 1
+        if (!active) {
+          update()
+        }
       },
     })
 
