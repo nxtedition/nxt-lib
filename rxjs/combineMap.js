@@ -16,10 +16,6 @@ function combineMap(
     const onError = (err) => o.error(err)
 
     function _update() {
-      if (!scheduled) {
-        return
-      }
-
       scheduled = false
 
       if (changed) {
@@ -45,7 +41,7 @@ function combineMap(
     }
 
     function update() {
-      if (scheduled === false) {
+      if (!scheduled) {
         scheduled = true
         process.nextTick(_update)
       }
@@ -128,7 +124,6 @@ function combineMap(
     })
 
     return () => {
-      scheduled = null
       for (const context of curr) {
         context.subscription.unsubscribe()
       }
