@@ -64,7 +64,6 @@
   ],
   "dependencies": {
     "abort-controller": "^3.0.0",
-    "encoding-down": "^7.1.0",
     "hasha": "^5.2.2",
     "http-errors": "^2.0.0",
     "json5": "^2.2.1",
@@ -75,7 +74,6 @@
     "moment-timezone": "^0.5.34",
     "nconf": "^0.12.0",
     "nested-error-stacks": "^2.1.1",
-    "object-hash": "^3.0.0",
     "pino-std-serializers": "^5.2.0",
     "qs": "^6.10.3",
     "request-target": "^1.0.2",
@@ -83,8 +81,7 @@
     "tap": "^16.2.0",
     "toobusy-js": "^0.5.1",
     "undici": "^5.2.0",
-    "url-join": "^4.0.1",
-    "xuid": "^4.0.10"
+    "url-join": "^4.0.1"
   },
   "devDependencies": {
     "eslint": "^8.15.0",
