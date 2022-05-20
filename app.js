@@ -478,8 +478,8 @@ module.exports = function (appConfig, onTerminate) {
           return ret?.then || ret?.subscribe ? ret : rxjs.of(ret)
         })
       )
-    } else if (appConfig.stats && typeof appConfig.stats === 'object') {
-      stats$ = rxjs.timer(0, 10e3).pipe(rx.exhaustMap(() => appConfig.stats))
+    } else if (typeof appConfig.stats === 'object') {
+      stats$ = rxjs.timer(0, 10e3).pipe(rx.map(() => appConfig.stats))
     } else {
       stats$ = rxjs.of({})
     }
