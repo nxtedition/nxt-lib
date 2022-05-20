@@ -6,6 +6,8 @@ function combineMap(resolver) {
     let curr = []
     let updating = false
 
+    const onError = (err) => o.error(err)
+
     function _update() {
       if (updating) {
         updating = false
@@ -64,9 +66,7 @@ function combineMap(resolver) {
                   context.hasValue = true
                   update()
                 },
-                error(err) {
-                  o.error(err)
-                },
+                error: onError,
               })
               curr.push(context)
             }
@@ -82,9 +82,7 @@ function combineMap(resolver) {
           }
         }
       },
-      error(err) {
-        o.error(err)
-      },
+      error: onError,
       complete() {
         _update()
         o.complete()
