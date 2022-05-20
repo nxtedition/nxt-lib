@@ -5,7 +5,7 @@ function combineMap(resolver) {
   return new rxjs.Observable((o) => {
     let curr = []
     let scheduled = false
-    let updated = false
+    let changed = false
     let completed = false
 
     const onError = (err) => o.error(err)
@@ -17,8 +17,8 @@ function combineMap(resolver) {
 
       scheduled = false
 
-      if (updated) {
-        updated = false
+      if (changed) {
+        changed = false
 
         const len = curr.length
         const values = new Array(len)
@@ -48,7 +48,7 @@ function combineMap(resolver) {
 
     const subscription = self.subscribe({
       next(xs) {
-        // TODO (perf): Avoid array allocation & copy if nothing has updated.
+        // TODO (perf): Avoid array allocation & copy if nothing has changed.
 
         const prev = curr
         curr = []
@@ -88,7 +88,7 @@ function combineMap(resolver) {
                   context.value = val
                   context.hasValue = true
 
-                  updated = true
+                  changed = true
                   update()
                 },
                 error: onError,
@@ -97,7 +97,7 @@ function combineMap(resolver) {
               curr.push(context)
             }
 
-            updated = true
+            changed = true
             update()
           }
         }
@@ -106,7 +106,7 @@ function combineMap(resolver) {
           if (context) {
             context.subscription.unsubscribe()
 
-            updated = true
+            changed = true
             update()
           }
         }
