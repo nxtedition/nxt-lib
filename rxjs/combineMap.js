@@ -36,6 +36,11 @@ function combineMap(
       }
 
       if (completed) {
+        for (const context of curr) {
+          if (!context.hasCompleted) {
+            return
+          }
+        }
         o.complete()
       }
     }
@@ -76,6 +81,7 @@ function combineMap(
               key,
               value: null,
               hasValue: false,
+              hasCompleted: false,
               subscription: null,
             }
 
@@ -99,6 +105,9 @@ function combineMap(
                 update()
               },
               error: onError,
+              complete: () => {
+                context.hasCompleted = true
+              },
             })
 
             curr.push(context)
