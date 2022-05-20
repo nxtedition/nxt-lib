@@ -12,7 +12,7 @@ function combineMap(
     let curr = []
     let scheduled = false
     let updated = false
-    let active = 1
+    let active = 0
 
     const onError = (err) => o.error(err)
 
@@ -48,6 +48,7 @@ function combineMap(
       }
     }
 
+    active += 1
     const subscription = self.subscribe({
       next(xs) {
         // TODO (perf): Avoid array allocation & copy if nothing has updated.
