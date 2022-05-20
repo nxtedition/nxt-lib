@@ -98,16 +98,16 @@ function combineMap(
                 update()
               },
               error: onError,
-              complete: () => {
-                if (context.value === EMPTY) {
-                  empty -= 1
-                }
+            })
+            context.subscription.add(() => {
+              if (context.value === EMPTY) {
+                empty -= 1
+              }
+              active -= 1
 
-                active -= 1
-                if (!active) {
-                  update()
-                }
-              },
+              if (!active) {
+                update()
+              }
             })
 
             curr.push(context)
@@ -119,10 +119,6 @@ function combineMap(
 
         for (const context of prev) {
           if (context) {
-            if (context.value === EMPTY) {
-              empty -= 1
-            }
-            active -= 1
             context.subscription.unsubscribe()
 
             updated = true
