@@ -1,6 +1,11 @@
 const rxjs = require('rxjs')
 
-function combineMap(resolver) {
+function combineMap(
+  resolver,
+  config = {
+    equals: (a, b) => a === b,
+  }
+) {
   const self = this
   return new rxjs.Observable((o) => {
     let curr = []
@@ -85,7 +90,7 @@ function combineMap(resolver) {
 
               context.subscription = observable.subscribe({
                 next(val) {
-                  if (context.hasValue && context.value === val) {
+                  if (config.equals && context.hasValue && config.equals(context.value, val)) {
                     return
                   }
 
