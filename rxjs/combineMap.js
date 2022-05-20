@@ -63,7 +63,7 @@ function combineMap(resolver) {
           } else {
             // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
             // a key has simply been added or removed.
-            const idx = prev.findIndex((context) => context?.key === key)
+            const idx = prev.findIndex((context) => context && context.key === key)
 
             if (idx !== -1) {
               curr.push(prev[idx])
