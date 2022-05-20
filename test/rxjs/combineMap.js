@@ -53,3 +53,29 @@ test('combineMap bad resolve', (t) => {
       },
     })
 })
+
+test('combineMap no change no tick', (t) => {
+  t.plan(1)
+  rxjs
+    .concat(
+      rxjs.timer(10).pipe(rxjs.map(() => [1, 2, 3])),
+      rxjs.timer(10).pipe(rxjs.map(() => [1, 2, 3]))
+    )
+    .pipe(combineMap((val) => rxjs.of(val * 2)))
+    .subscribe(() => {
+      t.pass()
+    })
+})
+
+test('combineMap combine in single tick', (t) => {
+  t.plan(2)
+  rxjs
+    .concat(
+      rxjs.timer(10).pipe(rxjs.map(() => [1, 2, 3])),
+      rxjs.timer(10).pipe(rxjs.map(() => [4, 5, 6]))
+    )
+    .pipe(combineMap((val) => rxjs.of(val * 2)))
+    .subscribe(() => {
+      t.pass()
+    })
+})
