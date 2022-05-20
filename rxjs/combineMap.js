@@ -107,6 +107,9 @@ function combineMap(
               error: onError,
               complete: () => {
                 context.hasCompleted = true
+                if (completed) {
+                  update()
+                }
               },
             })
 
