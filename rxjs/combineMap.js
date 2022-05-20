@@ -1,12 +1,97 @@
 const rxjs = require('rxjs')
-const rx = require('rxjs/operators')
 
 function combineMap(resolver) {
-  return this.pipe(
-    rx.switchMap((xs) =>
-      Array.isArray(xs) && xs.length > 0 ? rxjs.combineLatest(xs.map(resolver)) : rxjs.of([])
-    )
-  )
+  const self = this
+  return new rxjs.Observable((o) => {
+    let curr = []
+    let updating = false
+
+    function _update() {
+      updating = false
+
+      const values = []
+      for (const { value, hasValue } of curr) {
+        if (!hasValue) {
+          return
+        }
+        values.push(value)
+      }
+
+      o.next(values)
+    }
+
+    function update() {
+      if (!updating) {
+        updating = true
+        process.nextTick(_update)
+      }
+    }
+
+    const subscription = self.subscribe({
+      next(xs) {
+        const prev = curr
+        curr = []
+
+        const len = Array.isArray(xs) ? xs.length : 0
+        for (let n = 0; n < len; ++n) {
+          const key = xs[n]
+
+          if (n < prev.length && prev[n].key === key) {
+            curr.push(prev[n])
+            prev[n] = null
+          } else {
+            // TODO (perf): We can guess based on n, e.g. n - 1 and n + 1 to check if
+            // a key has simply been added or removed.
+            const idx = prev.findIndex((context) => context?.key === key)
+
+            if (idx !== -1) {
+              curr.push(prev[idx])
+              prev[idx] = null
+            } else {
+              const context = {
+                key,
+                value: null,
+                hasValue: false,
+                subscription: resolver(xs[n]).subscribe({
+                  next(val) {
+                    context.value = val
+                    context.hasValue = true
+                    update()
+                  },
+                  error(err) {
+                    o.error(err)
+                  },
+                }),
+              }
+              curr.push(context)
+            }
+
+            update()
+          }
+        }
+
+        for (const context of prev) {
+          if (context) {
+            context.subscription.unsubscribe()
+            update()
+          }
+        }
+      },
+      error(err) {
+        o.error(err)
+      },
+      complete() {
+        o.complete()
+      },
+    })
+
+    return () => {
+      for (const context of curr) {
+        context.subscription.unsubscribe()
+      }
+      subscription.unsubscribe()
+    }
+  })
 }
 
 rxjs.Observable.prototype.combineMap = combineMap
