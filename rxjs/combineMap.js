@@ -64,6 +64,9 @@ function combineMap(resolver) {
               let observable
               try {
                 observable = resolver(xs[n])
+                if (!rxjs.isObservable(observable)) {
+                  throw new Error('expected observable')
+                }
               } catch (err) {
                 observable = rxjs.throwError(() => err)
               }
