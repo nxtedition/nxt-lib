@@ -37,7 +37,7 @@ function combineMap(
     }
 
     function update() {
-      if (!scheduled) {
+      if (!scheduled && !empty) {
         scheduled = true
         process.nextTick(_update)
       }
@@ -102,9 +102,10 @@ function combineMap(
             context.subscription.add(() => {
               if (context.value === EMPTY) {
                 empty -= 1
+                update()
               }
-              active -= 1
 
+              active -= 1
               if (!active) {
                 update()
               }
