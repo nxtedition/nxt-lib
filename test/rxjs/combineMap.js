@@ -89,3 +89,55 @@ test('combineMap combine in single tick', (t) => {
       t.pass()
     })
 })
+
+test('combineLatest completion', (t) => {
+  t.plan(1)
+  rxjs.combineLatest([1, 2, 3].map((x) => rxjs.of(x))).subscribe({
+    complete: () => {
+      t.pass()
+    },
+  })
+})
+
+test('combineMap completion', (t) => {
+  t.plan(1)
+  rxjs
+    .of([1, 2, 3])
+    .pipe(combineMap((x) => rxjs.of(x)))
+    .subscribe({
+      complete: () => {
+        t.pass()
+      },
+    })
+})
+
+test('combineLatest no completion', (t) => {
+  t.plan(1)
+  const subscription = rxjs
+    .combineLatest([1, 2, 3].map((x) => rxjs.timer(0, 1e3).pipe(rxjs.map(() => x))))
+    .subscribe({
+      next: () => {
+        t.pass()
+      },
+      complete: () => {
+        t.fail()
+      },
+    })
+  t.teardown(() => subscription.unsubscribe())
+})
+
+test('combineMap no completion', (t) => {
+  t.plan(1)
+  const subscription = rxjs
+    .of([1, 2, 3])
+    .pipe(combineMap((x) => rxjs.timer(0, 1e3).pipe(rxjs.map(() => x))))
+    .subscribe({
+      next: () => {
+        t.pass()
+      },
+      complete: () => {
+        t.fail()
+      },
+    })
+  t.teardown(() => subscription.unsubscribe())
+})
