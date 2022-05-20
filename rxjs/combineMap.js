@@ -61,50 +61,51 @@ function combineMap(
           if (n < prev.length && prev[n].key === key) {
             curr.push(prev[n])
             prev[n] = null
+            continue
+          }
+
+          // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
+          // a key has simply been added or removed.
+          const idx = prev.findIndex((context) => context && context.key === key)
+
+          if (idx !== -1) {
+            curr.push(prev[idx])
+            prev[idx] = null
           } else {
-            // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
-            // a key has simply been added or removed.
-            const idx = prev.findIndex((context) => context && context.key === key)
-
-            if (idx !== -1) {
-              curr.push(prev[idx])
-              prev[idx] = null
-            } else {
-              const context = {
-                key,
-                value: null,
-                hasValue: false,
-                subscription: null,
-              }
-
-              let observable
-              try {
-                observable = rxjs.from(resolver(xs[n]))
-              } catch (err) {
-                observable = rxjs.throwError(() => err)
-              }
-
-              context.subscription = observable.subscribe({
-                next(value) {
-                  if (config.equals && context.hasValue && config.equals(context.value, value)) {
-                    return
-                  }
-
-                  context.value = value
-                  context.hasValue = true
-
-                  changed = true
-                  update()
-                },
-                error: onError,
-              })
-
-              curr.push(context)
+            const context = {
+              key,
+              value: null,
+              hasValue: false,
+              subscription: null,
             }
 
-            changed = true
-            update()
+            let observable
+            try {
+              observable = rxjs.from(resolver(xs[n]))
+            } catch (err) {
+              observable = rxjs.throwError(() => err)
+            }
+
+            context.subscription = observable.subscribe({
+              next(value) {
+                if (config.equals && context.hasValue && config.equals(context.value, value)) {
+                  return
+                }
+
+                context.value = value
+                context.hasValue = true
+
+                changed = true
+                update()
+              },
+              error: onError,
+            })
+
+            curr.push(context)
           }
+
+          changed = true
+          update()
         }
 
         for (const context of prev) {
