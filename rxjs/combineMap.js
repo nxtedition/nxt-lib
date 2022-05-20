@@ -25,7 +25,7 @@ function combineMap(resolver) {
     }
 
     function update() {
-      if (!updating) {
+      if (updating === false) {
         updating = true
         process.nextTick(_update)
       }
@@ -90,7 +90,7 @@ function combineMap(resolver) {
     })
 
     return () => {
-      updating = false
+      updating = null
       for (const context of curr) {
         context.subscription.unsubscribe()
       }
