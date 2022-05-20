@@ -31,7 +31,7 @@ function combineMap(resolver) {
 
     const subscription = self.subscribe({
       next(xs) {
-        // TODO (perf): We can avoid array allocation if nothing has changed.
+        // TODO (perf): Avoid array allocation if nothing has changed.
 
         const prev = curr
         curr = []
@@ -44,7 +44,7 @@ function combineMap(resolver) {
             curr.push(prev[n])
             prev[n] = null
           } else {
-            // TODO (perf): We can guess based on n, e.g. n - 1 and n + 1 to check if
+            // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
             // a key has simply been added or removed.
             const idx = prev.findIndex((context) => context?.key === key)
 
