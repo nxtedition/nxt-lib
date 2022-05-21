@@ -102,13 +102,11 @@ function combineMap(
             context.subscription.add(() => {
               if (context.value === EMPTY) {
                 empty -= 1
-                update()
               }
-
               active -= 1
-              if (!active) {
-                update()
-              }
+
+              updated = true
+              update()
             })
 
             curr.push(context)
@@ -119,12 +117,7 @@ function combineMap(
         }
 
         for (const context of prev) {
-          if (context) {
-            context.subscription.unsubscribe()
-
-            updated = true
-            update()
-          }
+          context?.subscription.unsubscribe()
         }
       },
       error: onError,
