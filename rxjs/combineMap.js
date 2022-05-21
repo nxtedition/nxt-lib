@@ -46,8 +46,6 @@ function combineMap(
     active += 1
     const subscription = self.subscribe({
       next(xs) {
-        // TODO (perf): Avoid array allocation & copy if nothing has updated.
-
         const len = Array.isArray(xs) ? xs.length : 0
         const next = new Array(len)
 
