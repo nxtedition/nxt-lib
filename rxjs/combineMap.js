@@ -45,16 +45,14 @@ function combineMap(
 
     active += 1
     const subscription = self.subscribe({
-      next(xs) {
+      next(keys) {
         // TODO (perf): Avoid array allocation & copy if nothing has updated.
 
-        const len = Array.isArray(xs) ? xs.length : 0
+        const len = Array.isArray(keys) ? keys.length : 0
         const next = new Array(len)
 
         for (let n = 0; n < len; ++n) {
-          const key = xs[n]
-
-          if (n < curr.length && keyEquals(curr[n].key, key)) {
+          if (n < curr.length && keyEquals(curr[n].key, keys[n])) {
             next[n] = curr[n]
             curr[n] = null
             continue
@@ -62,21 +60,21 @@ function combineMap(
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
-          const idx = curr.findIndex((context) => context && keyEquals(context.key, key))
+          const idx = curr.findIndex((context) => context && keyEquals(context.key, keys[n]))
 
           if (idx !== -1) {
             next[n] = curr[idx]
             curr[idx] = null
           } else {
             const context = {
-              key,
+              key: keys[n],
               value: EMPTY,
               subscription: null,
             }
 
             let observable
             try {
-              observable = rxjs.from(resolver(xs[n]))
+              observable = rxjs.from(resolver(keys[n]))
             } catch (err) {
               observable = rxjs.throwError(() => err)
             }
