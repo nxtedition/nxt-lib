@@ -48,26 +48,25 @@ function combineMap(
       next(xs) {
         // TODO (perf): Avoid array allocation & copy if nothing has updated.
 
-        const prev = curr
-        curr = []
-
         const len = Array.isArray(xs) ? xs.length : 0
+        const next = new Array(len)
+
         for (let n = 0; n < len; ++n) {
           const key = xs[n]
 
-          if (n < prev.length && keyEquals(prev[n].key, key)) {
-            curr.push(prev[n])
-            prev[n] = null
+          if (n < curr.length && keyEquals(curr[n].key, key)) {
+            next[n] = curr[n]
+            curr[n] = null
             continue
           }
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
-          const idx = prev.findIndex((context) => context && keyEquals(context.key, key))
+          const idx = curr.findIndex((context) => context && keyEquals(context.key, key))
 
           if (idx !== -1) {
-            curr.push(prev[idx])
-            prev[idx] = null
+            next[n] = curr[idx]
+            curr[idx] = null
           } else {
             const context = {
               key,
@@ -109,16 +108,18 @@ function combineMap(
               update()
             })
 
-            curr.push(context)
+            next[n] = context
           }
 
           updated = true
           update()
         }
 
-        for (const context of prev) {
+        for (const context of curr) {
           context?.subscription.unsubscribe()
         }
+
+        curr = next
       },
       error: onError,
       complete() {
