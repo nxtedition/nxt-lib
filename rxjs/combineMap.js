@@ -1,13 +1,12 @@
 const rxjs = require('rxjs')
 
 const EMPTY = {}
-const EQUALS = (a, b) => a === b
 
-function combineMap(resolver, { keyEquals = EQUALS, valueEquals = EQUALS, useMap = null } = {}) {
+function combineMap(project, keySelector) {
   const self = this
   return new rxjs.Observable((o) => {
     let curr = []
-    let map = useMap ? new Map() : null
+    let map = null
     let scheduled = false
     let updated = false
     let active = 0
@@ -47,7 +46,7 @@ function combineMap(resolver, { keyEquals = EQUALS, valueEquals = EQUALS, useMap
         const len = Array.isArray(keys) ? keys.length : 0
         const next = new Array(len)
 
-        if (useMap == null && !map && len > 1024) {
+        if (!map && len > 1024) {
           map = new Map()
           for (const context of curr) {
             map.set(context.key, context)
@@ -55,9 +54,9 @@ function combineMap(resolver, { keyEquals = EQUALS, valueEquals = EQUALS, useMap
         }
 
         for (let n = 0; n < len; ++n) {
-          const key = keys[n]
+          const key = keySelector ? keySelector(keys[n]) : keys[n]
 
-          if (n < curr.length && keyEquals(curr[n].key, key)) {
+          if (n < curr.length && curr[n].key === key) {
             next[n] = curr[n]
             curr[n] = null
             continue
@@ -68,8 +67,7 @@ function combineMap(resolver, { keyEquals = EQUALS, valueEquals = EQUALS, useMap
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
-          const i =
-            map?.get(key) ?? curr.findIndex((context, i) => context && keyEquals(context.key, key))
+          const i = map?.get(key) ?? curr.findIndex((context, i) => context && context.key === key)
 
           if (i !== -1) {
             next[n] = curr[i]
@@ -83,7 +81,7 @@ function combineMap(resolver, { keyEquals = EQUALS, valueEquals = EQUALS, useMap
 
             let observable
             try {
-              observable = rxjs.from(resolver(keys[n]))
+              observable = rxjs.from(project(keys[n]))
             } catch (err) {
               observable = rxjs.throwError(() => err)
             }
@@ -94,8 +92,6 @@ function combineMap(resolver, { keyEquals = EQUALS, valueEquals = EQUALS, useMap
               next(value) {
                 if (context.value === EMPTY) {
                   empty -= 1
-                } else if (valueEquals && valueEquals(context.value, value)) {
-                  return
                 }
 
                 context.value = value
@@ -149,4 +145,4 @@ function combineMap(resolver, { keyEquals = EQUALS, valueEquals = EQUALS, useMap
 
 rxjs.Observable.prototype.combineMap = combineMap
 
-module.exports = (resolver) => (o) => combineMap.call(o, resolver)
+module.exports = (project) => (o) => combineMap.call(o, project)
