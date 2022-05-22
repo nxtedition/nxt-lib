@@ -46,7 +46,7 @@ function combineMap(project, keySelector) {
         const len = Array.isArray(keys) ? keys.length : 0
         const next = new Array(len)
 
-        if (!map && len > 1024) {
+        if (!map && len > 1024 && curr.length > 1024) {
           map = new Map()
           for (const context of curr) {
             map.set(context.key, context)
