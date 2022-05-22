@@ -98,8 +98,6 @@ function combineMap(project, keySelector) {
 
                 updated = true
                 update()
-
-                map?.set(context.key, context)
               },
               error: onError,
             })
@@ -116,6 +114,7 @@ function combineMap(project, keySelector) {
             })
 
             next[n] = context
+            map?.set(context.key, context)
           }
         }
 
