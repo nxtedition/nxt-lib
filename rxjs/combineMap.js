@@ -86,6 +86,8 @@ function combineMap(project, keySelector) {
               observable = rxjs.throwError(() => err)
             }
 
+            empty += 1
+            active += 1
             context.subscription = observable.subscribe({
               next(value) {
                 if (context.value === EMPTY) {
@@ -113,8 +115,6 @@ function combineMap(project, keySelector) {
 
             next[n] = context
 
-            empty += 1
-            active += 1
             map?.set(context.key, context)
           }
         }
