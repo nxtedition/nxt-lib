@@ -1,17 +1,13 @@
 const rxjs = require('rxjs')
 
 const EMPTY = {}
+const EQUALS = (a, b) => a === b
 
-function combineMap(
-  resolver,
-  { keyEquals, valueEquals } = {
-    keyEquals: (a, b) => a === b,
-    valueEquals: (a, b) => a === b,
-  }
-) {
+function combineMap(resolver, { keyEquals = EQUALS, valueEquals = EQUALS, useMap = null } = {}) {
   const self = this
   return new rxjs.Observable((o) => {
     let curr = []
+    let map = useMap ? new Map() : null
     let scheduled = false
     let updated = false
     let active = 0
@@ -51,6 +47,13 @@ function combineMap(
         const len = Array.isArray(keys) ? keys.length : 0
         const next = new Array(len)
 
+        if (useMap == null && !map && len > 1024) {
+          map = new Map()
+          for (const context of curr) {
+            map.set(context.key, context)
+          }
+        }
+
         for (let n = 0; n < len; ++n) {
           const key = keys[n]
 
@@ -65,7 +68,8 @@ function combineMap(
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
-          const i = curr.findIndex((context, i) => context && keyEquals(context.key, key))
+          const i =
+            map?.get(key) ?? curr.findIndex((context, i) => context && keyEquals(context.key, key))
 
           if (i !== -1) {
             next[n] = curr[i]
@@ -98,6 +102,8 @@ function combineMap(
 
                 updated = true
                 update()
+
+                map?.set(context.key, context)
               },
               error: onError,
             })
@@ -109,6 +115,8 @@ function combineMap(
 
               updated = true
               update()
+
+              map?.delete(context.key)
             })
 
             next[n] = context
