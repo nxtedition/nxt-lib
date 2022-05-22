@@ -98,10 +98,10 @@ function combineMap(project, keySelector) {
                 empty -= 1
               }
 
+              active -= 1
+
               updated = true
               update()
-
-              active -= 1
             })
 
             next[n] = context
