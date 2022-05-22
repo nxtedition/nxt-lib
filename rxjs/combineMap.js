@@ -6,7 +6,6 @@ function combineMap(project, keySelector) {
   const self = this
   return new rxjs.Observable((o) => {
     let curr = []
-    let map = null
     let scheduled = false
     let updated = false
     let active = 0
@@ -46,13 +45,6 @@ function combineMap(project, keySelector) {
         const len = Array.isArray(keys) ? keys.length : 0
         const next = new Array(len)
 
-        if (!map && len > 1024 && curr.length > 1024) {
-          map = new Map()
-          for (const context of curr) {
-            map.set(context.key, context)
-          }
-        }
-
         for (let n = 0; n < len; ++n) {
           const key = keySelector ? keySelector(keys[n]) : keys[n]
 
@@ -67,7 +59,7 @@ function combineMap(project, keySelector) {
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
-          const i = map?.get(key) ?? curr.findIndex((context, i) => context && context.key === key)
+          const i = curr.findIndex((context, i) => context && context.key === key)
 
           if (i !== -1) {
             next[n] = curr[i]
@@ -110,12 +102,9 @@ function combineMap(project, keySelector) {
               update()
 
               active -= 1
-              map?.delete(context.key)
             })
 
             next[n] = context
-
-            map?.set(context.key, context)
           }
         }
 
