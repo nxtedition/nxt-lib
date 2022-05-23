@@ -16,3 +16,4 @@ public/bundle.js
 media
 nxt*
 db
+.nyc*
