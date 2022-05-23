@@ -11,7 +11,7 @@ function combineMap(project, compare = (a, b) => a === b) {
     let active = 0
     let empty = 0
 
-    const onError = (err) => o.error(err)
+    const _error = (err) => o.error(err)
 
     function _update() {
       scheduled = false
@@ -91,7 +91,7 @@ function combineMap(project, compare = (a, b) => a === b) {
                 updated = true
                 update()
               },
-              error: onError,
+              error: _error,
             })
             context.subscription.add(() => {
               if (context.value === EMPTY) {
@@ -114,7 +114,7 @@ function combineMap(project, compare = (a, b) => a === b) {
 
         curr = next
       },
-      error: onError,
+      error: _error,
       complete() {
         active -= 1
         if (!active) {
