@@ -34,7 +34,11 @@ function auditMap(project) {
       try {
         const result = project(value)
         const observable = typeof result.then === 'function' ? rxjs.from(result) : result
-        innerSubscription = observable.subscribe(_innerNext, _error, _innerComplete)
+        innerSubscription = observable.subscribe({
+          next: _innerNext,
+          error: _error,
+          complete: _innerComplete,
+        })
         if (innerSubscription && innerSubscription.closed) {
           innerSubscription = null
         }
@@ -59,7 +63,11 @@ function auditMap(project) {
       }
     }
 
-    outerSubscription = this.subscribe(_next, _error, _complete)
+    outerSubscription = this.subscribe({
+      next: _next,
+      error: _error,
+      complete: _complete,
+    })
 
     return () => {
       if (innerSubscription) {
