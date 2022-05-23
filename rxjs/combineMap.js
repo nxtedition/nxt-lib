@@ -125,7 +125,7 @@ function combineMap(project, compare = (a, b) => a === b) {
 
     return () => {
       for (const context of curr) {
-        context.subscription.unsubscribe()
+        context?.subscription.unsubscribe()
       }
       subscription.unsubscribe()
     }
