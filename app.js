@@ -532,6 +532,7 @@ module.exports = function (appConfig, onTerminate) {
 
   if (ds && Object.keys(monitorProviders).length) {
     const os = require('os')
+    const rx = require('rxjs/operators')
 
     const containerId = appConfig.containerId ?? os.hostname()
     const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
@@ -540,7 +541,15 @@ module.exports = function (appConfig, onTerminate) {
 
     const unprovide = ds.record.provide(`^([^:]+):monitor\\.([^?]+)[?]?`, (key) => {
       const [, id, prop] = key.match(/^([^:]+):monitor\.([^?]+)[?]?/)
-      return id === hostname && monitorProviders[prop + '$']
+
+      if (id === serviceName) {
+        // TODO (fix): If id === serviceName check if there are multiple instances.
+        return monitorProviders[prop + '$'].pipe(rx.map((value) => ({ [hostname]: value })))
+      }
+
+      if (id === hostname) {
+        return monitorProviders[prop + '$']
+      }
     })
 
     destroyers.push(() => {
