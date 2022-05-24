@@ -134,4 +134,4 @@ function combineMap(project, compare = (a, b) => a === b) {
 
 rxjs.Observable.prototype.combineMap = combineMap
 
-module.exports = (project) => (o) => combineMap.call(o, project)
+module.exports = (project, compare) => (o) => combineMap.call(o, project, compare)
