@@ -24,7 +24,7 @@
     "prepare": "husky install",
     "prepublishOnly": "pinst --disable",
     "postpublish": "pinst --enable",
-    "test": "jest --bail --watchAll"
+    "test": "npx jest && npx tap test"
   },
   "lint-staged": {
     "*.{js,jsx,md,ts}": [
@@ -64,7 +64,6 @@
   ],
   "dependencies": {
     "abort-controller": "^3.0.0",
-    "encoding-down": "^7.1.0",
     "hasha": "^5.2.2",
     "http-errors": "^2.0.0",
     "json5": "^2.2.1",
@@ -75,15 +74,14 @@
     "moment-timezone": "^0.5.34",
     "nconf": "^0.12.0",
     "nested-error-stacks": "^2.1.1",
-    "object-hash": "^3.0.0",
     "pino-std-serializers": "^5.2.0",
     "qs": "^6.10.3",
     "request-target": "^1.0.2",
     "split-string": "^6.0.0",
+    "tap": "^16.2.0",
     "toobusy-js": "^0.5.1",
     "undici": "^5.2.0",
-    "url-join": "^4.0.1",
-    "xuid": "^4.0.10"
+    "url-join": "^4.0.1"
   },
   "devDependencies": {
     "eslint": "^8.15.0",
@@ -95,10 +93,10 @@
     "eslint-plugin-promise": "^6.0.0",
     "eslint-plugin-standard": "^5.0.0",
     "husky": "^8.0.1",
-    "jest": "^28.1.0",
     "lint-staged": "^12.4.1",
     "pinst": "^3.0.0",
-    "prettier": "^2.6.2"
+    "prettier": "^2.6.2",
+    "rxjs": "^7.0.0"
   },
   "peerDependencies": {
     "@nxtedition/deepstream.io-client-js": ">=14.1.0",
