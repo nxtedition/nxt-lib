@@ -530,7 +530,7 @@ module.exports = function (appConfig, onTerminate) {
     })
   }
 
-  if (ds && Object.keys(monitorProviders).length) {
+  if (ds && Object.keys(monitorProviders).length && appConfig.monitor !== false) {
     const os = require('os')
     const rx = require('rxjs/operators')
 
