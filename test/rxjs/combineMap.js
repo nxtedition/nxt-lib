@@ -22,6 +22,16 @@ test('combineMap async', (t) => {
     })
 })
 
+test('combineMap empty', (t) => {
+  t.plan(1)
+  rxjs
+    .of([])
+    .pipe(combineMap((val) => rxjs.of(val * 2)))
+    .subscribe((val) => {
+      t.same(val, [])
+    })
+})
+
 test('combineMap throw in resolver', (t) => {
   t.plan(1)
   const _err = new Error('asd')

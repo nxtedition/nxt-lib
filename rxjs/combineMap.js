@@ -1,11 +1,11 @@
 const rxjs = require('rxjs')
 
-const EMPTY = {}
+const EMPTY = []
 
 function combineMap(project, compare = (a, b) => a === b) {
   const self = this
   return new rxjs.Observable((o) => {
-    let curr = []
+    let curr = EMPTY
     let scheduled = false
     let updated = false
     let active = 0
@@ -110,6 +110,11 @@ function combineMap(project, compare = (a, b) => a === b) {
 
         for (const context of curr) {
           context?.subscription.unsubscribe()
+        }
+
+        if (curr === EMPTY) {
+          updated = true
+          update()
         }
 
         curr = next

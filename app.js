@@ -530,7 +530,7 @@ module.exports = function (appConfig, onTerminate) {
     })
   }
 
-  if (ds && Object.keys(monitorProviders).length) {
+  if (ds && Object.keys(monitorProviders).length && appConfig.monitor !== false) {
     const os = require('os')
     const rx = require('rxjs/operators')
 
@@ -544,7 +544,7 @@ module.exports = function (appConfig, onTerminate) {
 
       if (id === serviceName) {
         // TODO (fix): If id === serviceName check if there are multiple instances.
-        return monitorProviders[prop + '$'].pipe(rx.map((value) => ({ [hostname]: value })))
+        return monitorProviders[prop + '$']?.pipe(rx.map((value) => ({ [hostname]: value })))
       }
 
       if (id === hostname) {
