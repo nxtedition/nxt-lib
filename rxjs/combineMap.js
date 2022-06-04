@@ -108,13 +108,13 @@ function combineMap(project, equals = (a, b) => a === b) {
           }
         }
 
-        for (const context of curr) {
-          context?.subscription.unsubscribe()
-        }
-
         if (curr === EMPTY) {
           updated = true
           update()
+        } else {
+          for (const context of curr) {
+            context?.subscription.unsubscribe()
+          }
         }
 
         curr = next
