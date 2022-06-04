@@ -2,7 +2,7 @@ const rxjs = require('rxjs')
 
 const EMPTY = []
 
-function combineMap(project, compare = (a, b) => a === b) {
+function combineMap(project, equals = (a, b) => a === b) {
   const self = this
   return new rxjs.Observable((o) => {
     let curr = EMPTY
@@ -48,7 +48,7 @@ function combineMap(project, compare = (a, b) => a === b) {
         for (let n = 0; n < len; ++n) {
           const key = keys[n]
 
-          if (n < curr.length && compare(curr[n].key, key)) {
+          if (n < curr.length && equals(curr[n].key, key)) {
             next[n] = curr[n]
             curr[n] = null
             continue
@@ -59,7 +59,7 @@ function combineMap(project, compare = (a, b) => a === b) {
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
-          const i = curr.findIndex((context) => context && compare(context.key, key))
+          const i = curr.findIndex((context) => context && equals(context.key, key))
 
           if (i !== -1) {
             next[n] = curr[i]
@@ -139,4 +139,4 @@ function combineMap(project, compare = (a, b) => a === b) {
 
 rxjs.Observable.prototype.combineMap = combineMap
 
-module.exports = (project, compare) => (o) => combineMap.call(o, project, compare)
+module.exports = (project, equals) => (o) => combineMap.call(o, project, equals)
