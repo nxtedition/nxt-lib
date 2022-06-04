@@ -1,6 +1,6 @@
 const rxjs = require('rxjs')
 
-const EMPTY = []
+const EMPTY = Object.freeze([])
 
 function combineMap(project, equals = (a, b) => a === b) {
   const self = this
