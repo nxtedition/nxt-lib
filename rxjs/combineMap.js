@@ -33,7 +33,7 @@ function combineMap(project, equals = (a, b) => a === b) {
     function update() {
       if (!scheduled && !empty) {
         scheduled = true
-        process.nextTick(_update)
+        queueMicrotask(_update)
       }
     }
 
