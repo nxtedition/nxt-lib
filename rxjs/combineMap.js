@@ -43,14 +43,15 @@ function combineMap(project, equals = (a, b) => a === b) {
         // TODO (perf): Avoid array allocation & copy if nothing has updated.
 
         const len = Array.isArray(keys) ? keys.length : 0
-        const next = new Array(len)
+        const prev = curr
+        curr = new Array(len)
 
         for (let n = 0; n < len; ++n) {
           const key = keys[n]
 
-          if (n < curr.length && equals(curr[n].key, key)) {
-            next[n] = curr[n]
-            curr[n] = null
+          if (n < prev.length && equals(prev[n].key, key)) {
+            curr[n] = prev[n]
+            prev[n] = null
             continue
           }
 
@@ -59,17 +60,17 @@ function combineMap(project, equals = (a, b) => a === b) {
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
-          const i = curr.findIndex((context) => context && equals(context.key, key))
+          const i = prev.findIndex((context) => context && equals(context.key, key))
 
           if (i !== -1) {
-            next[n] = curr[i]
-            curr[i] = null
+            curr[n] = prev[i]
+            prev[i] = null
           } else {
-            const context = {
+            const context = (curr[n] = {
               key,
               value: EMPTY,
               subscription: null,
-            }
+            })
 
             let observable
             try {
@@ -103,21 +104,17 @@ function combineMap(project, equals = (a, b) => a === b) {
               updated = true
               update()
             })
-
-            next[n] = context
           }
         }
 
-        if (curr === EMPTY) {
+        if (prev === EMPTY) {
           updated = true
           update()
         } else {
-          for (const context of curr) {
+          for (const context of prev) {
             context?.subscription.unsubscribe()
           }
         }
-
-        curr = next
       },
       error: _error,
       complete() {
