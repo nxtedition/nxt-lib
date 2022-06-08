@@ -49,7 +49,7 @@ function combineMap(project, equals = (a, b) => a === b) {
         for (let n = 0; n < len; ++n) {
           const key = keys[n]
 
-          if (n < prev.length && equals(prev[n].key, key)) {
+          if (n < prev.length && prev[n] && equals(prev[n].key, key)) {
             curr[n] = prev[n]
             prev[n] = null
             continue
