@@ -7,6 +7,7 @@ module.exports = function (appConfig, onTerminate) {
   let compiler
   let config
   let logger
+  let trace
 
   // Crash on unhandledRejection
   process.on('unhandledRejection', (err) => {
@@ -559,6 +560,68 @@ module.exports = function (appConfig, onTerminate) {
     })
   }
 
+  if (appConfig.trace) {
+    const { Pool } = require('undici')
+
+    const { url, stringify = JSON.stringify, index } = { ...appConfig.trace, ...config.trace }
+
+    const HEADERS = ['content-type', 'application/x-ndjson']
+
+    const client = new Pool(Array.isArray(url) ? url[0] : url, {
+      keepAliveTimeout: 10 * 60e3,
+      pipelining: 8,
+      connections: 1,
+    })
+
+    let prefix
+    function updatePrefix() {
+      prefix =
+        `{ "create": { "_index": ${index} } }\n{ "@timestamp": "${new Date().toISOString()}", "worker": "${serviceName}", "op": "`
+    }
+    updatePrefix()
+
+    let traceData = ''
+    async function flushTraces() {
+      if (!traceData) {
+        return
+      }
+
+      try {
+        const requestBody = traceData
+        traceData = ''
+
+        const { statusCode, body: responseBody } = await client.request({
+          path: '/_bulk',
+          method: 'POST',
+          idempotent: true,
+          headers: HEADERS,
+          body: requestBody,
+        })
+
+        if (statusCode !== 200) {
+          logger.error({ statusCode, escBody: await responseBody.json() }, 'trace failed')
+        } else {
+          await responseBody.dump()
+        }
+      } catch (err) {
+        logger.error({ err }, 'trace failed')
+      }
+    }
+
+    setInterval(updatePrefix, 1e3).unref()
+    setInterval(flushTraces, 30e3).unref()
+
+    trace = function trace(obj, op) {
+      const doc = stringify(obj).slice(1, -1)
+      traceData += prefix + `${op}", ${doc} }\n`
+      if (traceData.length > 128 * 1024) {
+        flushTraces()
+      }
+    }
+
+    destroyers.push(() => client.close())
+  }
+
   if (appConfig.http) {
     const http = require('http')
     // const undici = require('undici')
@@ -654,5 +717,5 @@ module.exports = function (appConfig, onTerminate) {
     }
   }
 
-  return { ds, nxt, logger, toobusy, destroyers, couch, server, config, compiler }
+  return { ds, nxt, logger, toobusy, destroyers, couch, server, config, compiler, trace }
 }
