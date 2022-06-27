@@ -9,6 +9,11 @@ module.exports = function (appConfig, onTerminate) {
   let logger
   let trace
 
+  // Crash on unhandledRejection
+  process.on('unhandledRejection', (err) => {
+    throw err
+  })
+
   const { createLogger } = require('./logger')
 
   const cleanAppConfig = ({
@@ -78,10 +83,6 @@ module.exports = function (appConfig, onTerminate) {
         })
     )
   }
-
-  process.on('warning', (warning) => {
-    logger.warn(warning, warning.name)
-  })
 
   if (appConfig.perf && process.platform === 'linux') {
     const os = require('os')
