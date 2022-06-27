@@ -38,7 +38,7 @@ function provide(ds, domain, callback, options) {
   }
 
   return ds.record.provide(
-    `^${idExpr}${domain}(?:\\?.*)?$`,
+    `^${idExpr}(${domain})(?:\\?.*)?$`,
     (key) => {
       const [id, options] = parseKey(key)
       return callback(id, options, key)
