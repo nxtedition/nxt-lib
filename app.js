@@ -579,7 +579,7 @@ module.exports = function (appConfig, onTerminate) {
 
     let prefix
     function updatePrefix() {
-      prefix = `{ "create": { "_index": ${index} } }\n{ "@timestamp": "${new Date().toISOString()}", "worker": "${serviceName}", "op": "`
+      prefix = `{ "create": { "_index": "${index}" } }\n{ "@timestamp": "${new Date().toISOString()}", "worker": "${serviceName}", "op": "`
     }
     updatePrefix()
 
