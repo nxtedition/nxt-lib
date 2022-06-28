@@ -68,6 +68,7 @@ module.exports = {
       url,
       bytesWritten: ureq.bytesWritten,
       headers: ureq.headers,
+      query: ureq.query,
     }
   },
 }
