@@ -10,7 +10,11 @@ const HOP_EXPR =
 // Removes hop-by-hop and pseudo headers.
 // Updates via and forwarded headers.
 // Only hop-by-hop headers may be set using the Connection general header.
-function reduceHeaders({ id, headers, proxyName, httpVersion, socket }, fn, acc) {
+module.exports.reduceHeaders = function reduceHeaders(
+  { id, headers, proxyName, httpVersion, socket },
+  fn,
+  acc
+) {
   let via
   let forwarded
   let host
@@ -100,5 +104,3 @@ export function printIp(address, port) {
   }
   return str
 }
-
-module.exports = { reduceHeaders }
