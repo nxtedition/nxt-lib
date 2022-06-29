@@ -18,7 +18,8 @@
     "weakCache.js",
     "couch.js",
     "app.js",
-    "errors.js"
+    "errors.js",
+    "proxy.js"
   ],
   "scripts": {
     "prepare": "husky install",
