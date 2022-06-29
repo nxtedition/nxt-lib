@@ -90,7 +90,7 @@ module.exports.reduceHeaders = function reduceHeaders(
   return acc
 }
 
-export function printIp(address, port) {
+function printIp(address, port) {
   const isIPv6 = net.isIPv6(address)
   let str = `${address}`
   if (isIPv6) {
