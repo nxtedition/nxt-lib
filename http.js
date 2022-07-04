@@ -5,6 +5,8 @@ const querystring = require('querystring')
 const assert = require('assert')
 const AbortController = require('abort-controller')
 const { AbortError } = require('./errors')
+const compose = require('koa-compose')
+const http = require('http')
 
 const ERR_HEADER_EXPR =
   /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
@@ -147,6 +149,13 @@ module.exports.request = async function request(ctx, next) {
   } finally {
     queueMicrotask(() => ac.abort())
   }
+}
+
+module.exports.createServer = function (middleware, ctx) {
+  middleware = compose([module.exports.request, ...middleware])
+  const server = http.createServer((req, res) => middleware({ req, res, ...ctx }))
+  server.keepAliveTimeout = 2 * 60e3
+  return server
 }
 
 module.exports.upgrade = async function upgrade(ctx, next) {
