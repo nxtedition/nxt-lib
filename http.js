@@ -151,7 +151,7 @@ module.exports.request = async function request(ctx, next) {
   }
 }
 
-module.exports.createServer = function (middleware, ctx) {
+module.exports.createServer = function (ctx, middleware) {
   middleware = compose([module.exports.request, ...middleware])
   const server = http.createServer((req, res) => middleware({ req, res, ...ctx }))
   server.keepAliveTimeout = 2 * 60e3
