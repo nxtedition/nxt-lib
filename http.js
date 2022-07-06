@@ -114,12 +114,13 @@ module.exports.request = async function request(ctx, next) {
         }
       }
 
+      res.statusCode = statusCode
+
       if (!res.headersSent && fp.isPlainObject(err.body) && !fp.isEmpty(err.body)) {
         res.setHeader('content-type', 'application/json')
         res.write(JSON.stringify(err.body))
       }
 
-      res.statusCode = statusCode
       res.end()
     } else {
       res.destroy(err)
