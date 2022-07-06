@@ -7,6 +7,7 @@ const AbortController = require('abort-controller')
 const { AbortError } = require('./errors')
 const compose = require('koa-compose')
 const http = require('http')
+const fp = require('lodash/fp')
 
 const ERR_HEADER_EXPR =
   /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
@@ -111,6 +112,11 @@ module.exports.request = async function request(ctx, next) {
             res.setHeader(key, val)
           }
         }
+      }
+
+      if (!res.headersSent && fp.isPlainObject(err.body) && !fp.isEmpty(err.body)) {
+        res.setHeader('content-type', 'application/json')
+        res.write(JSON.stringify(err.body))
       }
 
       res.statusCode = statusCode
