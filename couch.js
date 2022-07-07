@@ -61,6 +61,7 @@ module.exports = function (opts) {
     connections: 256,
   }
 
+  const userAgent = config.userAgent
   const defaultClient = new undici.Pool(dbOrigin, defaultClientOpts)
 
   const getClient =
@@ -213,6 +214,11 @@ module.exports = function (opts) {
         method,
         body,
         signal: ac.signal,
+        headers: userAgent
+          ? {
+              'user-agent': userAgent,
+            }
+          : null,
         highWaterMark: 128 * 1024, // TODO (fix): Needs support in undici...
       }
       const res = await client.request(req)
@@ -275,6 +281,11 @@ module.exports = function (opts) {
             method,
             body,
             signal: ac.signal,
+            headers: userAgent
+              ? {
+                  'user-agent': userAgent,
+                }
+              : null,
           }
           const res = await client.request(req)
 
@@ -416,6 +427,13 @@ module.exports = function (opts) {
       }
     } else {
       headers = body ? ACCEPT_CONTENT_TYPE_HEADERS : ACCEPT_HEADERS
+    }
+
+    if (
+      userAgent &&
+      headers.some((element, index) => index % 2 === 0 && /user-agent/i.test(element))
+    ) {
+      headers.push('user-agent', userAgent)
     }
 
     let path = dbPathname

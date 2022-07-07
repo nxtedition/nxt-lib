@@ -65,6 +65,11 @@ module.exports = function (appConfig, onTerminate) {
   const instanceId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
 
   const serviceName = appConfig.name + (instanceId && instanceId !== '0' ? `-${instanceId}` : '')
+  const serviceVersion = appConfig.version
+
+  const userAgent =
+    appConfig.userAgent ||
+    (serviceName ? `${serviceName}/${serviceVersion || '*'} Node/${process.version}` : null)
 
   {
     const loggerConfig = { ...appConfig.logger, ...config.logger }
@@ -132,6 +137,7 @@ module.exports = function (appConfig, onTerminate) {
 
   if (appConfig.couchdb || appConfig.couch) {
     const couchConfig = {
+      userAgent,
       ...(appConfig.couchdb || appConfig.couch),
       ...(config.couchdb ?? config.couch),
     }
@@ -716,5 +722,19 @@ module.exports = function (appConfig, onTerminate) {
     }
   }
 
-  return { ds, nxt, logger, toobusy, destroyers, couch, server, config, compiler, trace }
+  return {
+    ds,
+    nxt,
+    logger,
+    toobusy,
+    destroyers,
+    couch,
+    server,
+    config,
+    compiler,
+    trace,
+    userAgent,
+    serviceName,
+    serviceVersion,
+  }
 }
