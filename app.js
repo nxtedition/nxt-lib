@@ -617,6 +617,15 @@ module.exports = function (appConfig, onTerminate) {
     setInterval(flushTraces, 30e3).unref()
 
     trace = function trace(obj, op) {
+      if (obj.worker) {
+        throw new Error('invalid property `worker`')
+      }
+      if (obj.op) {
+        throw new Error('invalid property `op`')
+      }
+      if (obj['@timestamp']) {
+        throw new Error('invalid property `@timestamp`')
+      }
       const doc = stringify(obj).slice(1, -1)
       traceData += prefix + `${op}", ${doc} }\n`
       if (traceData.length > 128 * 1024) {
