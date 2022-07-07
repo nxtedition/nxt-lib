@@ -160,8 +160,6 @@ module.exports = function (opts) {
 
     if (typeof options.timeout !== 'undefined') {
       params.timeout = options.timeout
-    } else {
-      params.timeout = parseInt(params.heartbeat) * 4
     }
 
     if (typeof options.limit !== 'undefined') {
