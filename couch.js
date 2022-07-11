@@ -3,8 +3,6 @@ const makeWeak = require('./weakCache')
 const tp = require('timers/promises')
 const AbortController = require('abort-controller')
 
-let rxjs
-
 function parseHeaders(headers, obj = {}) {
   for (let i = 0; i < headers.length; i += 2) {
     const key = headers[i].toString().toLowerCase()
@@ -361,32 +359,6 @@ module.exports = function (opts) {
         }
       }
     }
-  }
-
-  function onChanges(options) {
-    if (!rxjs) {
-      rxjs = require('rxjs')
-    }
-
-    return new rxjs.Observable((o) => {
-      const ac = new AbortController()
-      async function run() {
-        try {
-          for await (const change of changes({ ...options, signal: ac.signal })) {
-            o.next(change)
-          }
-          o.complete()
-        } catch (err) {
-          o.error(err)
-        }
-      }
-
-      run()
-
-      return () => {
-        ac.abort()
-      }
-    })
   }
 
   const ACCEPT_HEADERS = ['Accept', 'application/json']
@@ -823,7 +795,6 @@ module.exports = function (opts) {
     delete: _delete,
     info,
     changes,
-    onChanges, // TODO: deprecate
     close,
   }
 }
