@@ -101,6 +101,7 @@ module.exports = function (opts) {
     return createError(res.status, {
       reason,
       error,
+      body: req.body ? JSON.stringify(req.body).slice(0, 4096) : null,
       data: {
         req: {
           path,
