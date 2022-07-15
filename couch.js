@@ -3,6 +3,19 @@ const makeWeak = require('./weakCache')
 const tp = require('timers/promises')
 const AbortController = require('abort-controller')
 
+// https://github.com/fastify/fastify/blob/main/lib/reqIdGenFactory.js
+// 2,147,483,647 (2^31 − 1) stands for max SMI value (an internal optimization of V8).
+// With this upper bound, if you'll be generating 1k ids/sec, you're going to hit it in ~25 days.
+// This is very likely to happen in real-world applications, hence the limit is enforced.
+// Growing beyond this value will make the id generation slower and cause a deopt.
+// In the worst cases, it will become a float, losing accuracy.
+const maxInt = 2147483647
+let nextReqId = Math.floor(Math.random() * maxInt)
+function genReqId() {
+  nextReqId = (nextReqId + 1) & maxInt
+  return `req-${nextReqId.toString(36)}`
+}
+
 function parseHeaders(headers, obj = {}) {
   for (let i = 0; i < headers.length; i += 2) {
     const key = headers[i].toString().toLowerCase()
@@ -213,11 +226,10 @@ module.exports = function (opts) {
         method,
         body,
         signal: ac.signal,
-        headers: userAgent
-          ? {
-              'user-agent': userAgent,
-            }
-          : null,
+        headers: {
+          'user-agent': userAgent,
+          'request-id': genReqId(),
+        },
         highWaterMark: 128 * 1024, // TODO (fix): Needs support in undici...
       }
       const res = await client.request(req)
@@ -280,11 +292,10 @@ module.exports = function (opts) {
             method,
             body,
             signal: ac.signal,
-            headers: userAgent
-              ? {
-                  'user-agent': userAgent,
-                }
-              : null,
+            headers: {
+              'user-agent': userAgent,
+              'request-id': genReqId(),
+            },
           }
           const res = await client.request(req)
 
