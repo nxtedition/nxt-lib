@@ -136,7 +136,7 @@ module.exports.request = async function request(ctx, next) {
 }
 
 function errorResponse(req, res, err) {
-  const statusCode = err.statusCode || err.status || 500
+  res.statusCode = err.statusCode || err.status || 500
 
   let reqId = req?.id || err.id
   for (const name of res.getHeaderNames()) {
@@ -150,9 +150,7 @@ function errorResponse(req, res, err) {
     res.setHeader('request-id', reqId)
   }
 
-  if (err.headers) {
-    assert(typeof err.headers === 'object')
-
+  if (fp.isPlainObject(err.headers)) {
     for (const [key, val] of Object.entries(err.headers)) {
       if (!ERR_HEADER_EXPR.test(key)) {
         res.setHeader(key, val)
@@ -160,9 +158,7 @@ function errorResponse(req, res, err) {
     }
   }
 
-  res.statusCode = statusCode
-
-  if (!res.headersSent && fp.isPlainObject(err.body) && !fp.isEmpty(err.body)) {
+  if (fp.isPlainObject(err.body)) {
     res.setHeader('content-type', 'application/json')
     res.write(JSON.stringify(err.body))
   }
