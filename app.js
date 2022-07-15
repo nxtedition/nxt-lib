@@ -575,7 +575,7 @@ module.exports = function (appConfig, onTerminate) {
 
     const client = new Pool(Array.isArray(url) ? url[0] : url, {
       keepAliveTimeout: 10 * 60e3,
-      pipelining: 1,
+      pipelining: 8,
       connections: 4,
     })
 
