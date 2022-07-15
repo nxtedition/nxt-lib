@@ -34,7 +34,7 @@ module.exports = function ({
       const requestBody = traceData
       traceData = ''
 
-      const ures = await client.request({
+      const { body } = await client.request({
         throwOnError: true,
         path: '/_bulk',
         method: 'POST',
@@ -42,7 +42,7 @@ module.exports = function ({
         headers: HEADERS,
         body: requestBody,
       })
-      await ures.body.dump()
+      await body.dump()
     } catch (err) {
       logger.error({ err }, 'trace failed')
     }
