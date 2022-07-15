@@ -18,11 +18,10 @@ module.exports = function ({
 
   destroyers?.push(() => client.close())
 
-  let prefix
+  let prefix = ''
   function updatePrefix() {
-    prefix = `{ "create": { "_index": "${index}" } }\n{ "@timestamp": "${new Date().toISOString()}", "worker": "${serviceName}", "op": "`
+    prefix = ''
   }
-  updatePrefix()
 
   let traceData = ''
   async function flushTraces() {
@@ -60,6 +59,9 @@ module.exports = function ({
     }
     if (obj['@timestamp']) {
       throw new Error('invalid property `@timestamp`')
+    }
+    if (!prefix) {
+      prefix = `{ "create": { "_index": "${index}" } }\n{ "@timestamp": "${new Date().toISOString()}", "worker": "${serviceName}", "op": "`
     }
     const doc = stringify(obj).slice(1, -1)
     traceData += prefix + `${op}", ${doc} }\n`
