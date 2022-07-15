@@ -1,6 +1,13 @@
 const { Pool } = require('undici')
 
-module.exports = function ({ url, stringify = JSON.stringify, index, destroyers, logger, serviceName }) {
+module.exports = function ({
+  url,
+  stringify = JSON.stringify,
+  index,
+  destroyers,
+  logger,
+  serviceName,
+}) {
   const HEADERS = ['content-type', 'application/x-ndjson']
 
   const client = new Pool(Array.isArray(url) ? url[0] : url, {
@@ -60,4 +67,3 @@ module.exports = function ({ url, stringify = JSON.stringify, index, destroyers,
     }
   }
 }
-
