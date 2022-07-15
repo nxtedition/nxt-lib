@@ -49,7 +49,7 @@ module.exports = function ({
   }
 
   setInterval(updatePrefix, 1e3).unref()
-  setInterval(flushTraces, 2e3).unref()
+  setInterval(flushTraces, 30e3).unref()
 
   return function trace(obj, op) {
     if (obj.worker) {
