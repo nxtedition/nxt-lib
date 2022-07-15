@@ -15,6 +15,7 @@
     "deepstream.js",
     "logger.js",
     "mime.js",
+    "trace.js",
     "weakCache.js",
     "couch.js",
     "app.js",
