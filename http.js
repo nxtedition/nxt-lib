@@ -136,7 +136,7 @@ module.exports.request = async function request(ctx, next) {
 }
 
 function errorResponse(req, res, err) {
-  const statusCode = res.headersSent ? res.statusCode : err.statusCode || 500
+  const statusCode = err.statusCode || err.status || 500
 
   let reqId = req?.id || err.id
   for (const name of res.getHeaderNames()) {
