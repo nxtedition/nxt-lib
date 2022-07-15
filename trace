@@ -27,26 +27,21 @@ module.exports = function ({ url, stringify = JSON.stringify, index, destroyers,
       const requestBody = traceData
       traceData = ''
 
-      const { statusCode, body: responseBody } = await client.request({
+      await client.request({
+        throwOnError: true,
         path: '/_bulk',
         method: 'POST',
         idempotent: true,
         headers: HEADERS,
         body: requestBody,
       })
-
-      if (statusCode !== 200) {
-        logger.error({ statusCode, escBody: await responseBody.json() }, 'trace failed')
-      } else {
-        await responseBody.dump()
-      }
     } catch (err) {
       logger.error({ err }, 'trace failed')
     }
   }
 
   setInterval(updatePrefix, 1e3).unref()
-  setInterval(flushTraces, 30e3).unref()
+  setInterval(flushTraces, 2e3).unref()
 
   return function trace(obj, op) {
     if (obj.worker) {
