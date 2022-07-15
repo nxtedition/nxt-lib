@@ -98,30 +98,7 @@ module.exports.request = async function request(ctx, next) {
     const responseTime = Math.round(performance.now() - startTime)
 
     if (!res.headersSent) {
-      for (const name of res.getHeaderNames()) {
-        res.removeHeader(name)
-      }
-
-      res.setHeader('request-id', req.id)
-
-      if (err.headers) {
-        assert(typeof err.headers === 'object')
-
-        for (const [key, val] of Object.entries(err.headers)) {
-          if (!ERR_HEADER_EXPR.test(key)) {
-            res.setHeader(key, val)
-          }
-        }
-      }
-
-      res.statusCode = statusCode
-
-      if (!res.headersSent && fp.isPlainObject(err.body) && !fp.isEmpty(err.body)) {
-        res.setHeader('content-type', 'application/json')
-        res.write(JSON.stringify(err.body))
-      }
-
-      res.end()
+      errorResponse(req, res, err)
     } else {
       res.destroy(err)
     }
@@ -158,9 +135,93 @@ module.exports.request = async function request(ctx, next) {
   }
 }
 
-module.exports.createServer = function (ctx, middleware) {
+function errorResponse(req, res, err) {
+  const statusCode = res.headersSent ? res.statusCode : err.statusCode || 500
+
+  let reqId = req?.id || err.id
+  for (const name of res.getHeaderNames()) {
+    res.removeHeader(name)
+    if (name === 'request-id') {
+      reqId = res.getHeader(name)
+    }
+  }
+
+  if (reqId) {
+    res.setHeader('request-id', reqId)
+  }
+
+  if (err.headers) {
+    assert(typeof err.headers === 'object')
+
+    for (const [key, val] of Object.entries(err.headers)) {
+      if (!ERR_HEADER_EXPR.test(key)) {
+        res.setHeader(key, val)
+      }
+    }
+  }
+
+  res.statusCode = statusCode
+
+  if (!res.headersSent && fp.isPlainObject(err.body) && !fp.isEmpty(err.body)) {
+    res.setHeader('content-type', 'application/json')
+    res.write(JSON.stringify(err.body))
+  }
+
+  res.end()
+}
+
+class ServerResponse extends http.ServerResponse {
+  constructor(req) {
+    super(req)
+    this.bytesWritten = 0
+    this.startTime = performance.now()
+    this.stats = {
+      headers: null,
+      ttfb: null,
+    }
+  }
+
+  destroy(err) {
+    if (!this.headersSent) {
+      errorResponse(this.req, this, err)
+    } else {
+      super.destroy(err)
+    }
+  }
+
+  flushHeaders() {
+    if (!this.stats.headers) {
+      this.stats.headers = performance.now() - this.startTime
+    }
+    return super.flushHeaders()
+  }
+
+  write(chunk, encoding, callback) {
+    if (!this.stats.ttfb) {
+      this.stats.ttfb = performance.now() - this.startTime
+    }
+    const ret = super.write(chunk, encoding, callback)
+    this.bytesWritten +=
+      typeof chunk === 'string' ? Buffer.byteLength(chunk, encoding) : chunk.length
+    return ret
+  }
+
+  end(chunk, encoding, callback) {
+    if (!this.stats.ttfb) {
+      this.stats.ttfb = performance.now() - this.startTime
+    }
+    if (!this.stats.headers) {
+      this.stats.headers = performance.now() - this.startTime
+    }
+    return super.end(chunk, encoding, callback)
+  }
+}
+
+module.exports.createServer = function (options, ctx, middleware) {
   middleware = compose([module.exports.request, ...middleware])
-  const server = http.createServer((req, res) => middleware({ req, res, ...ctx }))
+  const server = http.createServer({ ServerResponse, ...options }, (req, res) =>
+    middleware({ req, res, ...ctx })
+  )
   server.keepAliveTimeout = 2 * 60e3
   return server
 }
