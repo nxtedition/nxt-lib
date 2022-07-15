@@ -83,7 +83,7 @@ module.exports.request = async function request(ctx, next) {
 
     const responseTime = Math.round(performance.now() - startTime)
 
-    reqLogger = reqLogger.child({ res })
+    reqLogger = reqLogger.child({ err: res.err, res })
 
     if (res.statusCode >= 500) {
       reqLogger.error({ responseTime }, 'request error')
@@ -140,10 +140,10 @@ function errorResponse(req, res, err) {
 
   let reqId = req?.id || err.id
   for (const name of res.getHeaderNames()) {
-    res.removeHeader(name)
-    if (name === 'request-id') {
+    if (!reqId && name === 'request-id') {
       reqId = res.getHeader(name)
     }
+    res.removeHeader(name)
   }
 
   if (reqId) {
@@ -173,6 +173,7 @@ function errorResponse(req, res, err) {
 class ServerResponse extends http.ServerResponse {
   constructor(req) {
     super(req)
+    this.err = null
     this.bytesWritten = 0
     this.startTime = performance.now()
     this.stats = {
@@ -182,6 +183,8 @@ class ServerResponse extends http.ServerResponse {
   }
 
   destroy(err) {
+    this.err = err
+
     if (!this.headersSent) {
       errorResponse(this.req, this, err)
     } else {
