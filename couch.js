@@ -242,10 +242,10 @@ module.exports = function (opts) {
         })
       }
 
+      retryCount = 0
+
       let str = ''
       for await (const chunk of res.body) {
-        retryCount = 0
-
         str += chunk
 
         const lines = str.split('\n') // TODO (perf): Avoid extra array allocation.
