@@ -7,7 +7,7 @@ const compareRevImpl = (a, b, { I, ZERO, DASH }) => {
     const isInfA = a[0] === I
     const isInfB = b[0] === I
     if (isInfA !== isInfB) {
-      return isInfB ? 1 : -1
+      return isInfB ? -1 : 1
     }
   }
 
