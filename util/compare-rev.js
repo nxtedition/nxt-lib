@@ -1,29 +1,28 @@
-const ordI = 'I'.charCodeAt(0)
-const ordZero = '0'.charCodeAt(0)
-const ordDash = '-'.charCodeAt(0)
+const STRING = { I: 'I', ZERO: '0', DASH: '-' }
+const BUFFER = { I: 'I'.charCodeAt(0), ZERO: '0'.charCodeAt(0), DASH: '-'.charCodeAt(0) }
 
-const compareRevString = (a, b) => {
+const compareRevImpl = (a, b, { I, ZERO, DASH }) => {
   // Handle INF-XXXXXXXX
-  const isInfiniteA = a[0] === 'I'
-  const isInfiniteB = b[0] === 'I'
-  if (isInfiniteA) {
-    if (!isInfiniteB) {
-      return 1
+  {
+    const isInfA = a[0] === I
+    const isInfB = b[0] === I
+    if (isInfA !== isInfB) {
+      return isInfB ? 1 : -1
     }
-  } else if (isInfiniteB) {
-    return -1
   }
 
   // Skip leading zeroes
+
   let indexA = 0
-  let indexB = 0
   let lenA = a.length
-  let lenB = b.length
-  while (a[indexA] === '0') {
+  while (a[indexA] === ZERO) {
     ++indexA
     --lenA
   }
-  while (b[indexB] === '0') {
+
+  let indexB = 0
+  let lenB = b.length
+  while (b[indexB] === ZERO) {
     ++indexB
     --lenB
   }
@@ -35,8 +34,8 @@ const compareRevString = (a, b) => {
     const ac = a[indexA++]
     const bc = b[indexB++]
 
-    const isDashA = ac === '-'
-    const isDashB = bc === '-'
+    const isDashA = ac === DASH
+    const isDashB = bc === DASH
     if (isDashA) {
       if (isDashB) {
         break
@@ -48,11 +47,12 @@ const compareRevString = (a, b) => {
 
     result ||= ac === bc ? 0 : ac < bc ? -1 : 1
   }
+
   if (result) {
     return result
   }
 
-  // Comapare the rest
+  // Compare the rest
   while (indexA < len) {
     const ac = a[indexA++]
     const bc = b[indexB++]
@@ -60,72 +60,6 @@ const compareRevString = (a, b) => {
       continue
     }
     return ac < bc ? -1 : 1
-  }
-  return lenA - lenB
-}
-
-const compareRevBuffer = (a, b) => {
-  if (a === b) {
-    return 0
-  }
-
-  // Handle INF-XXXXXXXX
-  const isInfiniteA = a[0] === ordI
-  const isInfiniteB = b[0] === ordI
-  if (isInfiniteA) {
-    if (!isInfiniteB) {
-      return 1
-    }
-  } else if (isInfiniteB) {
-    return -1
-  }
-
-  // Skip leading zeroes
-  let indexA = 0
-  let indexB = 0
-  let lenA = a.length
-  let lenB = b.length
-  while (a[indexA] === ordZero) {
-    ++indexA
-    --lenA
-  }
-  while (b[indexB] === ordZero) {
-    ++indexB
-    --lenB
-  }
-
-  // Compare the revision number
-  let result = 0
-  const len = Math.min(lenA, lenB)
-  while (indexA < len) {
-    const ac = a[indexA++]
-    const bc = b[indexB++]
-
-    const isDashA = ac === ordDash
-    const isDashB = bc === ordDash
-    if (isDashA) {
-      if (isDashB) {
-        break
-      }
-      return -1
-    } else if (isDashB) {
-      return 1
-    }
-
-    result ||= ac - bc
-  }
-  if (result) {
-    return result
-  }
-
-  // Comapare the rest
-  while (indexA < len) {
-    const ac = a[indexA++]
-    const bc = b[indexB++]
-    result = ac - bc
-    if (result) {
-      return result
-    }
   }
   return lenA - lenB
 }
@@ -138,6 +72,6 @@ module.exports = function (a, b) {
   }
 
   return typeof a === 'string' || typeof b === 'string'
-    ? compareRevString(a.toString(), b.toString())
-    : compareRevBuffer(a, b)
+    ? compareRevImpl(a.toString('latin1'), b.toString('latin1'), STRING)
+    : compareRevImpl(a, b, BUFFER)
 }
