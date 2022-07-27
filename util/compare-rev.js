@@ -11,17 +11,17 @@ const compareRevImpl = (a, b, { I, ZERO, DASH }) => {
     }
   }
 
-  // Skip leading zeroes
-
   let indexA = 0
   let lenA = a.length
+
+  let indexB = 0
+  let lenB = b.length
+
+  // Skip leading zeroes
   while (a[indexA] === ZERO) {
     ++indexA
     --lenA
   }
-
-  let indexB = 0
-  let lenB = b.length
   while (b[indexB] === ZERO) {
     ++indexB
     --lenB
