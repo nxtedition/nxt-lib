@@ -130,26 +130,14 @@ const compareRevBuffer = (a, b) => {
   return lenA - lenB
 }
 
-const compareRev = (a, b) => {
-  // Handle null and undefined
-  /* eslint-disable eqeqeq */
-  if (a == undefined) {
-    return b == undefined ? 0 : -1
-  } else if (b == undefined) {
+module.exports = function (a, b) {
+  if (!a || !a.length) {
+    return !b || !b.length ? 0 : -1
+  } else if (!b || !b.length) {
     return 1
   }
-  /* eslint-enable eqeqeq */
 
-  const isStringA = typeof a === 'string'
-  const isStringB = typeof b === 'string'
-
-  return isStringA
-    ? isStringB
-      ? compareRevString(a, b)
-      : compareRevString(a, b.toString())
-    : isStringB
-    ? compareRevString(a.toString(), b)
+  return typeof a === 'string' || typeof b === 'string'
+    ? compareRevString(a.toString(), b.toString())
     : compareRevBuffer(a, b)
 }
-
-module.exports = compareRev
