@@ -56,11 +56,11 @@ const compareRevImpl = (a, b, { I, ZERO, DASH }) => {
   while (indexA < len) {
     const ac = a[indexA++]
     const bc = b[indexB++]
-    if (ac === bc) {
-      continue
+    if (ac !== bc) {
+      return ac < bc ? -1 : 1
     }
-    return ac < bc ? -1 : 1
   }
+
   return lenA - lenB
 }
 
