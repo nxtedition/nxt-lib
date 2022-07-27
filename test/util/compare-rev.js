@@ -25,17 +25,32 @@ const cases = [
 
 for (const [a, b, r] of cases) {
   test(`${a} ${b} ${r}`, (t) => {
-    t.same(compareRev(a, b), r)
-    t.same(compareRev(a && Buffer.from(a), b), r)
-    t.same(compareRev(a, b && Buffer.from(b)), r)
-    t.same(compareRev(a && Buffer.from(a), b && Buffer.from(b)), r)
-    t.same(compareRev(a, b), _compareRev(a?.toString(), b?.toString()))
-    t.same(compareRev(a && Buffer.from(a), b), _compareRev(a?.toString(), b?.toString()))
-    t.same(compareRev(a, b && Buffer.from(b)), _compareRev(a?.toString(), b?.toString()))
-    t.same(
-      compareRev(a && Buffer.from(a), b && Buffer.from(b)),
-      _compareRev(a?.toString(), b?.toString())
-    )
+    const expected = _compareRev(a, b)
+    t.same(expected, r) // sanity check
+
+    t.same(Math.sign(compareRev(a, b)), r)
+    t.same(Math.sign(compareRev(a && Buffer.from(a), b)), r)
+    t.same(Math.sign(compareRev(a, b && Buffer.from(b))), r)
+    t.same(Math.sign(compareRev(a && Buffer.from(a), b && Buffer.from(b))), r)
+    t.end()
+  })
+}
+
+const rand = (n) => Math.floor(Math.random() * n)
+const randHex = () => '0123456779ABCDEF'[rand(16)]
+const randId = () => Array.from({ length: rand(10) + 5 }, randHex).join('')
+const randRev = () => `${rand(200)}-${randId()}`
+const N = 1e3
+for (let i = 0 ; i < N; i++) {
+  const a = randRev()
+  const b = randRev()
+  const r = _compareRev(a, b)
+
+  test(`${a} ${b} ${r}`, (t) => {
+    t.same(Math.sign(compareRev(a, b)), r)
+    t.same(Math.sign(compareRev(a && Buffer.from(a), b)), r)
+    t.same(Math.sign(compareRev(a, b && Buffer.from(b))), r)
+    t.same(Math.sign(compareRev(a && Buffer.from(a), b && Buffer.from(b))), r)
     t.end()
   })
 }
