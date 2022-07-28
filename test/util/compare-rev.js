@@ -36,24 +36,31 @@ for (const [a, b, r] of cases) {
   })
 }
 
+const ascii = Array.from({ length: 128 })
+  .map((_, index) => String.fromCharCode(index))
+  .join('')
 const rand = (n) => Math.floor(Math.random() * n)
-const randHex = () => '0123456779ABCDEF'[rand(16)]
-const randId = () => Array.from({ length: rand(10) + 5 }, randHex).join('')
-const randRev = () => `${rand(200)}-${randId()}`
-const N = 1e3
-for (let i = 0 ; i < N; i++) {
-  const a = randRev()
-  const b = randRev()
-  const r = _compareRev(a, b)
+const randHex = () => ascii[rand(ascii.length)]
+const randId = () => Array.from({ length: rand(10e2) }, randHex).join('')
+const randRev = () => `${rand(10e3)}-${randId()}`
 
-  test(`${a} ${b} ${r}`, (t) => {
-    t.same(Math.sign(compareRev(a, b)), r)
-    t.same(Math.sign(compareRev(a && Buffer.from(a), b)), r)
-    t.same(Math.sign(compareRev(a, b && Buffer.from(b))), r)
-    t.same(Math.sign(compareRev(a && Buffer.from(a), b && Buffer.from(b))), r)
-    t.end()
-  })
-}
+test('fuzz', (t) => {
+  const N = 1e4
+  for (let i = 0; i < N; i++) {
+    const a = randRev()
+    const b = randRev()
+    const r = _compareRev(a, b)
+
+    t.test(`${a} ${b} ${r}`, (t) => {
+      t.same(Math.sign(compareRev(a, b)), r)
+      t.same(Math.sign(compareRev(a && Buffer.from(a), b)), r)
+      t.same(Math.sign(compareRev(a, b && Buffer.from(b))), r)
+      t.same(Math.sign(compareRev(a && Buffer.from(a), b && Buffer.from(b))), r)
+      t.end()
+    })
+  }
+  t.end()
+})
 
 function _compareRev(a, b) {
   if (!a) {
