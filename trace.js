@@ -50,7 +50,7 @@ module.exports = function ({
   setInterval(updatePrefix, 1e3).unref()
   setInterval(flushTraces, 30e3).unref()
 
-  return function trace(obj, op) {
+  function trace(obj, op) {
     if (obj.worker) {
       throw new Error('invalid property `worker`')
     }
@@ -63,10 +63,14 @@ module.exports = function ({
     if (!prefix) {
       prefix = `{ "create": { "_index": "${index}" } }\n{ "@timestamp": "${new Date().toISOString()}", "worker": "${serviceName}", "op": "`
     }
-    const doc = stringify(obj).slice(1, -1)
+    const doc = (typeof obj === 'string' ? obj : stringify(obj)).slice(1, -1)
     traceData += prefix + `${op}", ${doc} }\n`
     if (traceData.length > 128 * 1024) {
       flushTraces()
     }
   }
+
+  trace.stringify = stringify
+
+  return trace
 }
