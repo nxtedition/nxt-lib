@@ -8,7 +8,7 @@ const ascii = Array.from({ length: 128 })
 const rand = (n) => Math.floor(Math.random() * n)
 const randHex = () => ascii[rand(ascii.length)]
 const randId = () => Array.from({ length: rand(10e2) }, randHex).join('')
-const randRev = () => `${rand(10e3)}-${randId()}`
+const randRev = () => `${String(rand(10e2)).padStart(rand(10), '0')}-${randId()}`
 
 const NUM_CASES = 1e5
 const cases = []
