@@ -54,7 +54,7 @@ const compareRevStringString = (a, b) => {
   }
 
   // Compare the rest
-  while (indexA < end) {
+  while (indexA < end && indexB < end) {
     const ac = a[indexA++]
     const bc = b[indexB++]
     if (ac !== bc) {
@@ -123,7 +123,7 @@ const compareRevBufferBuffer = (a, b) => {
   }
 
   // Compare the rest
-  while (indexA < end) {
+  while (indexA < end && indexB < end) {
     const ac = a[indexA++]
     const bc = b[indexB++]
     result = ac - bc
@@ -189,7 +189,7 @@ const compareRevBufferString = (a, b) => {
   }
 
   // Compare the rest
-  while (indexA < end) {
+  while (indexA < end && indexB < end) {
     const ac = String.fromCharCode(a[indexA++])
     const bc = b[indexB++]
     if (ac !== bc) {
