@@ -21,27 +21,32 @@ const cases = [
   ['02-00000000000000', '01-00000000000000', 1],
   ['11-00000000000000', '2-00000000000000', 1],
   ['2-00000000000000', '11-00000000000000', -1],
+  ['837-N', '5763-/h', -1],
+  ['000000837-N', '5763-/h', -1],
 ]
 
 for (const [a, b, r] of cases) {
   test(`${a} ${b} ${r}`, (t) => {
     const expected = _compareRev(a, b)
-    t.same(expected, r) // sanity check
+    if (r != null) {
+      t.same(expected, r) // sanity check
+      t.same(Math.sign(compareRev(a, b)), r)
+    }
 
-    t.same(Math.sign(compareRev(a, b)), r)
-    t.same(Math.sign(compareRev(a && Buffer.from(a), b)), r)
-    t.same(Math.sign(compareRev(a, b && Buffer.from(b))), r)
-    t.same(Math.sign(compareRev(a && Buffer.from(a), b && Buffer.from(b))), r)
+    t.same(Math.sign(compareRev(a && Buffer.from(a), b)), expected)
+    t.same(Math.sign(compareRev(a, b && Buffer.from(b))), expected)
+    t.same(Math.sign(compareRev(a && Buffer.from(a), b && Buffer.from(b))), expected)
     t.end()
   })
 }
 
 const ascii = Array.from({ length: 128 })
-  .map((_, index) => String.fromCharCode(index))
+  .map((_, index) => (index > 27 && index < 127 ? String.fromCharCode(index) : null))
+  .filter(Boolean)
   .join('')
 const rand = (n) => Math.floor(Math.random() * n)
 const randHex = () => ascii[rand(ascii.length)]
-const randId = () => Array.from({ length: rand(10e2) }, randHex).join('')
+const randId = () => Array.from({ length: rand(63) + 1 }, randHex).join('')
 const randRev = () => `${String(rand(10e3)).padStart(rand(10), '0')}-${randId()}`
 
 test('fuzz', (t) => {
