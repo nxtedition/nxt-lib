@@ -23,6 +23,7 @@ const cases = [
   ['2-00000000000000', '11-00000000000000', -1],
   ['837-N', '5763-/h', -1],
   ['000000837-N', '5763-/h', -1],
+  ['1-A', '1-AA', -1],
 ]
 
 for (const [a, b, r] of cases) {
@@ -45,15 +46,30 @@ const ascii = Array.from({ length: 128 })
   .filter(Boolean)
   .join('')
 const rand = (n) => Math.floor(Math.random() * n)
-const randHex = () => ascii[rand(ascii.length)]
-const randId = () => Array.from({ length: rand(63) + 1 }, randHex).join('')
-const randRev = () => `${String(rand(10e3)).padStart(rand(10), '0')}-${randId()}`
+const randChar = () => ascii[rand(ascii.length)]
+const randId = () => Array.from({ length: rand(63) + 1 }, randChar).join('')
+const randRev = (other) => {
+  const num = other && !rand(3) ? parseInt(other) : rand(10e3)
+  let id
+  if (other && !rand(3)) {
+    id = other.slice(other.indexOf('-') + 1)
+    if (rand(3)) {
+      id = id.slice(0, rand(id.length - 1) + 1)
+    }
+  } else {
+    id = randId()
+  }
+  return `${String(num).padStart(rand(10), '0')}-${id}`
+}
 
 test('fuzz', (t) => {
   const N = 1e4
   for (let i = 0; i < N; i++) {
-    const a = randRev()
-    const b = randRev()
+    let a = randRev()
+    let b = randRev(a)
+    if (rand(2)) {
+      ;[a, b] = [b, a]
+    }
     const r = _compareRev(a, b)
 
     t.test(`${a} ${b} ${r}`, (t) => {
