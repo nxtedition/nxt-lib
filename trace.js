@@ -16,6 +16,8 @@ module.exports = function ({
     connections: 4,
   })
 
+  let dropped = 0
+
   destroyers?.push(() => client.close())
 
   let prefix = ''
@@ -42,6 +44,11 @@ module.exports = function ({
         body: requestBody,
       })
       await body.dump()
+
+      if (dropped) {
+        logger.error({ count: dropped }, 'dropped trace messages')
+        dropped = 0
+      }
     } catch (err) {
       logger.error({ err }, 'trace failed')
     }
@@ -57,12 +64,20 @@ module.exports = function ({
     if (obj.op) {
       throw new Error('invalid property `op`')
     }
+
     if (obj['@timestamp']) {
       throw new Error('invalid property `@timestamp`')
     }
+
+    if (traceData.length > 128e6) {
+      dropped += 1
+      return
+    }
+
     if (!prefix) {
       prefix = `{ "create": { "_index": "${index}" } }\n{ "@timestamp": "${new Date().toISOString()}", "worker": "${serviceName}", "op": "`
     }
+
     const doc = (typeof obj === 'string' ? obj : stringify(obj)).slice(1, -1)
     traceData += prefix + `${op}", ${doc} }\n`
     if (traceData.length > 128 * 1024) {
