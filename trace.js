@@ -31,12 +31,12 @@ module.exports = function ({
 
   let traceData = ''
   async function flushTraces() {
-    const data = traceData
-    traceData = ''
-
-    if (!data) {
+    if (!traceData) {
       return
     }
+
+    const data = traceData
+    traceData = ''
 
     if (bytes > LIMIT) {
       dropped += 1
