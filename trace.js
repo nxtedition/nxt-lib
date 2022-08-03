@@ -81,7 +81,7 @@ module.exports = function ({
     const doc = (typeof obj === 'string' ? obj : stringify(obj)).slice(1, -1)
     traceData += prefix + `${op}", ${doc} }\n`
     if (traceData.length > 128 * 1024) {
-      flushTraces()
+      return flushTraces()
     }
   }
 
