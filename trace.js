@@ -19,7 +19,7 @@ module.exports = function ({
   const client = new Pool(Array.isArray(url) ? url[0] : url, {
     keepAliveTimeout: 10 * 60e3,
     pipelining: 4,
-    connections: 4,
+    connections: 1,
   })
 
   destroyers?.push(() => client.close())
