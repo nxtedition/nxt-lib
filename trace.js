@@ -89,7 +89,6 @@ module.exports = function ({
   }
 
   trace.stringify = stringify
-  trace.flush = () => {}
   trace.trace = trace
   trace.write = trace
 
