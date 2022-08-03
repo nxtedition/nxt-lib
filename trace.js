@@ -34,6 +34,10 @@ module.exports = function ({
     const data = traceData
     traceData = ''
 
+    if (!data) {
+      return
+    }
+
     if (bytes > LIMIT) {
       dropped += 1
       return
