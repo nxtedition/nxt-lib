@@ -677,6 +677,7 @@ module.exports = function (appConfig, onTerminate) {
     config,
     compiler,
     trace,
+    tracer: trace,
     userAgent,
     serviceName,
     serviceVersion,

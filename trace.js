@@ -1,5 +1,8 @@
 const { Pool } = require('undici')
 
+const BATCH = 128e3
+const LIMIT = 8e6
+
 module.exports = function ({
   url,
   stringify = JSON.stringify,
@@ -45,7 +48,7 @@ module.exports = function ({
       })
       await body.dump()
 
-      if (dropped) {
+      if (dropped && traceData.length < LIMIT) {
         logger.error({ count: dropped }, 'dropped trace messages')
         dropped = 0
       }
@@ -69,7 +72,7 @@ module.exports = function ({
       throw new Error('invalid property `@timestamp`')
     }
 
-    if (traceData.length > 128e6) {
+    if (traceData.length > LIMIT) {
       dropped += 1
       return
     }
@@ -80,12 +83,15 @@ module.exports = function ({
 
     const doc = (typeof obj === 'string' ? obj : stringify(obj)).slice(1, -1)
     traceData += prefix + `${op}", ${doc} }\n`
-    if (traceData.length > 128 * 1024) {
-      return flushTraces()
+    if (traceData.length > BATCH) {
+      flushTraces()
     }
   }
 
   trace.stringify = stringify
+  trace.flush = () => {}
+  trace.trace = trace
+  trace.write = trace
 
   return trace
 }
