@@ -64,7 +64,7 @@ module.exports.request = async function request(ctx, next) {
             // Normalize OutgoingMessage.destroyed
             this.destroyed = true
 
-            if (this.writableEnded === false) {
+            if (!this.writableEnded) {
               reject(new AbortError())
             } else {
               resolve()
@@ -79,6 +79,7 @@ module.exports.request = async function request(ctx, next) {
     ])
 
     assert(res.writableEnded)
+    assert(res.destroyed)
     assert(res.statusCode)
 
     const responseTime = Math.round(performance.now() - startTime)
