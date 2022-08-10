@@ -71,6 +71,15 @@ module.exports = function (appConfig, onTerminate) {
     appConfig.userAgent ||
     (serviceName ? `${serviceName}/${serviceVersion || '*'} Node/${process.version}` : null)
 
+  const terminate = async (finalLogger, asd) => {
+    finalLogger ??= logger
+    try {
+      await Promise.all(destroyers.filter(Boolean).map((fn) => fn(finalLogger)))
+    } catch (err) {
+      finalLogger.error({ err }, 'shutdown error')
+    }
+  }
+
   {
     const loggerConfig = { ...appConfig.logger, ...config.logger }
 
@@ -80,13 +89,19 @@ module.exports = function (appConfig, onTerminate) {
         name: serviceName,
         base: loggerConfig?.base ? { ...loggerConfig.base } : {},
       },
-      (finalLogger) =>
-        Promise.all(destroyers.filter(Boolean).map((fn) => fn(finalLogger))).catch((err) => {
-          if (err) {
-            finalLogger.error({ err }, 'shutdown error')
-          }
-        })
+      terminate
     )
+  }
+
+  {
+    const { isMainThread, parentPort } = require('node:worker_threads')
+    if (!isMainThread && parentPort) {
+      parentPort.on('message', ({ type }) => {
+        if (type === 'nxt:worker:terminate') {
+          terminate(null, true)
+        }
+      })
+    }
   }
 
   if (appConfig.perf && process.platform === 'linux') {

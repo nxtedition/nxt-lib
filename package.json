@@ -20,6 +20,7 @@
     "couch.js",
     "app.js",
     "errors.js",
+    "worker.js",
     "proxy.js"
   ],
   "scripts": {
