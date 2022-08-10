@@ -75,7 +75,14 @@ module.exports.request = async function request(ctx, next) {
             reject(new createError.RequestTimeout())
           })
       ),
-      next(),
+      next().catch((err) => {
+        if (!res.headersSent) {
+          reqLogger = reqLogger.child({ err })
+          errorResponse(req, res, err)
+        } else {
+          throw err
+        }
+      }),
     ])
 
     assert(res.writableEnded)
@@ -84,7 +91,7 @@ module.exports.request = async function request(ctx, next) {
 
     const responseTime = Math.round(performance.now() - startTime)
 
-    reqLogger = reqLogger.child({ err: res.err, res })
+    reqLogger = reqLogger.child({ res })
 
     if (res.statusCode >= 500) {
       reqLogger.error({ responseTime }, 'request error')
@@ -98,13 +105,9 @@ module.exports.request = async function request(ctx, next) {
 
     const responseTime = Math.round(performance.now() - startTime)
 
-    if (!res.headersSent) {
-      errorResponse(req, res, err)
-    } else {
-      res.destroy(err)
-    }
+    res.catch(() => {}).destroy(err)
 
-    reqLogger = reqLogger.child({ req, res })
+    reqLogger = reqLogger.child({ res })
 
     if (req.aborted || err.name === 'AbortError') {
       reqLogger.info({ err, statusCode, responseTime }, 'request aborted')
@@ -167,16 +170,6 @@ class ServerResponse extends http.ServerResponse {
     this.stats = {
       headers: null,
       ttfb: null,
-    }
-  }
-
-  destroy(err) {
-    this.err = err
-
-    if (!this.headersSent) {
-      errorResponse(this.req, this, err)
-    } else {
-      super.destroy(err)
     }
   }
 
