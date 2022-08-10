@@ -28,6 +28,15 @@ module.exports = {
       bytesWritten: res.bytesWritten,
       headers: getHeaders(res),
     },
+  socket: (socket) =>
+    socket && {
+      id: socket.id || null,
+      version: socket.version ?? null,
+      user: socket.user ?? null,
+      userAgent: socket.userAgent ?? null,
+      remoteAddress: socket.remoteAddress ?? null,
+      headers: socket.headers,
+    },
   req: (req) =>
     req && {
       id: req.id || getHeader(req, 'request-id'),
