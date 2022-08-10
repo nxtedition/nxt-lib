@@ -61,7 +61,6 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   const destroyers = [onTerminate]
-  const appDestroyers = []
 
   const instanceId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
 
@@ -72,19 +71,12 @@ module.exports = function (appConfig, onTerminate) {
     appConfig.userAgent ||
     (serviceName ? `${serviceName}/${serviceVersion || '*'} Node/${process.version}` : null)
 
-  const terminate = async (finalLogger) => {
+  const terminate = async (finalLogger, asd) => {
     finalLogger ??= logger
-    for (const fn of [...destroyers, ...appDestroyers].filter(Boolean)) {
-      try {
-        await Promise.race([
-          fn(finalLogger),
-          new Promise((resolve, reject) =>
-            setTimeout(() => reject(new Error('destroyer timeout')), 60e3)
-          ),
-        ])
-      } catch (err) {
-        finalLogger.error({ err }, 'shutdown error')
-      }
+    try {
+      await Promise.all(destroyers.filter(Boolean).map((fn) => fn(finalLogger)))
+    } catch (err) {
+      finalLogger.error({ err }, 'shutdown error')
     }
   }
 
@@ -165,7 +157,7 @@ module.exports = function (appConfig, onTerminate) {
       ...(config.couchdb ?? config.couch),
     }
     couch = require('./couch')(couchConfig)
-    appDestroyers.push(() => couch.close())
+    destroyers.push(() => couch.close())
   }
 
   if (appConfig.deepstream) {
@@ -290,7 +282,7 @@ module.exports = function (appConfig, onTerminate) {
 
     globalThis.ds = ds
 
-    appDestroyers.push(() => ds.close())
+    destroyers.push(() => ds.close())
   }
 
   if (appConfig.compiler) {
@@ -486,7 +478,7 @@ module.exports = function (appConfig, onTerminate) {
 
     monitorProviders.status$ = status$
 
-    appDestroyers.push(() => {
+    destroyers.push(() => {
       loggerSubscription.unsubscribe()
     })
   }
@@ -555,7 +547,7 @@ module.exports = function (appConfig, onTerminate) {
       }
     })
 
-    appDestroyers.push(() => {
+    destroyers.push(() => {
       subscription.unsubscribe()
     })
   }
@@ -582,7 +574,7 @@ module.exports = function (appConfig, onTerminate) {
       }
     })
 
-    appDestroyers.push(() => {
+    destroyers.push(() => {
       if (unprovide) {
         unprovide()
       }
@@ -693,7 +685,7 @@ module.exports = function (appConfig, onTerminate) {
         logger.debug({ port }, `http listening on port ${port}`)
       })
 
-      appDestroyers.push(() => new Promise((resolve) => server.close(resolve)))
+      destroyers.push(() => new Promise((resolve) => server.close(resolve)))
     }
   }
 
@@ -702,7 +694,6 @@ module.exports = function (appConfig, onTerminate) {
     nxt,
     logger,
     toobusy,
-    destroyers,
     couch,
     server,
     config,
