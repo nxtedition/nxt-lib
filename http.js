@@ -207,6 +207,8 @@ class ServerResponse extends http.ServerResponse {
   }
 }
 
+module.exports.ServerResponse = ServerResponse
+
 module.exports.createServer = function (options, ctx, middleware) {
   middleware = compose([module.exports.request, ...middleware])
   const server = http.createServer({ ServerResponse, ...options }, (req, res) =>
