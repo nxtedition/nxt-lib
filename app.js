@@ -76,7 +76,12 @@ module.exports = function (appConfig, onTerminate) {
     finalLogger ??= logger
     for (const fn of [...destroyers, ...appDestroyers].filter(Boolean)) {
       try {
-        await fn(finalLogger)
+        await Promise.race([
+          fn(finalLogger),
+          new Promise((resolve, reject) =>
+            setTimeout(() => reject(new Error('destroyer timeout')), 60e3)
+          ),
+        ])
       } catch (err) {
         finalLogger.error({ err }, 'shutdown error')
       }
