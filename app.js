@@ -60,7 +60,7 @@ module.exports = function (appConfig, onTerminate) {
     }
   }
 
-  const destroyers = [onTerminate]
+  const destroyers = []
 
   const instanceId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
 
@@ -74,6 +74,13 @@ module.exports = function (appConfig, onTerminate) {
   const terminate = async (finalLogger, asd) => {
     finalLogger ??= logger
     try {
+      if (onTerminate) {
+        try {
+          await onTerminate(finalLogger)
+        } catch (err) {
+          finalLogger.error({ err }, 'terminate error')
+        }
+      }
       await Promise.all(destroyers.filter(Boolean).map((fn) => fn(finalLogger)))
     } catch (err) {
       finalLogger.error({ err }, 'shutdown error')
