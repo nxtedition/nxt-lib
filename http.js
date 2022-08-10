@@ -215,6 +215,8 @@ module.exports.createServer = function (options, ctx, middleware) {
     middleware({ req, res, ...ctx })
   )
   server.keepAliveTimeout = 2 * 60e3
+  server.headersTimeout = 2 * 60e3
+  server.requestTimeout = 0
   return server
 }
 

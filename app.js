@@ -658,6 +658,14 @@ module.exports = function (appConfig, onTerminate) {
         server.setTimeout(httpConfig.timeout)
       }
 
+      if (httpConfig.headersTimeout == null) {
+        server.headersTimeout = 2 * 60e3
+      }
+
+      if (httpConfig.headersTimeout == null) {
+        server.requestTimeout = 0
+      }
+
       server.listen(port, () => {
         logger.debug({ port }, `http listening on port ${port}`)
       })
