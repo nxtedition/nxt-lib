@@ -61,6 +61,7 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   const destroyers = [onTerminate]
+  const appDestroyers = []
 
   const instanceId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
 
@@ -71,12 +72,14 @@ module.exports = function (appConfig, onTerminate) {
     appConfig.userAgent ||
     (serviceName ? `${serviceName}/${serviceVersion || '*'} Node/${process.version}` : null)
 
-  const terminate = async (finalLogger, asd) => {
+  const terminate = async (finalLogger) => {
     finalLogger ??= logger
-    try {
-      await Promise.all(destroyers.filter(Boolean).map((fn) => fn(finalLogger)))
-    } catch (err) {
-      finalLogger.error({ err }, 'shutdown error')
+    for (const fn of [...destroyers, ...appDestroyers].filter(Boolean)) {
+      try {
+        await fn(finalLogger)
+      } catch (err) {
+        finalLogger.error({ err }, 'shutdown error')
+      }
     }
   }
 
@@ -157,7 +160,7 @@ module.exports = function (appConfig, onTerminate) {
       ...(config.couchdb ?? config.couch),
     }
     couch = require('./couch')(couchConfig)
-    destroyers.push(() => couch.close())
+    appDestroyers.push(() => couch.close())
   }
 
   if (appConfig.deepstream) {
@@ -282,7 +285,7 @@ module.exports = function (appConfig, onTerminate) {
 
     globalThis.ds = ds
 
-    destroyers.push(() => ds.close())
+    appDestroyers.push(() => ds.close())
   }
 
   if (appConfig.compiler) {
@@ -478,7 +481,7 @@ module.exports = function (appConfig, onTerminate) {
 
     monitorProviders.status$ = status$
 
-    destroyers.push(() => {
+    appDestroyers.push(() => {
       loggerSubscription.unsubscribe()
     })
   }
@@ -547,7 +550,7 @@ module.exports = function (appConfig, onTerminate) {
       }
     })
 
-    destroyers.push(() => {
+    appDestroyers.push(() => {
       subscription.unsubscribe()
     })
   }
@@ -574,7 +577,7 @@ module.exports = function (appConfig, onTerminate) {
       }
     })
 
-    destroyers.push(() => {
+    appDestroyers.push(() => {
       if (unprovide) {
         unprovide()
       }
@@ -685,7 +688,7 @@ module.exports = function (appConfig, onTerminate) {
         logger.debug({ port }, `http listening on port ${port}`)
       })
 
-      destroyers.push(() => new Promise((resolve) => server.close(resolve)))
+      appDestroyers.push(() => new Promise((resolve) => server.close(resolve)))
     }
   }
 
