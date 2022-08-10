@@ -105,7 +105,7 @@ module.exports.request = async function request(ctx, next) {
 
     const responseTime = Math.round(performance.now() - startTime)
 
-    res.catch(() => {}).destroy(err)
+    res.on('error', () => {}).destroy(err)
 
     reqLogger = reqLogger.child({ res })
 
