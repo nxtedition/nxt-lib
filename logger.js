@@ -6,7 +6,6 @@ const isProduction = process.env.NODE_ENV === 'production'
 module.exports.createLogger = function (
   {
     extreme = isProduction,
-    prettyPrint = isProduction ? null : { translateTime: true },
     level = isProduction ? 'info' : 'trace',
     flushInterval = 2e3,
     stream,
@@ -34,11 +33,6 @@ module.exports.createLogger = function (
 
   const logger = pino(
     {
-      transport: prettyPrint
-        ? {
-            target: 'pino-pretty',
-          }
-        : null,
       level,
       ...options,
       serializers: {
