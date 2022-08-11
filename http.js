@@ -205,9 +205,11 @@ module.exports.ServerResponse = ServerResponse
 
 module.exports.createServer = function (options, ctx, middleware) {
   middleware = compose([module.exports.request, ...middleware])
+  const factory = typeof ctx === 'function' ? ctx : () => ctx
   const server = http.createServer({ ServerResponse, ...options }, (req, res) =>
-    middleware({ req, res, ...ctx })
+    middleware({ req, res, ...factory() })
   )
+  server.setTimeout(2 * 60e3)
   server.keepAliveTimeout = 2 * 60e3
   server.headersTimeout = 2 * 60e3
   server.requestTimeout = 0
