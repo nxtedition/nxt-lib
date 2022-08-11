@@ -181,6 +181,9 @@ class ServerResponse extends http.ServerResponse {
   }
 
   write(chunk, encoding, callback) {
+    if (!this.stats.headers) {
+      this.stats.headers = performance.now() - this.startTime
+    }
     if (!this.stats.ttfb) {
       this.stats.ttfb = performance.now() - this.startTime
     }
