@@ -96,7 +96,7 @@ module.exports = function ({
   trace.stringify = stringify
   trace.trace = trace
   trace.write = trace
-  trace.flush = () => {}
+  trace.flush = flushTraces
 
   return trace
 }
