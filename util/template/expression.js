@@ -369,6 +369,9 @@ module.exports = ({ ds } = {}) => {
       (value) => (Array.isArray(value) ? value : []),
       (value) => Array.isArray(value),
       {
+        fromEntries: () => fp.fromPairs,
+        fromPairs: () => fp.fromPairs,
+        set: (path) => fp.set(path),
         map: (path) => (value) =>
           fp.isArray(path) ? fp.map(fp.pick(path), value) : fp.map(fp.get(path), value),
         every: (predicate) => (value) => fp.every(predicate, value),
