@@ -10,8 +10,8 @@ module.exports = function (appConfig, onTerminate) {
   let trace
 
   // Crash on unhandledRejection
-  process.on('unhandledRejection', (err) => {
-    throw err
+  process.on('unhandledRejection', (reason) => {
+    throw reason
   })
 
   const { createLogger } = require('./logger')

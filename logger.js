@@ -51,6 +51,9 @@ module.exports.createLogger = function (
     called = true
 
     if (err) {
+      if (!(err instanceof Error)) {
+        err = new Error(err)
+      }
       logger.fatal({ err }, evt || 'error caused exit')
       if (stream?.flushSync) {
         stream.flushSync()
