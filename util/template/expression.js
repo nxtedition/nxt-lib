@@ -372,6 +372,8 @@ module.exports = ({ ds } = {}) => {
         fromEntries: () => fp.fromPairs,
         fromPairs: () => fp.fromPairs,
         set: (path) => fp.set(path),
+        merge: (value) => fp.merge(value),
+        mergeAll: () => fp.mergeAll,
         map: (path) => (value) =>
           fp.isArray(path) ? fp.map(fp.pick(path), value) : fp.map(fp.get(path), value),
         every: (predicate) => (value) => fp.every(predicate, value),
@@ -391,6 +393,7 @@ module.exports = ({ ds } = {}) => {
         last: () => (value) => fp.last(value),
         tail: () => (value) => fp.last(value),
         length: () => (value) => fp.size(value),
+        size: () => (value) => fp.size(value),
         sort: () => (value) => [...value].sort(),
         sortBy: (iteratees) => (value) => fp.sortBy(iteratees, value),
         sum: () => (value) => fp.sum(value),
