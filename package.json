@@ -83,7 +83,7 @@
     "split-string": "^6.0.0",
     "tap": "^16.3.0",
     "toobusy-js": "^0.5.1",
-    "undici": "^5.8.0",
+    "undici": "^5.8.2",
     "url-join": "^4.0.0"
   },
   "devDependencies": {
