@@ -231,6 +231,7 @@ module.exports = function (opts) {
           'request-id': genReqId(),
         },
         highWaterMark: 128 * 1024, // TODO (fix): Needs support in undici...
+        bodyTimeout: 2 * (params.heartbeat || 60e3),
       }
       const res = await client.request(req)
 
