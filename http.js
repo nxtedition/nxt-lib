@@ -110,11 +110,11 @@ module.exports.request = async function request(ctx, next) {
     reqLogger = reqLogger.child({ res })
 
     if (req.aborted || err.name === 'AbortError') {
-      reqLogger.info({ err, statusCode, responseTime }, 'request aborted')
+      reqLogger.info({ err, responseTime }, 'request aborted')
     } else if (statusCode < 500) {
-      reqLogger.warn({ err, statusCode, responseTime }, 'request failed')
+      reqLogger.warn({ err, responseTime }, 'request failed')
     } else {
-      reqLogger.error({ err, statusCode, responseTime }, 'request error')
+      reqLogger.error({ err, responseTime }, 'request error')
     }
 
     req.on('error', (err) => {
