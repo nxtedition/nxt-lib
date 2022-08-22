@@ -125,22 +125,20 @@ module.exports = function (appConfig, onTerminate) {
       let started = false
       ds.rpc.provide(`${perfName}:perf.start`, () => {
         if (started) {
-          return
+          return false
         }
         linuxPerf.start()
         started = true
-        logger.debug('started linux perf')
+        return true
       })
       ds.rpc.provide(`${perfName}:perf.stop`, () => {
         if (!started) {
-          return
+          return false
         }
         linuxPerf.stop()
         started = false
-        logger.debug('stopped linux perf')
+        return true
       })
-
-      logger.info({ perfName }, 'initialized linux perf')
     } catch (err) {
       logger.error('could not initialize linux perf')
     }
@@ -492,7 +490,6 @@ module.exports = function (appConfig, onTerminate) {
 
   if (appConfig.stats) {
     const v8 = require('v8')
-    const os = require('os')
     const rxjs = require('rxjs')
     const rx = require('rxjs/operators')
     const { eventLoopUtilization } = require('perf_hooks').performance
@@ -527,12 +524,7 @@ module.exports = function (appConfig, onTerminate) {
       rx.refCount()
     )
 
-    const containerId = appConfig.containerId ?? os.hostname()
-    const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
-
     monitorProviders.stats$ = stats$
-
-    logger.debug({ hostname }, 'monitor.stats')
 
     let elu1 = eventLoopUtilization?.()
     const subscription = stats$.pipe(rx.auditTime(10e3)).subscribe((stats) => {
@@ -565,8 +557,6 @@ module.exports = function (appConfig, onTerminate) {
 
     const containerId = appConfig.containerId ?? os.hostname()
     const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
-
-    logger.debug({ hostname }, 'monitor')
 
     const unprovide = ds.record.provide(`^([^:]+):monitor\\.([^?]+)[?]?`, (key) => {
       const [, id, prop] = key.match(/^([^:]+):monitor\.([^?]+)[?]?/)
@@ -688,9 +678,7 @@ module.exports = function (appConfig, onTerminate) {
         server.requestTimeout = 0
       }
 
-      server.listen(port, () => {
-        logger.debug({ port }, `http listening on port ${port}`)
-      })
+      server.listen(port)
 
       destroyers.push(() => new Promise((resolve) => server.close(resolve)))
     }
