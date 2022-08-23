@@ -60,6 +60,7 @@ module.exports = ({ ds } = {}) => {
         },
       default: (defaultValue, notJustNully) => (value) =>
         notJustNully ? (!value ? defaultValue : value) : value == null ? defaultValue : value,
+      else: (x) => (value) => value || x,
       eq: (x) => (value) => value === x,
       ne: (x) => (value) => value !== x,
       not: () => (value) => !value,
