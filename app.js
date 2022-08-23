@@ -419,8 +419,8 @@ module.exports = function (appConfig, onTerminate) {
       )
       .pipe(
         rx.auditTime(1e3),
-        rx.map(([status, lag, couch, ds]) => {
-          const messages = [
+        rx.map(([status, lag, couch, ds]) =>
+          [
             lag,
             couch,
             ds,
@@ -451,13 +451,7 @@ module.exports = function (appConfig, onTerminate) {
                     ),
                   }
             )
-
-          status = { ...status, messages }
-
-          logger.trace({ status }, 'status')
-
-          return status
-        }),
+        ),
         rx.catchError((err) => {
           logger.error({ err }, 'monitor.status')
           return rxjs.of({
