@@ -207,6 +207,9 @@ class ServerResponse extends http.ServerResponse {
 module.exports.ServerResponse = ServerResponse
 
 module.exports.createServer = function (options, ctx, middleware) {
+  middleware = Array.isArray(middleware) ? middleware : [middleware]
+  middleware = fp.values(middleware)
+  middleware = middleware.flat().filter(Boolean)
   middleware = compose([module.exports.request, ...middleware])
   const factory = typeof ctx === 'function' ? ctx : () => ctx
   const server = http.createServer({ ServerResponse, ...options }, (req, res) =>
