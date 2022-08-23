@@ -452,11 +452,7 @@ module.exports = function (appConfig, onTerminate) {
                   }
             )
 
-          status = { ...status, messages }
-
-          logger.trace({ status }, 'status')
-
-          return status
+          return { ...status, messages }
         }),
         rx.catchError((err) => {
           logger.error({ err }, 'monitor.status')
