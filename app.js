@@ -584,10 +584,9 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.http) {
-    const http = require('http')
     // const undici = require('undici')
     const compose = require('koa-compose')
-    const { request } = require('./http')
+    const { createServer } = require('./http')
     const createError = require('http-errors')
 
     const httpConfig = { ...appConfig.http, ...config.http }
@@ -601,9 +600,8 @@ module.exports = function (appConfig, onTerminate) {
       : null
 
     if (port != null) {
-      const requestHandler = compose(
+      const middleware = compose(
         [
-          request,
           async ({ req, res }, next) => {
             if (req.url.startsWith('/healthcheck')) {
               // if (ds._url || ds.url) {
@@ -655,11 +653,10 @@ module.exports = function (appConfig, onTerminate) {
           .filter(Boolean)
       )
 
-      server = http.createServer(
+      server = createServer(
         typeof appConfig.http === 'object' ? appConfig.http : {},
-        async (req, res) => {
-          requestHandler({ req, res, ds, couch, config: httpConfig, logger })
-        }
+        { ds, couch, config: httpConfig, logger },
+        middleware
       )
 
       if (httpConfig.keepAlive != null) {
