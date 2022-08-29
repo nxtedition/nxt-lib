@@ -2,10 +2,11 @@ const qs = require('qs')
 const cached = require('./util/cached')
 
 function provide(ds, domain, callback, options) {
+  let domainExpr
   if (domain instanceof RegExp) {
-    domain = domain.source
+    domainExpr = domain.source
   } else {
-    domain = domain.replace('.', '\\.')
+    domainExpr = domain.replace('.', '\\.')
   }
 
   if (!options || typeof options !== 'object') {
@@ -32,19 +33,20 @@ function provide(ds, domain, callback, options) {
 
   let idExpr = '(?:([^{}]+|{.*}):)?'
   if (options.id === true) {
-    idExpr = '([^{}]+):'
+    idExpr = '(?:[^{}]+):'
   } else if (options.id === false) {
     idExpr = '(?:({.*}):)?'
   }
 
+  const queryExpr = options.strict ? '\\?' : '(?:\\?.*)?$'
+
   return ds.record.provide(
-    `^${idExpr}(${domain})(?:\\?.*)?$`,
+    `^${idExpr}(?:${domainExpr})${queryExpr}`,
     (key) => {
       const [id, options] = parseKey(key)
       return callback(id, options, key)
     },
-    options.recursive,
-    options.schema
+    options.recursive
   )
 }
 
