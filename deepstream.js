@@ -62,27 +62,29 @@ function parseKey(key) {
 }
 
 function observe(ds, name, ...args) {
-  let options = null
+  let query = null
 
-  if (args[0] && typeof args[0] === 'object') {
-    options = JSON.parse(JSON.stringify(args.shift()))
+  if (args[0] == null || typeof args[0] === 'object') {
+    query = args.shift()
+    query = query ? JSON.parse(JSON.stringify(query)) : null
   }
 
   return ds.record.observe(
-    `${name}${options && Object.keys(options).length > 0 ? `?${qs.stringify(options)}` : ''}`,
+    `${name}${query && Object.keys(query).length > 0 ? `?${qs.stringify(query)}` : ''}`,
     ...args
   )
 }
 
 function observe2(ds, name, ...args) {
-  let options = null
+  let query = null
 
-  if (args[0] && typeof args[0] === 'object') {
-    options = JSON.parse(JSON.stringify(args.shift()))
+  if (args[0] == null || typeof args[0] === 'object') {
+    query = args.shift()
+    query = query ? JSON.parse(JSON.stringify(query)) : null
   }
 
   return ds.record.observe2(
-    `${name}${options && Object.keys(options).length > 0 ? `?${qs.stringify(options)}` : ''}`,
+    `${name}${query && Object.keys(query).length > 0 ? `?${qs.stringify(query)}` : ''}`,
     ...args
   )
 }
