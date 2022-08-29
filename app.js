@@ -322,27 +322,26 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     status$ = rxjs
-      .combineLatest(
-        [
-          status$.pipe(
-            rx.filter(Boolean),
-            rx.catchError((err) => {
-              logger.error({ err }, 'monitor.status')
-              return rxjs.of([
-                {
-                  id: 'app:user_monitor_status',
-                  level: 50,
-                  code: err.code,
-                  msg: err.message,
-                },
-              ])
-            }),
-            rx.startWith([]),
-            rx.distinctUntilChanged(fp.isEqual),
-            rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
-          ),
-          toobusy ?
-            rxjs.timer(0, 1e3).pipe(
+      .combineLatest([
+        status$.pipe(
+          rx.filter(Boolean),
+          rx.catchError((err) => {
+            logger.error({ err }, 'monitor.status')
+            return rxjs.of([
+              {
+                id: 'app:user_monitor_status',
+                level: 50,
+                code: err.code,
+                msg: err.message,
+              },
+            ])
+          }),
+          rx.startWith([]),
+          rx.distinctUntilChanged(fp.isEqual),
+          rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
+        ),
+        toobusy
+          ? rxjs.timer(0, 1e3).pipe(
               rx.map(() =>
                 toobusy.lag() > 1e3
                   ? [
@@ -357,9 +356,10 @@ module.exports = function (appConfig, onTerminate) {
               ),
               rx.startWith([]),
               rx.distinctUntilChanged(fp.isEqual)
-            ) : rxjs.of({}),
-          couch ?
-            rxjs.timer(0, 10e3).pipe(
+            )
+          : rxjs.of({}),
+        couch
+          ? rxjs.timer(0, 10e3).pipe(
               rx.exhaustMap(async () => {
                 try {
                   await couch.info()
@@ -376,9 +376,10 @@ module.exports = function (appConfig, onTerminate) {
               }),
               rx.startWith([]),
               rx.distinctUntilChanged(fp.isEqual)
-            ) : rxjs.of({}),
-          ds ?
-            new rxjs.Observable((o) => {
+            )
+          : rxjs.of({}),
+        ds
+          ? new rxjs.Observable((o) => {
               const client = new undici.Client(`http://${new URL(ds._url || ds.url).host}`, {
                 keepAliveTimeout: 30e3,
               })
@@ -414,10 +415,10 @@ module.exports = function (appConfig, onTerminate) {
                 client.destroy()
                 subscription.unsubscribe()
               }
-            }).pipe(rx.startWith([]), rx.distinctUntilChanged(fp.isEqual))  : rxjs.of({}),
-          rxjs.timer(0, 10e3),
-        ]
-      )
+            }).pipe(rx.startWith([]), rx.distinctUntilChanged(fp.isEqual))
+          : rxjs.of({}),
+        rxjs.timer(0, 10e3),
+      ])
       .pipe(
         rx.auditTime(1e3),
         rx.map(([status, lag, couch, ds]) => {
@@ -463,6 +464,7 @@ module.exports = function (appConfig, onTerminate) {
         }),
         rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
         rx.startWith({}),
+        rx.distinctUntilChanged(fp.isEqual),
         rx.publishReplay(1),
         rx.refCount()
       )
