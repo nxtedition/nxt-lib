@@ -64,7 +64,7 @@ function parseKey(key) {
 function observe(ds, name, ...args) {
   let query = null
 
-  if (args[0] == null || typeof args[0] === 'object') {
+  if (args.length && (args[0] == null || typeof args[0] === 'object')) {
     query = args.shift()
     query = query ? JSON.parse(JSON.stringify(query)) : null
   }
@@ -78,7 +78,7 @@ function observe(ds, name, ...args) {
 function observe2(ds, name, ...args) {
   let query = null
 
-  if (args[0] == null || typeof args[0] === 'object') {
+  if (args.length && (args[0] == null || typeof args[0] === 'object')) {
     query = args.shift()
     query = query ? JSON.parse(JSON.stringify(query)) : null
   }
