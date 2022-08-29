@@ -341,7 +341,7 @@ module.exports = function (appConfig, onTerminate) {
             rx.distinctUntilChanged(fp.isEqual),
             rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
           ),
-          toobusy &&
+          toobusy ?
             rxjs.timer(0, 1e3).pipe(
               rx.map(() =>
                 toobusy.lag() > 1e3
@@ -357,8 +357,8 @@ module.exports = function (appConfig, onTerminate) {
               ),
               rx.startWith([]),
               rx.distinctUntilChanged(fp.isEqual)
-            ),
-          couch &&
+            ) : rxjs.of({}),
+          couch ?
             rxjs.timer(0, 10e3).pipe(
               rx.exhaustMap(async () => {
                 try {
@@ -376,8 +376,8 @@ module.exports = function (appConfig, onTerminate) {
               }),
               rx.startWith([]),
               rx.distinctUntilChanged(fp.isEqual)
-            ),
-          ds &&
+            ) : rxjs.of({}),
+          ds ?
             new rxjs.Observable((o) => {
               const client = new undici.Client(`http://${new URL(ds._url || ds.url).host}`, {
                 keepAliveTimeout: 30e3,
@@ -414,8 +414,9 @@ module.exports = function (appConfig, onTerminate) {
                 client.destroy()
                 subscription.unsubscribe()
               }
-            }).pipe(rx.startWith([]), rx.distinctUntilChanged(fp.isEqual)),
-        ].filter(Boolean)
+            }).pipe(rx.startWith([]), rx.distinctUntilChanged(fp.isEqual))  : rxjs.of({}),
+          rxjs.timer(0, 10e3),
+        ]
       )
       .pipe(
         rx.auditTime(1e3),
@@ -452,7 +453,7 @@ module.exports = function (appConfig, onTerminate) {
                   }
             )
 
-          return { ...status, messages }
+          return { ...status, messages, timestamp: Date.now() }
         }),
         rx.catchError((err) => {
           logger.error({ err }, 'monitor.status')
