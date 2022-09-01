@@ -372,8 +372,6 @@ module.exports = ({ ds } = {}) => {
       {
         fromEntries: () => fp.fromPairs,
         fromPairs: () => fp.fromPairs,
-        set: (path) => fp.set(path),
-        merge: (value) => fp.merge(value),
         mergeAll: () => fp.mergeAll,
         map: (path) => (value) =>
           fp.isArray(path) ? fp.map(fp.pick(path), value) : fp.map(fp.get(path), value),
@@ -427,6 +425,15 @@ module.exports = ({ ds } = {}) => {
           (...args) =>
           (value) =>
             fp.pull(args[0], value),
+      }
+    ),
+    // object
+    ...asFilter(
+      (value) => (fp.isPlainObject(value) ? value : {}),
+      (value) => fp.isPlainObject(value),
+      {
+        merge: (value) => fp.merge(value),
+        set: (path, value) => fp.set(path, value),
       }
     ),
     // collection
