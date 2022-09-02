@@ -70,8 +70,8 @@ module.exports = function ({
   setInterval(flushTraces, 30e3).unref()
 
   function trace(obj, op) {
-    if (obj.worker) {
-      throw new Error('invalid property `worker`')
+    if (obj.serviceName) {
+      throw new Error('invalid property `serviceName`')
     }
     if (obj.op) {
       throw new Error('invalid property `op`')
@@ -82,12 +82,12 @@ module.exports = function ({
     }
 
     if (!prefix) {
-      prefix = `{ "create": { "_index": "${index}" } }\n{ "@timestamp": "${new Date().toISOString()}", "worker": "${serviceName}", "op": "`
+      prefix = `{ "create": { "_index": "trace-${index}" } }\n{ "serviceName": "${serviceName}", "op": "`
     }
 
     const doc = (typeof obj === 'string' ? obj : stringify(obj)).slice(1, -1)
 
-    traceData += prefix + `${op}", ${doc} }\n`
+    traceData += prefix + `${op}", "@timestamp": ${Date.now()}, ${doc} }\n`
     if (traceData.length > BATCH) {
       flushTraces()
     }
