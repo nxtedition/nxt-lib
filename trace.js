@@ -24,11 +24,6 @@ module.exports = function ({
 
   destroyers?.push(() => client.close())
 
-  let prefix = ''
-  function clearPrefix() {
-    prefix = ''
-  }
-
   let traceData = ''
   async function flushTraces() {
     if (!traceData) {
@@ -66,8 +61,9 @@ module.exports = function ({
     }
   }
 
-  setInterval(clearPrefix, 1e3).unref()
-  setInterval(flushTraces, 30e3).unref()
+  setInterval(flushTraces, 10e3).unref()
+
+  const prefix = `{ "create": { "_index": "trace-${index}" } }\n{ "serviceName": "${serviceName}", "op": "`
 
   function trace(obj, op) {
     if (obj.serviceName) {
@@ -79,10 +75,6 @@ module.exports = function ({
 
     if (obj['@timestamp']) {
       throw new Error('invalid property `@timestamp`')
-    }
-
-    if (!prefix) {
-      prefix = `{ "create": { "_index": "trace-${index}" } }\n{ "serviceName": "${serviceName}", "op": "`
     }
 
     const doc = (typeof obj === 'string' ? obj : stringify(obj)).slice(1, -1)
