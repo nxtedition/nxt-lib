@@ -37,7 +37,15 @@ module.exports = ({ ds } = {}) => {
       json: (indent) => (value) => JSON.stringify(value, null, indent),
       isEmpty: () => (value) => fp.isEmpty(value),
       json5: () => (value) => JSON5.stringify(value),
-      string: () => (value) => String(value),
+      string: () => (value) => {
+        if (moment.isMoment(value) || moment.isDate(value)) {
+          return value.toISOString()
+        }
+        if (typeof value?.toString() === 'function') {
+          return value.toString()
+        }
+        return String(value)
+      },
       number: () => (value) => Number(value),
       date: (tz) => (value) => tz ? moment.tz(value, tz) : moment(value),
       array: () => (value) => [value],
