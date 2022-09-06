@@ -46,7 +46,12 @@ module.exports = ({ ds } = {}) => {
         }
         return String(value)
       },
-      number: () => (value) => Number(value),
+      number: () => (value) => {
+        if (moment.isMoment(value) || moment.isDate(value)) {
+          return value.valueOf()
+        }
+        return Number(value)
+      },
       date: (tz) => (value) => tz ? moment.tz(value, tz) : moment(value),
       array: () => (value) => [value],
       value: (value) => () => value,
