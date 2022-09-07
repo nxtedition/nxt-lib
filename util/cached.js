@@ -1,13 +1,10 @@
 const { Observable, ReplaySubject, Subject } = require('rxjs')
 
-const STATS = {}
-
 const registry = new FinalizationRegistry((interval) => {
   clearInterval(interval)
 })
 
 module.exports = function cached(fn, options, keySelector) {
-  const name = fn.name
   const cache = new Map()
   const array = []
 
@@ -79,20 +76,9 @@ module.exports = function cached(fn, options, keySelector) {
       }
       entry.refs += 1
 
-      if (name) {
-        STATS[name] = (STATS[name] || 0) + 1
-      }
-
       const subscription = entry.observable.subscribe(o)
 
       return () => {
-        if (name) {
-          STATS[name] = (STATS[name] || 0) - 1
-          if (!STATS[name]) {
-            delete STATS[name]
-          }
-        }
-
         entry.refs -= 1
         if (entry.refs === 0) {
           if (!maxAge || entry.observable.hasError) {
@@ -116,5 +102,3 @@ module.exports = function cached(fn, options, keySelector) {
 
   return cached
 }
-
-module.exports.STATS = STATS
