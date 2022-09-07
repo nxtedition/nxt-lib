@@ -2,6 +2,10 @@ const { Observable, ReplaySubject, Subject } = require('rxjs')
 
 const STATS = {}
 
+const registry = new FinalizationRegistry((interval) => {
+  clearInterval(interval)
+})
+
 module.exports = function cached(fn, options, keySelector) {
   const name = fn.name
   const cache = new Map()
@@ -48,11 +52,7 @@ module.exports = function cached(fn, options, keySelector) {
     array.splice(0, idx)
   }
 
-  if (maxAge) {
-    setInterval(prune, maxAge)
-  }
-
-  return function (...args) {
+  const cached = function (...args) {
     const key = keySelector(...args)
 
     return new Observable((o) => {
@@ -108,6 +108,13 @@ module.exports = function cached(fn, options, keySelector) {
       }
     })
   }
+
+  if (maxAge) {
+    const interval = setInterval(prune, maxAge).unref()
+    registry.register(cached, interval)
+  }
+
+  return cached
 }
 
 module.exports.STATS = STATS
