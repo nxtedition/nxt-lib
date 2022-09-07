@@ -1,17 +1,17 @@
 const { Observable, ReplaySubject, Subject } = require('rxjs')
 
-const registry = new FinalizationRegistry((interval) => {
+const registry = new FinalizationRegistry(({ interval, array }) => {
   clearInterval(interval)
+  for (const entry of array) {
+    entry?.subscription?.unsubscribe()
+  }
 })
 
 module.exports = function cached(fn, options, keySelector) {
-  const cache = new Map()
-  const array = []
-
   if (Number.isFinite(options)) {
     options = { maxAge: options }
   } else if (options == null) {
-    options = { maxAge: 1000 }
+    options = { maxAge: 1e3 }
   }
 
   if (!keySelector) {
@@ -22,83 +22,88 @@ module.exports = function cached(fn, options, keySelector) {
 
   if (maxAge === undefined) {
     // NOTE: backwards compat
-    maxAge = options.minAge !== undefined ? options.minAge : 1000
+    maxAge = options.minAge !== undefined ? options.minAge : 1e3
+  } else if (maxAge === null) {
+    maxAge = 0
   }
 
-  const buffer = options.buffer ? options.buffer : 1
+  if (!Number.isFinite(maxAge) || maxAge < 0) {
+    throw new Error('invalid maxAge')
+  }
 
-  function prune() {
-    const end = array.length
-    const now = Date.now()
+  const bufferSize = options.buffer ? options.buffer : 1
+  const cache = new Map()
+  const array = []
 
-    let idx = 0
+  let fastNow = Date.now()
+  let interval
 
-    while (idx < end) {
-      const age = now - array[idx].timestamp
-      if (age < maxAge) {
-        break
+  if (maxAge) {
+    interval = setInterval(() => {
+      fastNow = Date.now()
+
+      const end = Math.max(1024, array.length / 100)
+
+      let idx
+      for (idx = 0; idx < end; ++idx) {
+        const entry = array[idx]
+
+        if (!entry || entry.refs > 0) {
+          continue
+        }
+
+        const age = fastNow - entry.timestamp
+        if (age < maxAge) {
+          break
+        }
+
+        entry.subscription.unsubscribe()
       }
 
-      const { key, subscription } = array[idx]
-      subscription.unsubscribe()
-      cache.delete(key)
-
-      idx += 1
-    }
-
-    array.splice(0, idx)
+      array.splice(0, idx)
+    }, 1e3).unref()
   }
 
-  const cached = function (...args) {
+  const getter = function (...args) {
     const key = keySelector(...args)
 
     return new Observable((o) => {
       let entry = cache.get(key)
 
       if (!entry) {
-        const observable = buffer ? new ReplaySubject(buffer) : Subject()
+        const observable = bufferSize ? new ReplaySubject(bufferSize) : Subject()
+
         entry = {
-          key,
           observable,
           subscription: fn(...args).subscribe(observable),
           refs: 0,
           timestamp: null,
         }
 
+        entry.subscription.add(() => cache.delete(key))
+
         cache.set(key, entry)
-      } else if (maxAge) {
-        if (entry.refs === 0) {
-          const idx = array.indexOf(entry)
-          if (idx !== -1) {
-            array.splice(idx, 1)
-          }
-        }
       }
+
       entry.refs += 1
-
       const subscription = entry.observable.subscribe(o)
-
       return () => {
         entry.refs -= 1
+        subscription.unsubscribe()
+
         if (entry.refs === 0) {
-          if (!maxAge || entry.observable.hasError) {
-            const { key, subscription } = entry
-            subscription.unsubscribe()
-            cache.delete(key)
-          } else {
-            entry.timestamp = Date.now()
+          if (maxAge) {
+            entry.timestamp = fastNow
             array.push(entry)
+          } else {
+            entry.subscription.unsubscribe()
           }
         }
-        subscription.unsubscribe()
       }
     })
   }
 
-  if (maxAge) {
-    const interval = setInterval(prune, maxAge).unref()
-    registry.register(cached, interval)
-  }
+  registry.register(getter, { interval, array })
 
-  return cached
+  return getter
 }
