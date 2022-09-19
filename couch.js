@@ -230,11 +230,12 @@ module.exports = function (opts) {
         idempotent: true,
         blocking: true,
         method,
-        body,
+        body: JSON.stringify(body),
         signal: ac.signal,
         headers: {
           'user-agent': userAgent,
           'request-id': genReqId(),
+          ...(body ? { 'content-type': 'application/json' } : {}),
         },
         highWaterMark: 128 * 1024, // TODO (fix): Needs support in undici...
         bodyTimeout: 2 * (params.heartbeat || 60e3),
@@ -297,11 +298,12 @@ module.exports = function (opts) {
             idempotent: true,
             blocking: live,
             method,
-            body,
+            body: JSON.stringify(body),
             signal: ac.signal,
             headers: {
               'user-agent': userAgent,
               'request-id': genReqId(),
+              ...(body ? { 'content-type': 'application/json' } : {}),
             },
           }
           const res = await client.request(req)
