@@ -136,6 +136,7 @@ module.exports = function (opts) {
 
     let body
     let method = 'GET'
+    let selector
 
     if (options.conflicts) {
       params.conflicts = true
@@ -181,7 +182,13 @@ module.exports = function (opts) {
 
     if (typeof options.doc_ids !== 'undefined') {
       method = 'POST'
-      body = { doc_ids: options.doc_ids }
+      body = { ...body, doc_ids: options.doc_ids }
+    }
+
+    if (typeof options.selector !== 'undefined') {
+      method = 'POST'
+      body = { ...body, selector: options.selector }
+      params._filter = selector
     }
 
     if (dbPathname === '/') {
