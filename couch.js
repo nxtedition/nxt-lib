@@ -136,7 +136,6 @@ module.exports = function (opts) {
 
     let body
     let method = 'GET'
-    let selector
 
     if (options.conflicts) {
       params.conflicts = true
@@ -188,7 +187,7 @@ module.exports = function (opts) {
     if (typeof options.selector !== 'undefined') {
       method = 'POST'
       body = { ...body, selector: options.selector }
-      params._filter = selector
+      params.filter = '_selector'
     }
 
     if (dbPathname === '/') {
