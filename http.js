@@ -42,8 +42,12 @@ module.exports.request = async function request(ctx, next) {
   res.setHeader('request-id', req.id)
 
   let reqLogger = ctx.logger
+  const log =
+    ctx.url?.pathname === '/healthcheck'
+      ? reqLogger.trace.bind(reqLogger)
+      : reqLogger.debug.bind(reqLogger)
   try {
-    reqLogger.debug('request started')
+    log('request started')
 
     if (!ctx.url) {
       throw new createError.BadRequest()
@@ -98,7 +102,7 @@ module.exports.request = async function request(ctx, next) {
     } else if (res.statusCode >= 400) {
       reqLogger.warn({ responseTime }, 'request failed')
     } else {
-      reqLogger.debug({ responseTime }, 'request completed')
+      log({ responseTime }, 'request completed')
     }
   } catch (err) {
     const statusCode = res.headersSent ? res.statusCode : err.statusCode || 500
