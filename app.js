@@ -158,11 +158,14 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.couchdb || appConfig.couch) {
     const couchConfig = {
       userAgent,
-      ...(appConfig.couchdb || appConfig.couch),
+      ...(appConfig.couchdb ?? appConfig.couch),
       ...(config.couchdb ?? config.couch),
     }
-    couch = require('./couch')(couchConfig)
-    destroyers.push(() => couch.close())
+    if (couchConfig.url) {
+      const makeCouch = require('./couch')
+      couch = makeCouch(couchConfig)
+      destroyers.push(() => couch.close())
+    }
   }
 
   if (appConfig.deepstream) {
@@ -582,8 +585,11 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.trace) {
-    const makeTrace = require('./trace')
-    trace = makeTrace({ ...appConfig.trace, ...config.trace, destroyers, logger, serviceName })
+    const traceConfig = { ...appConfig.trace, ...config.trace }
+    if (traceConfig.url) {
+      const makeTrace = require('./trace')
+      trace = makeTrace({ ...traceConfig, destroyers, logger, serviceName })
+    }
   }
 
   if (appConfig.http) {
