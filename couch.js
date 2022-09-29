@@ -252,29 +252,61 @@ module.exports = function (opts) {
 
       retryCount = 0
 
+      const src = res.body
+
+      let resume
+      let error
       let str = ''
-      for await (const chunk of res.body) {
-        str += chunk
 
-        const lines = str.split('\n') // TODO (perf): Avoid extra array allocation.
-        str = lines.pop()
+      src
+        .on('readable', () => {
+          resume?.()
+          resume = null
+        })
+        .on('error', (err) => {
+          error = err
 
-        const results = batched ? [] : null
-        for (const line of lines) {
-          if (line) {
-            const change = JSON.parse(line)
-            params.since = change.seq
-            if (results) {
-              results.push(change)
-            } else {
-              yield change
+          resume?.()
+          resume = null
+        })
+
+      try {
+        while (true) {
+          const chunk = src.read()
+          if (chunk !== null) {
+            str += chunk
+          } else if (error) {
+            throw error
+          } else {
+            const promise = new Promise((resolve) => {
+              resume = resolve
+            })
+
+            const lines = str.split('\n')
+            str = lines.pop()
+
+            const results = batched ? [] : null
+            for (const line of lines) {
+              if (line) {
+                const change = JSON.parse(line)
+                params.since = change.seq
+                if (results) {
+                  results.push(change)
+                } else {
+                  yield change
+                }
+              }
             }
+
+            if (results?.length) {
+              yield results
+            }
+
+            await promise
           }
         }
-
-        if (results && results.length) {
-          yield results
-        }
+      } finally {
+        src.destroy()
       }
     }
 
