@@ -236,7 +236,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
   ctx.logger = req.log = logger.child({ req: { id: req.id, method: req.method, url: req.url } })
   ctx.signal = signal
   ctx.url = requestTarget(req)
-  ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : null
+  ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : {}
 
   let aborted = false
   const reqLogger = logger.child({ req })
