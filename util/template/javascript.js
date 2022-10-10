@@ -1,7 +1,6 @@
 const NestedError = require('nested-error-stacks')
 const weakCache = require('../../weakCache')
 const rxjs = require('rxjs')
-const rx = require('rxjs/operators')
 const _ = require('lodash')
 const fp = require('lodash/fp')
 const moment = require('lodash')
@@ -28,6 +27,8 @@ const overrides = [
 
 const globals = { _, fp, moment }
 
+const kEmpty = Symbol('kEmpty')
+
 module.exports = ({ ds } = {}) => {
   return weakCache((expression) => {
     try {
@@ -42,76 +43,75 @@ module.exports = ({ ds } = {}) => {
 
       return (context) => {
         return new rxjs.Observable((o) => {
-          const activeRecords = new Map()
-          const unusedRecordIds = new Set()
+          const records = new Map()
 
-          const getRecord = (recordId) => {
-            unusedRecordIds.delete(recordId)
+          let dirty = false
 
-            let entry = activeRecords.get(recordId)
-            if (entry) {
-              return entry.value
+          const refresh = () => {
+            if (!dirty) {
+              dirty = true
+              setImmediate(callScript)
             }
-
-            entry = { value: undefined }
-            entry.subscription = ds.record
-              .observe(recordId)
-              .pipe(rx.distinctUntilChanged(fp.isEqual))
-              .subscribe((x) => {
-                entry.value = x
-                callScript()
-              })
-
-            activeRecords.set(recordId, entry)
-            return entry.value
           }
 
-          let done = false
+          const getRecord = (recordId, path, state = ds.record.SERVER) => {
+            let entry = records.get(recordId)
+            if (!entry) {
+              entry = { isUsed: false, record: ds.record.getRecord(recordId) }
+              entry.record.on('update', refresh)
+              records.set(recordId, entry)
+            }
+            entry.isUsed = true
 
-          const callScript = _.debounce(() => {
-            if (done) {
-              return
+            if (typeof state === 'string') {
+              // TODO (fix): Convert to state
             }
 
-            for (const recordId of activeRecords.keys()) {
-              unusedRecordIds.add(recordId)
+            if (entry.record.state < state) {
+              throw kEmpty
             }
 
-            let result
-            let error
+            return entry.record.get(path)
+          }
+
+          const callScript = () => {
+            dirty = false
+
+            for (const entry of records.values()) {
+              entry.isUsed = false
+            }
+
             try {
-              result = script(
+              // TODO (fix): https://nodejs.org/api/vm.html
+              const result = script(
                 ...new Array(overrides.length),
                 ...Object.values(globals),
                 context,
                 getRecord
               )
-            } catch (err) {
-              error = err
-            }
-
-            if (error) {
-              o.error(error)
-            } else {
               o.next(result)
+            } catch (err) {
+              if (err !== kEmpty) {
+                o.error(err)
+              }
             }
 
-            for (const recordId of unusedRecordIds.values()) {
-              const { subscription } = activeRecords.get(recordId)
-              subscription.unsubscribe()
-              activeRecords.delete(recordId)
+            for (const [recordId, entry] of records.entries()) {
+              if (!entry.isUsed) {
+                entry.record.unref()
+                entry.record.off('update', refresh)
+                records.delete(recordId)
+              }
             }
-            unusedRecordIds.clear()
-          }, 100)
+          }
 
           callScript()
 
           return () => {
-            done = true
-            for (const { subscription } of activeRecords.values()) {
-              subscription.unsubscribe()
+            for (const entry of records.values()) {
+              entry.record.unref()
+              entry.record.off('update', refresh)
             }
-            activeRecords.clear()
           }
         })
       }
