@@ -23,7 +23,14 @@ const globals = {
   moment: require('moment'),
 }
 
-const kEmpty = Symbol('kEmpty')
+const kWait = Symbol('kWait')
+const kNull = Symbol('kNull')
+
+const hashaint = (value, _options = {}) => {
+  const str = JSON.stringify(value)
+  const hash = hasha(str, _options)
+  return parseInt(hash.slice(-13), 16)
+}
 
 module.exports = ({ ds } = {}) => {
   return weakCache((expression) => {
@@ -59,27 +66,27 @@ module.exports = ({ ds } = {}) => {
 
             if (state == null) {
               state =
-                recordId.startsWith('{') || recordId.endsWith('?')
+                recordId.startsWith('{') || recordId.includes('?')
                   ? ds.record.PROVIDER
                   : ds.record.SERVER
             }
 
             if (entry.record.state < state) {
-              throw kEmpty
+              throw kWait
             }
 
             return entry.record.get(path)
           }
 
-          const hasAssetType = (id, type, _return = true) => {
+          const hasAssetType = (id, type, throws = true) => {
             const types = getRecord(id + ':asset.rawTypes?', 'value')
-            return types.includes(type)
-          }
-
-          const hashaint = (value, _options = {}) => {
-            const str = JSON.stringify(value)
-            const hash = hasha(str, _options)
-            return parseInt(hash.slice(-13), 16)
+            if (types.includes(type)) {
+              return id
+            }
+            if (throws) {
+              throw kNull
+            }
+            return null
           }
 
           const context = vm.createContext({
@@ -103,7 +110,9 @@ module.exports = ({ ds } = {}) => {
             try {
               o.next(script.runInContext(context))
             } catch (err) {
-              if (err !== kEmpty) {
+              if (err === kNull) {
+                o.next(null)
+              } else if (err !== kWait) {
                 o.error(err)
               }
             }
