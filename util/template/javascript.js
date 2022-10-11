@@ -1,47 +1,37 @@
 const NestedError = require('nested-error-stacks')
 const weakCache = require('../../weakCache')
 const rxjs = require('rxjs')
-const _ = require('lodash')
-const fp = require('lodash/fp')
-const moment = require('lodash')
+const hasha = require('hasha')
+const vm = require('node:vm')
+const babel = require('@babel/core')
 
-const overrides = [
-  '__dirname',
-  '__filename',
-  'clearImmediate',
-  'clearInterval',
-  'clearTimeout',
-  'console',
-  'exports',
-  'fetch',
-  'global',
-  'module',
-  'process',
-  'queueMicrotask',
-  'require',
-  'setImmediate',
-  'setInterval',
-  'setTimeout',
-  'WebAssembly',
-]
+const babelOptions = {
+  plugins: [
+    [
+      '@babel/plugin-proposal-pipeline-operator',
+      {
+        proposal: 'hack',
+        topicToken: '#',
+      },
+    ],
+  ],
+}
 
-const globals = { _, fp, moment }
+const globals = {
+  _: require('lodash'),
+  fp: require('lodash/fp'),
+  moment: require('moment'),
+}
 
 const kEmpty = Symbol('kEmpty')
 
 module.exports = ({ ds } = {}) => {
   return weakCache((expression) => {
     try {
-      // eslint-disable-next-line no-new-func
-      const script = new Function(
-        ...overrides,
-        ...Object.keys(globals),
-        'ctx',
-        'ds',
-        `return ${expression.trim()}`
-      )
+      const transformed = babel.transformSync(`"use strict"; ${expression}`, babelOptions)
+      const script = new vm.Script(transformed.code)
 
-      return (context) => {
+      return (args) => {
         return new rxjs.Observable((o) => {
           const records = new Map()
 
@@ -64,7 +54,14 @@ module.exports = ({ ds } = {}) => {
             entry.isUsed = true
 
             if (typeof state === 'string') {
-              // TODO (fix): Convert to state
+              state = ds.CONSTANTS.RECORD_STATE[state.toUpperCase()]
+            }
+
+            if (state == null) {
+              state =
+                recordId.startsWith('{') || recordId.includes('?')
+                  ? ds.record.PROVIDER
+                  : ds.record.SERVER
             }
 
             if (entry.record.state < state) {
@@ -74,6 +71,28 @@ module.exports = ({ ds } = {}) => {
             return entry.record.get(path)
           }
 
+          const hasAssetType = (id, type, _return = true) => {
+            const types = getRecord(id + ':asset.rawTypes?', 'value')
+            return types.includes(type)
+          }
+
+          const hashaint = (value, _options = {}) => {
+            const str = JSON.stringify(value)
+            const hash = hasha(str, _options)
+            return parseInt(hash.slice(-13), 16)
+          }
+
+          const context = vm.createContext({
+            ...globals,
+            ...args,
+            nxt: {
+              ds: getRecord,
+              asset: hasAssetType,
+              hashaint,
+              // timer, // TODO
+            },
+          })
+
           const callScript = () => {
             dirty = false
 
@@ -82,14 +101,7 @@ module.exports = ({ ds } = {}) => {
             }
 
             try {
-              // TODO (fix): https://nodejs.org/api/vm.html
-              const result = script(
-                ...new Array(overrides.length),
-                ...Object.values(globals),
-                context,
-                getRecord
-              )
-              o.next(result)
+              o.next(script.runInContext(context))
             } catch (err) {
               if (err !== kEmpty) {
                 o.error(err)
