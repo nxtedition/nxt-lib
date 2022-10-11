@@ -149,42 +149,42 @@ module.exports = function (opts) {
       params.include_docs = true
     }
 
-    if (typeof options.since !== 'undefined') {
+    if (options.since != null) {
       params.since = options.since || 0
     }
 
-    if (typeof options.style !== 'undefined') {
+    if (options.style != null) {
       params.style = options.style
     }
 
-    if (typeof options.view !== 'undefined') {
+    if (options.view != null) {
       params.view = options.view
     }
 
-    if (typeof options.filter !== 'undefined') {
+    if (options.filter != null) {
       params.filter = options.filter
     }
 
-    if (typeof options.heartbeat !== 'undefined') {
+    if (options.heartbeat != null) {
       params.heartbeat = options.heartbeat
     } else {
       params.heartbeat = 10e3
     }
 
-    if (typeof options.timeout !== 'undefined') {
+    if (options.timeout != null) {
       params.timeout = options.timeout
     }
 
-    if (typeof options.limit !== 'undefined') {
+    if (options.limit != null) {
       params.limit = options.limit
     }
 
-    if (typeof options.doc_ids !== 'undefined') {
+    if (options.doc_ids != null) {
       method = 'POST'
       body = { ...body, doc_ids: options.doc_ids }
     }
 
-    if (typeof options.selector !== 'undefined') {
+    if (options.selector != null) {
       method = 'POST'
       body = { ...body, selector: options.selector }
       params.filter = '_selector'
