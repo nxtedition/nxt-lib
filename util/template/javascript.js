@@ -59,7 +59,7 @@ module.exports = ({ ds } = {}) => {
 
             if (state == null) {
               state =
-                recordId.startsWith('{') || recordId.includes('?')
+                recordId.startsWith('{') || recordId.endsWith('?')
                   ? ds.record.PROVIDER
                   : ds.record.SERVER
             }
