@@ -123,7 +123,7 @@ module.exports = ({ ds } = {}) => {
           }
 
           pipe.asset = (type) => (id) => hasAssetType(id, type, false)
-          pipe.ds = (domain) => (id) => getRecord(id + domain)
+          pipe.ds = (domain, path, state) => (id) => getRecord(id + domain, path, state)
 
           const context = vm.createContext({
             ...globals,
