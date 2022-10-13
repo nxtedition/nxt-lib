@@ -3,22 +3,8 @@ const weakCache = require('../../weakCache')
 const rxjs = require('rxjs')
 const hasha = require('hasha')
 const vm = require('node:vm')
-const babel = require('@babel/core')
-
-const babelOptions = {
-  plugins: [
-    [
-      '@babel/plugin-proposal-pipeline-operator',
-      {
-        proposal: 'hack',
-        topicToken: '#',
-      },
-    ],
-  ],
-}
 
 const globals = {
-  _: require('lodash'),
   fp: require('lodash/fp'),
   moment: require('moment'),
 }
@@ -35,12 +21,11 @@ const hashaint = (value, _options = {}) => {
 module.exports = ({ ds } = {}) => {
   return weakCache((expression) => {
     try {
-      const transformed = babel.transformSync(`"use strict"; ${expression}`, babelOptions)
-      const script = new vm.Script(transformed.code)
+      const script = new vm.Script(`"use strict"; ${expression}`)
 
       return (args) => {
         return new rxjs.Observable((o) => {
-          const records = new Map()
+          const entries = new Map()
 
           let dirty = false
 
@@ -52,11 +37,18 @@ module.exports = ({ ds } = {}) => {
           }
 
           const getRecord = (recordId, path, state = ds.record.SERVER) => {
-            let entry = records.get(recordId)
+            let entry = entries.get(recordId)
             if (!entry) {
-              entry = { isUsed: false, record: ds.record.getRecord(recordId) }
+              entry = {
+                isUsed: false,
+                record: ds.record.getRecord(recordId),
+                dispose () {
+                  this.record.unref()
+                  this.record.off('update', refresh)
+                },
+              }
               entry.record.on('update', refresh)
-              records.set(recordId, entry)
+              entries.set(recordId, entry)
             }
             entry.isUsed = true
 
@@ -89,21 +81,66 @@ module.exports = ({ ds } = {}) => {
             return null
           }
 
+          const getTimer = (dueTime, undueValue, dueValue) => {
+            dueTime = Number.isFinite(dueTime)
+              ? dueTime
+              : dueTime?.valueOf
+                ? dueTime.valueOf()
+                : 0
+            const nowTime = Date.now()
+
+            if (nowTime >= dueTime) {
+              return dueValue
+            }
+
+            const delay = dueTime - nowTime
+
+            let entry = entries.get(dueTime)
+            if (!entry) {
+              entry = {
+                isUsed: false,
+                timer: setTimeout(refresh, delay),
+                dispose () {
+                  clearTimeout(this.timer)
+                  this.timer = null
+                }
+              }
+              entries.set(dueTime, entry)
+            }
+            entry.isUsed = true
+
+            return undueValue
+          }
+
+          const pipe = (value, ...funcs) => {
+            for (const func of funcs) {
+              value = func(value)
+              if (value == null) {
+                break
+              }
+            }
+            return value
+          }
+
+          pipe.asset = (type) => (id) => hasAssetType(id, type, false)
+          pipe.ds = (domain) => (id) => getRecord(id + domain)
+
           const context = vm.createContext({
             ...globals,
-            ...args,
             nxt: {
+              ...args,
               ds: getRecord,
               asset: hasAssetType,
               hashaint,
-              // timer, // TODO
+              timer: getTimer,
+              pipe,
             },
           })
 
           const callScript = () => {
             dirty = false
 
-            for (const entry of records.values()) {
+            for (const entry of entries.values()) {
               entry.isUsed = false
             }
 
@@ -117,11 +154,10 @@ module.exports = ({ ds } = {}) => {
               }
             }
 
-            for (const [recordId, entry] of records.entries()) {
+            for (const [key, entry] of entries.entries()) {
               if (!entry.isUsed) {
-                entry.record.unref()
-                entry.record.off('update', refresh)
-                records.delete(recordId)
+                entry.dispose()
+                entries.delete(key)
               }
             }
           }
@@ -129,7 +165,7 @@ module.exports = ({ ds } = {}) => {
           callScript()
 
           return () => {
-            for (const entry of records.values()) {
+            for (const entry of entries.values()) {
               entry.record.unref()
               entry.record.off('update', refresh)
             }
