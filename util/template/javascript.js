@@ -13,6 +13,7 @@ const globals = {
 }
 
 const kWait = Symbol('kWait')
+const kEmpty = Symbol('kEmpty')
 const maxInt = 2147483647
 
 function makeTimerEntry(key, refresh, delay) {
@@ -85,8 +86,9 @@ module.exports = ({ ds } = {}) => {
           }),
         })
 
-        let refreshing = false
-        let counter = 0
+        let _refreshing = false
+        let _counter = 0
+        let _value = kEmpty
 
         refreshNT()
 
@@ -97,21 +99,28 @@ module.exports = ({ ds } = {}) => {
         }
 
         function refreshNT() {
-          refreshing = false
-          counter = (counter + 1) & maxInt
+          _refreshing = false
+          _counter = (_counter + 1) & maxInt
 
           try {
-            o.next(script.runInContext(context))
+            const value = script.runInContext(context)
+            if (value !== _value) {
+              _value = value
+              o.next(value)
+            }
           } catch (err) {
             if (err !== kWait) {
               o.error(
-                Object.assign(new Error('expression failed'), { cause: err, data: { expression, args } })
+                Object.assign(new Error('expression failed'), {
+                  cause: err,
+                  data: { expression, args },
+                })
               )
             }
           }
 
           for (const entry of entries.values()) {
-            if (entry.counter !== counter) {
+            if (entry._counter !== _counter) {
               entry.dispose()
               entries.delete(entry.key)
             }
@@ -119,8 +128,8 @@ module.exports = ({ ds } = {}) => {
         }
 
         function refresh() {
-          if (!refreshing) {
-            refreshing = true
+          if (!_refreshing) {
+            _refreshing = true
             queueMicrotask(refreshNT)
           }
         }
@@ -131,7 +140,7 @@ module.exports = ({ ds } = {}) => {
             entry = factory(key, refresh, opaque)
             entries.set(key, entry)
           } else {
-            entry.counter = counter
+            entry._counter = _counter
           }
           return entry
         }
