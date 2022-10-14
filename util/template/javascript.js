@@ -115,6 +115,8 @@ module.exports = ({ ds } = {}) => {
             if (value !== _value && value !== undefined) {
               _value = value
               o.next(value)
+            } else if (_entries.length === 0) {
+              o.next(undefined)
             }
           } catch (err) {
             if (err !== kSuspend) {
