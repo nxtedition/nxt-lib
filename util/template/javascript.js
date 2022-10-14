@@ -127,13 +127,14 @@ module.exports = ({ ds } = {}) => {
 
           const context = vm.createContext({
             ...globals,
+            $: args,
             nxt: {
               ...args,
               ds: getRecord,
               asset: hasAssetType,
               hashaint,
               timer: getTimer,
-              pipe,
+              _: pipe,
             },
           })
 
