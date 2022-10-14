@@ -19,6 +19,7 @@ const maxInt = 2147483647
 function makeTimerEntry(key, refresh, delay) {
   return {
     key,
+    counter: null,
     timer: setTimeout(refresh, delay),
     dispose: disposeTimerEntry,
   }
@@ -32,6 +33,7 @@ function disposeTimerEntry() {
 function makeRecordEntry(key, refresh, ds) {
   const entry = {
     key,
+    counter: null,
     refresh,
     record: ds.record.getRecord(key),
     dispose: disposeRecordEntry,
@@ -120,7 +122,7 @@ module.exports = ({ ds } = {}) => {
           }
 
           for (const entry of _entries.values()) {
-            if (entry._counter !== _counter) {
+            if (entry.counter !== _counter) {
               entry.dispose()
               _entries.delete(entry.key)
             }
@@ -139,9 +141,8 @@ module.exports = ({ ds } = {}) => {
           if (!entry) {
             entry = factory(key, refresh, opaque)
             _entries.set(key, entry)
-          } else {
-            entry._counter = _counter
           }
+          entry.counter = _counter
           return entry
         }
 
