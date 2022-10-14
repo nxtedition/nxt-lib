@@ -57,7 +57,7 @@ module.exports = ({ ds } = {}) => {
             }
           }
 
-          const getRecord = (key, path, state = ds.record.SERVER) => {
+          const getRecord = (key, path, state) => {
             let entry = entries.get(key)
             if (!entry) {
               entry = {
@@ -139,23 +139,23 @@ module.exports = ({ ds } = {}) => {
               asset: hasAssetType,
               hash: objectHash,
               timer: getTimer,
-              _: Object.assign(
-                (value, ...fns) => {
-                  for (const fn of fns) {
-                    value = fn(value)
-                    if (value == null) {
-                      return undefined
-                    }
-                  }
-                  return value
-                },
-                {
-                  asset: (type) => (id) => hasAssetType(id, type),
-                  ds: (postfix, path, state) => (id) => getRecord(`${id}${postfix}`, path, state),
-                  timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
-                }
-              ),
             },
+            _: Object.assign(
+              (value, ...fns) => {
+                for (const fn of fns) {
+                  value = fn(value)
+                  if (value == null) {
+                    return undefined
+                  }
+                }
+                return value
+              },
+              {
+                asset: (type) => (id) => hasAssetType(id, type),
+                ds: (postfix, path, state) => (id) => getRecord(`${id}${postfix}`, path, state),
+                timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
+              }
+            ),
           })
 
           refreshNT()
