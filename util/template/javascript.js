@@ -149,11 +149,11 @@ module.exports = ({ ds } = {}) => {
             throw kWait
           }
 
-          return entry.record.get(path)
+          return path ? entry.record.get(path) : entry.record.data
         }
 
         function hasAssetType(id, type) {
-          const types = getRecord(id + ':asset.rawTypes?', 'value')
+          const { value: types } = getRecord(id + ':asset.rawTypes?')
           return types.includes(type) ? id : null
         }
 
