@@ -104,7 +104,9 @@ module.exports = ({ ds } = {}) => {
             o.next(script.runInContext(context))
           } catch (err) {
             if (err !== kWait) {
-              o.error(err)
+              o.error(
+                Object.assign(new Error('expression failed'), { cause: err, data: { expression, args } })
+              )
             }
           }
 
