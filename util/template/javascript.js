@@ -12,7 +12,7 @@ const globals = {
   JSON5,
 }
 
-const kWait = Symbol('kWait')
+const kSuspend = Symbol('kSuspend')
 const kEmpty = Symbol('kEmpty')
 const maxInt = 2147483647
 
@@ -51,7 +51,7 @@ function disposeRecordEntry() {
 function pipe(value, ...fns) {
   for (const fn of fns) {
     value = fn(value)
-    if (value === kWait) {
+    if (value === kSuspend) {
       return undefined
     }
     if (value == null) {
@@ -79,6 +79,9 @@ module.exports = ({ ds } = {}) => {
           ...globals,
           $: args,
           nxt: {
+            suspend: () => {
+              throw kSuspend
+            },
             get: (id, state) => getRecord(id, state, true),
             asset: (id, type) => getHasRawAssetType(id, type, true),
             hash: objectHash,
@@ -109,12 +112,12 @@ module.exports = ({ ds } = {}) => {
 
           try {
             const value = script.runInContext(_context)
-            if (value !== _value && value !== kWait) {
+            if (value !== _value && value !== kSuspend) {
               _value = value
               o.next(value)
             }
           } catch (err) {
-            if (err !== kWait) {
+            if (err !== kSuspend) {
               o.error(
                 Object.assign(new Error('expression failed'), {
                   cause: err,
@@ -163,9 +166,9 @@ module.exports = ({ ds } = {}) => {
 
           if (entry.record.state < state) {
             if (throws) {
-              throw kWait
+              throw kSuspend
             } else {
-              return kWait
+              return kSuspend
             }
           }
 
@@ -174,7 +177,7 @@ module.exports = ({ ds } = {}) => {
 
         function getHasRawAssetType(id, type, throws) {
           const data = getRecord(id + ':asset.rawTypes?', ds.record.PROVIDER, throws)
-          return data === kWait ? kWait : data.value.includes(type) ? id : null
+          return data === kSuspend ? kSuspend : data.value.includes(type) ? id : null
         }
 
         function getTimer(dueTime, dueValue = dueTime, undueValue = null) {
