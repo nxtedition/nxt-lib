@@ -51,8 +51,8 @@ function disposeRecordEntry() {
 function pipe(value, ...fns) {
   for (const fn of fns) {
     value = fn(value)
-    if (value == null) {
-      return undefined
+    if (value == null || value === kWait) {
+      return value
     }
   }
   return value
@@ -76,14 +76,14 @@ module.exports = ({ ds } = {}) => {
           ...globals,
           $: args,
           nxt: {
-            get: getRecord,
-            asset: hasAssetType,
+            get: (id, state) => getRecord(id, state, true),
+            asset: (id, type) => getHasRawAssetType(id, type, true),
             hash: objectHash,
             timer: getTimer,
           },
           _: Object.assign((...args) => pipe(...args), {
-            asset: (type) => (id) => hasAssetType(id, type),
-            ds: (postfix, state) => (id) => getRecord(`${id}${postfix}`, state),
+            asset: (type) => (id) => getHasRawAssetType(id, type, false),
+            ds: (postfix, state) => (id) => getRecord(`${id}${postfix}`, state, false),
             timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
           }),
         })
@@ -106,7 +106,7 @@ module.exports = ({ ds } = {}) => {
 
           try {
             const value = script.runInContext(_context)
-            if (value !== _value) {
+            if (value !== _value && value !== kWait) {
               _value = value
               o.next(value)
             }
@@ -146,27 +146,32 @@ module.exports = ({ ds } = {}) => {
           return entry
         }
 
-        function getRecord(key, state) {
-          if (typeof state === 'string') {
-            state = ds.CONSTANTS.RECORD_STATE[state.toUpperCase()]
-          }
-
+        function getRecord(key, state, throws = true) {
           if (state == null) {
             state = key.startsWith('{') || key.includes('?') ? ds.record.PROVIDER : ds.record.SERVER
+          } else if (typeof state === 'string') {
+            state = ds.CONSTANTS.RECORD_STATE[state.toUpperCase()]
+            if (state == null) {
+              throw new Error(`invalid argument: state (${state})`)
+            }
           }
 
           const entry = getEntry(key, makeRecordEntry, ds)
 
           if (entry.record.state < state) {
-            throw kWait
+            if (throws) {
+              throw kWait
+            } else {
+              return kWait
+            }
           }
 
           return entry.record.data
         }
 
-        function hasAssetType(id, type) {
-          const { value: types } = getRecord(id + ':asset.rawTypes?')
-          return types.includes(type) ? id : null
+        function getHasRawAssetType(id, type, throws) {
+          const data = getRecord(id + ':asset.rawTypes?', ds.record.PROVIDER, throws)
+          return data === kWait ? kWait : data.value.includes(type) ? id : null
         }
 
         function getTimer(dueTime, dueValue = dueTime, undueValue = null) {
