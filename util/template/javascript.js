@@ -13,7 +13,6 @@ const globals = {
 }
 
 const kWait = Symbol('kWait')
-const maxInt = 2147483647
 
 module.exports = ({ ds } = {}) => {
   function makeTimerEntry(key, refresh, delay) {
@@ -66,9 +65,7 @@ module.exports = ({ ds } = {}) => {
 
     return (args) =>
       new rxjs.Observable((o) => {
-        // TODO (perf): This could be faster by using an array + indices.
-        // A bit similar to how react-hooks works.
-        const entries = new Map()
+        const entries = []
         const context = vm.createContext({
           ...globals,
           $: args,
@@ -86,19 +83,20 @@ module.exports = ({ ds } = {}) => {
         })
 
         let refreshing = false
-        let counter = 0
+        let index = 0
 
         refreshNT()
 
         return () => {
-          for (const entry of entries.values()) {
+          for (const entry of entries) {
             entry.dispose()
           }
+          entries.length = 0
         }
 
         function refreshNT() {
           refreshing = false
-          counter = (counter + 1) & maxInt
+          index = 0
 
           try {
             o.next(script.runInContext(context))
@@ -108,12 +106,10 @@ module.exports = ({ ds } = {}) => {
             }
           }
 
-          for (const entry of entries.values()) {
-            if (entry.counter !== counter) {
-              entry.dispose()
-              entries.delete(entry.key)
-            }
+          for (let n = index; n < entries.length; n++) {
+            entries[n].dispose()
           }
+          entries.length = index
         }
 
         function refresh() {
@@ -124,14 +120,14 @@ module.exports = ({ ds } = {}) => {
         }
 
         function getEntry(key, factory, opaque) {
-          let entry = entries.get(key)
-          if (!entry) {
-            entry = factory(key, refresh, opaque)
-            entries.set(key, entry)
-          } else {
-            entry.counter = counter
+          if (index === entries.length) {
+            entries.push(factory(key, refresh, opaque))
+          } else if (entries[index].key !== key) {
+            entries[index].dispose()
+            entries[index] = factory(key, refresh, opaque)
           }
-          return entry
+
+          return entries[index++]
         }
 
         function getRecord(key, path, state) {
