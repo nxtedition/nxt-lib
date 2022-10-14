@@ -112,7 +112,7 @@ module.exports = ({ ds } = {}) => {
 
           try {
             const value = script.runInContext(_context)
-            if (value !== _value && value !== kSuspend) {
+            if (value !== _value && value !== undefined) {
               _value = value
               o.next(value)
             }
