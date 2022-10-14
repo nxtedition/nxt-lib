@@ -1,4 +1,3 @@
-const NestedError = require('nested-error-stacks')
 const weakCache = require('../../weakCache')
 const rxjs = require('rxjs')
 const vm = require('node:vm')
@@ -58,128 +57,123 @@ module.exports = ({ ds } = {}) => {
   }
 
   return weakCache((expression) => {
+    let script
     try {
-      const script = new vm.Script(`"use strict"; ${expression}`)
+      script = new vm.Script(`"use strict"; ${expression}`)
+    } catch (err) {
+      throw new Error(`failed to parse expression ${expression}`, { cause: err })
+    }
 
-      return (args) => {
-        return new rxjs.Observable((o) => {
-          // TODO (perf): This could be faster by using an array + indices.
-          // A bit similar to how react-hooks works.
-          const entries = new Map()
-          const context = vm.createContext({
-            ...globals,
-            $: args,
-            nxt: {
-              get: getRecord,
-              asset: hasAssetType,
-              hash: objectHash,
-              timer: getTimer,
-            },
-            _: Object.assign(pipe, {
-              asset: (type) => (id) => hasAssetType(id, type),
-              ds: (postfix, path, state) => (id) => getRecord(`${id}${postfix}`, path, state),
-              timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
-            }),
-          })
+    return (args) =>
+      new rxjs.Observable((o) => {
+        // TODO (perf): This could be faster by using an array + indices.
+        // A bit similar to how react-hooks works.
+        const entries = new Map()
+        const context = vm.createContext({
+          ...globals,
+          $: args,
+          nxt: {
+            get: getRecord,
+            asset: hasAssetType,
+            hash: objectHash,
+            timer: getTimer,
+          },
+          _: Object.assign(pipe, {
+            asset: (type) => (id) => hasAssetType(id, type),
+            ds: (postfix, path, state) => (id) => getRecord(`${id}${postfix}`, path, state),
+            timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
+          }),
+        })
 
-          let refreshing = false
-          let counter = 0
+        let refreshing = false
+        let counter = 0
 
-          refreshNT()
+        refreshNT()
 
-          return () => {
-            for (const entry of entries.values()) {
+        return () => {
+          for (const entry of entries.values()) {
+            entry.dispose()
+          }
+        }
+
+        function refreshNT() {
+          refreshing = false
+          counter = (counter + 1) & maxInt
+
+          try {
+            o.next(script.runInContext(context))
+          } catch (err) {
+            if (err !== kWait) {
+              o.error(err)
+            }
+          }
+
+          for (const entry of entries.values()) {
+            if (entry.counter !== counter) {
               entry.dispose()
+              entries.delete(entry.key)
             }
           }
+        }
 
-          function refreshNT() {
-            refreshing = false
-            counter = (counter + 1) & maxInt
+        function refresh() {
+          if (!refreshing) {
+            refreshing = true
+            queueMicrotask(refreshNT)
+          }
+        }
 
-            try {
-              o.next(script.runInContext(context))
-            } catch (err) {
-              if (err !== kWait) {
-                o.error(err)
-              }
-            }
+        function getEntry(key, factory, opaque) {
+          let entry = entries.get(key)
+          if (!entry) {
+            entry = factory(key, refresh, opaque)
+            entries.set(key, entry)
+          } else {
+            entry.counter = counter
+          }
+          return entry
+        }
 
-            for (const entry of entries.values()) {
-              if (entry.counter !== counter) {
-                entry.dispose()
-                entries.delete(entry.key)
-              }
-            }
+        function getRecord(key, path, state) {
+          if (typeof state === 'string') {
+            state = ds.CONSTANTS.RECORD_STATE[state.toUpperCase()]
           }
 
-          function refresh() {
-            if (!refreshing) {
-              refreshing = true
-              queueMicrotask(refreshNT)
-            }
+          if (state == null) {
+            state = key.startsWith('{') || key.includes('?') ? ds.record.PROVIDER : ds.record.SERVER
           }
 
-          function getEntry(key, factory, opaque) {
-            let entry = entries.get(key)
-            if (!entry) {
-              entry = factory(key, refresh, opaque)
-              entries.set(key, entry)
-            } else {
-              entry.counter = counter
-            }
-            return entry
+          const entry = getEntry(key, makeRecordEntry)
+
+          if (entry.record.state < state) {
+            throw kWait
           }
 
-          function getRecord(key, path, state) {
-            if (typeof state === 'string') {
-              state = ds.CONSTANTS.RECORD_STATE[state.toUpperCase()]
-            }
+          return entry.record.get(path)
+        }
 
-            if (state == null) {
-              state =
-                key.startsWith('{') || key.includes('?') ? ds.record.PROVIDER : ds.record.SERVER
-            }
+        function hasAssetType(id, type) {
+          const types = getRecord(id + ':asset.rawTypes?', 'value')
+          return types.includes(type) ? id : null
+        }
 
-            const entry = getEntry(key, makeRecordEntry)
+        function getTimer(dueTime, dueValue = dueTime, undueValue = null) {
+          dueTime = Number.isFinite(dueTime) ? dueTime : new Date(dueTime).valueOf()
 
-            if (entry.record.state < state) {
-              throw kWait
-            }
+          const nowTime = Date.now()
 
-            return entry.record.get(path)
-          }
-
-          function hasAssetType(id, type) {
-            const types = getRecord(id + ':asset.rawTypes?', 'value')
-            return types.includes(type) ? id : null
-          }
-
-          function getTimer(dueTime, dueValue = dueTime, undueValue = null) {
-            dueTime = Number.isFinite(dueTime) ? dueTime : new Date(dueTime).valueOf()
-
-            const nowTime = Date.now()
-
-            if (!Number.isFinite(dueTime)) {
-              return undueValue
-            }
-
-            if (nowTime >= dueTime) {
-              return dueValue
-            }
-
-            getEntry(
-              objectHash({ dueTime, dueValue, undueValue }),
-              makeTimerEntry,
-              dueTime - nowTime
-            )
-
+          if (!Number.isFinite(dueTime)) {
             return undueValue
           }
-        })
-      }
-    } catch (err) {
-      throw new NestedError(`failed to parse expression ${expression}`, err)
-    }
+
+          if (nowTime >= dueTime) {
+            return dueValue
+          }
+
+          getEntry(objectHash({ dueTime, dueValue, undueValue }), makeTimerEntry, dueTime - nowTime)
+
+          return undueValue
+        }
+      })
   })
 }
