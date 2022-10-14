@@ -78,7 +78,7 @@ module.exports = ({ ds } = {}) => {
             hash: objectHash,
             timer: getTimer,
           },
-          _: Object.assign(pipe, {
+          _: Object.assign((...args) => pipe(...args), {
             asset: (type) => (id) => hasAssetType(id, type),
             ds: (postfix, path, state) => (id) => getRecord(`${id}${postfix}`, path, state),
             timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
