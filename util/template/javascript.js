@@ -69,8 +69,8 @@ module.exports = ({ ds } = {}) => {
       new rxjs.Observable((o) => {
         // TODO (perf): This could be faster by using an array + indices.
         // A bit similar to how react-hooks works.
-        const entries = new Map()
-        const context = vm.createContext({
+        const _entries = new Map()
+        const _context = vm.createContext({
           ...globals,
           $: args,
           nxt: {
@@ -93,7 +93,7 @@ module.exports = ({ ds } = {}) => {
         refreshNT()
 
         return () => {
-          for (const entry of entries.values()) {
+          for (const entry of _entries.values()) {
             entry.dispose()
           }
         }
@@ -103,7 +103,7 @@ module.exports = ({ ds } = {}) => {
           _counter = (_counter + 1) & maxInt
 
           try {
-            const value = script.runInContext(context)
+            const value = script.runInContext(_context)
             if (value !== _value) {
               _value = value
               o.next(value)
@@ -119,10 +119,10 @@ module.exports = ({ ds } = {}) => {
             }
           }
 
-          for (const entry of entries.values()) {
+          for (const entry of _entries.values()) {
             if (entry._counter !== _counter) {
               entry.dispose()
-              entries.delete(entry.key)
+              _entries.delete(entry.key)
             }
           }
         }
@@ -135,10 +135,10 @@ module.exports = ({ ds } = {}) => {
         }
 
         function getEntry(key, factory, opaque) {
-          let entry = entries.get(key)
+          let entry = _entries.get(key)
           if (!entry) {
             entry = factory(key, refresh, opaque)
-            entries.set(key, entry)
+            _entries.set(key, entry)
           } else {
             entry._counter = _counter
           }
