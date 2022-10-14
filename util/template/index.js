@@ -1,12 +1,16 @@
 const rx = require('rxjs/operators')
 const Observable = require('rxjs')
 const fp = require('lodash/fp')
-const getExpressionCompiler = require('./expression')
+const getNxtpressionsCompiler = require('./nextpressions')
+const getJavascriptCompiler = require('./javascript')
 const weakCache = require('../../weakCache')
 const JSON5 = require('json5')
 
 module.exports = ({ ds } = {}) => {
-  const compileExpression = getExpressionCompiler({ ds })
+  const compilers = {
+    nxt: getNxtpressionsCompiler({ ds }),
+    js: getJavascriptCompiler({ ds }),
+  }
 
   async function resolveObjectTemplate(...args) {
     return resolveObjectTemplate(...args)
@@ -64,19 +68,32 @@ module.exports = ({ ds } = {}) => {
   }
 
   function inner(str) {
-    const start = str.lastIndexOf('{{')
-    if (start === -1) {
+    const templateStart = str.lastIndexOf('{{')
+    if (templateStart === -1) {
       return null
     }
-    const end = str.indexOf('}}', start + 2)
-    if (end === -1) {
+    let bodyStart = templateStart + 2
+
+    let templateEnd = str.indexOf('}}', templateStart + 2)
+    if (templateEnd === -1) {
       return null
+    }
+    const bodyEnd = templateEnd
+    templateEnd += 2
+
+    let type = 'nxt'
+    if (str[bodyStart] === '#') {
+      const typeStart = bodyStart + 1
+      const typeEnd = str.indexOf(' ', bodyStart + 1)
+      type = str.slice(typeStart, typeEnd)
+      bodyStart = typeEnd + 1
     }
 
     return {
-      pre: str.slice(0, start),
-      body: str.slice(start + 2, end),
-      post: str.slice(end + 2),
+      pre: str.slice(0, templateStart),
+      type,
+      body: str.slice(bodyStart, bodyEnd),
+      post: str.slice(templateEnd),
     }
   }
 
@@ -91,7 +108,12 @@ module.exports = ({ ds } = {}) => {
       return () => Observable.of(str)
     }
 
-    const { pre, body, post } = match
+    const { pre, type, body, post } = match
+
+    const compileExpression = compilers[type]
+    if (!compileExpression) {
+      throw new Error('unknown expression type')
+    }
 
     const expr = compileExpression(body)
 
@@ -101,7 +123,7 @@ module.exports = ({ ds } = {}) => {
 
     return (...args) =>
       expr(...args).pipe(
-        rx.switchMap((body) => compileTemplate(`${pre}${stringify(body)}${post}`)(...args))
+        rx.switchMap((body) => compileStringTemplate(`${pre}${stringify(body)}${post}`)(...args))
       )
   })
 
