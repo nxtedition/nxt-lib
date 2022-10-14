@@ -80,7 +80,7 @@ module.exports = ({ ds } = {}) => {
           },
           _: Object.assign((...args) => pipe(...args), {
             asset: (type) => (id) => hasAssetType(id, type),
-            ds: (postfix, path, state) => (id) => getRecord(`${id}${postfix}`, path, state),
+            ds: (postfix, state) => (id) => getRecord(`${id}${postfix}`, state),
             timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
           }),
         })
@@ -134,7 +134,7 @@ module.exports = ({ ds } = {}) => {
           return entry
         }
 
-        function getRecord(key, path, state) {
+        function getRecord(key, state) {
           if (typeof state === 'string') {
             state = ds.CONSTANTS.RECORD_STATE[state.toUpperCase()]
           }
@@ -149,7 +149,7 @@ module.exports = ({ ds } = {}) => {
             throw kWait
           }
 
-          return path ? entry.record.get(path) : entry.record.data
+          return entry.record.data
         }
 
         function hasAssetType(id, type) {
