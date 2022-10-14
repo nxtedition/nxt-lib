@@ -10,7 +10,6 @@ const globals = {
 }
 
 const kWait = Symbol('kWait')
-const kNull = Symbol('kNull')
 
 const hashaint = (value, _options = {}) => {
   const str = JSON.stringify(value)
@@ -70,15 +69,9 @@ module.exports = ({ ds } = {}) => {
             return entry.record.get(path)
           }
 
-          const hasAssetType = (id, type, throws = true) => {
+          const hasAssetType = (id, type) => {
             const types = getRecord(id + ':asset.rawTypes?', 'value')
-            if (types.includes(type)) {
-              return id
-            }
-            if (throws) {
-              throw kNull
-            }
-            return null
+            return types.includes(type) ? id : null
           }
 
           const getTimer = (dueTime, undueValue, dueValue) => {
@@ -148,9 +141,7 @@ module.exports = ({ ds } = {}) => {
             try {
               o.next(script.runInContext(context))
             } catch (err) {
-              if (err === kNull) {
-                o.next(null)
-              } else if (err !== kWait) {
+              if (err !== kWait) {
                 o.error(err)
               }
             }
