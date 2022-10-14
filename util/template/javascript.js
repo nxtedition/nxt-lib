@@ -151,7 +151,7 @@ module.exports = ({ ds } = {}) => {
                 },
                 {
                   asset: (type) => (id) => hasAssetType(id, type),
-                  ds: (domain, path, state) => (id) => getRecord(`${id}:${domain}`, path, state),
+                  ds: (postfix, path, state) => (id) => getRecord(`${id}${postfix}`, path, state),
                   timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
                 }
               ),
