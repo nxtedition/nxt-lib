@@ -58,6 +58,15 @@ module.exports = ({ ds } = {}) => {
           }
 
           const getRecord = (key, path, state) => {
+            if (typeof state === 'string') {
+              state = ds.CONSTANTS.RECORD_STATE[state.toUpperCase()]
+            }
+
+            if (state == null) {
+              state =
+                key.startsWith('{') || key.includes('?') ? ds.record.PROVIDER : ds.record.SERVER
+            }
+
             let entry = entries.get(key)
             if (!entry) {
               entry = {
@@ -74,15 +83,6 @@ module.exports = ({ ds } = {}) => {
               entries.set(key, entry)
             } else {
               entry.counter = counter
-            }
-
-            if (typeof state === 'string') {
-              state = ds.CONSTANTS.RECORD_STATE[state.toUpperCase()]
-            }
-
-            if (state == null) {
-              state =
-                key.startsWith('{') || key.includes('?') ? ds.record.PROVIDER : ds.record.SERVER
             }
 
             if (entry.record.state < state) {
@@ -162,8 +162,7 @@ module.exports = ({ ds } = {}) => {
 
           return () => {
             for (const entry of entries.values()) {
-              entry.record.unref()
-              entry.record.off('update', refresh)
+              entry.dispose()
             }
           }
         })
