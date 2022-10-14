@@ -51,14 +51,15 @@ function disposeRecordEntry() {
 function pipe(value, ...fns) {
   for (const fn of fns) {
     value = fn(value)
-    if (value === kSuspend) {
-      return undefined
-    }
     if (value == null) {
-      return null
+      return value
     }
   }
   return value
+}
+
+function suspend() {
+  throw kSuspend
 }
 
 module.exports = ({ ds } = {}) => {
@@ -79,17 +80,15 @@ module.exports = ({ ds } = {}) => {
           ...globals,
           $: args,
           nxt: {
-            suspend: () => {
-              throw kSuspend
-            },
-            get: (id, state) => getRecord(id, state, true),
-            asset: (id, type) => getHasRawAssetType(id, type, true),
+            suspend,
+            get: getRecord,
+            asset: getHasRawAssetType,
             hash: objectHash,
             timer: getTimer,
           },
           _: Object.assign((...args) => pipe(...args), {
-            asset: (type) => (id) => getHasRawAssetType(id, type, false),
-            ds: (postfix, state) => (id) => getRecord(`${id}${postfix}`, state, false),
+            asset: (type) => (id) => getHasRawAssetType(id, type),
+            ds: (postfix, state) => (id) => getRecord(`${id}${postfix}`, state),
             timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
           }),
         })
@@ -112,11 +111,9 @@ module.exports = ({ ds } = {}) => {
 
           try {
             const value = script.runInContext(_context)
-            if (value !== _value && value !== undefined) {
+            if (value !== _value) {
               _value = value
               o.next(value)
-            } else if (_entries.length === 0) {
-              o.next(undefined)
             }
           } catch (err) {
             if (err !== kSuspend) {
@@ -154,7 +151,7 @@ module.exports = ({ ds } = {}) => {
           return entry
         }
 
-        function getRecord(key, state, throws = true) {
+        function getRecord(key, state) {
           if (state == null) {
             state = key.startsWith('{') || key.includes('?') ? ds.record.PROVIDER : ds.record.SERVER
           } else if (typeof state === 'string') {
@@ -167,18 +164,15 @@ module.exports = ({ ds } = {}) => {
           const entry = getEntry(key, makeRecordEntry, ds)
 
           if (entry.record.state < state) {
-            if (throws) {
-              throw kSuspend
-            } else {
-              return kSuspend
-            }
+            // TODO (perf): Avoid throw hack...
+            throw kSuspend
           }
 
           return entry.record.data
         }
 
-        function getHasRawAssetType(id, type, throws) {
-          const data = getRecord(id + ':asset.rawTypes?', ds.record.PROVIDER, throws)
+        function getHasRawAssetType(id, type) {
+          const data = getRecord(id + ':asset.rawTypes?', ds.record.PROVIDER)
           return data === kSuspend ? kSuspend : data.value.includes(type) ? id : null
         }
 
