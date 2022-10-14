@@ -15,47 +15,47 @@ const globals = {
 const kWait = Symbol('kWait')
 const maxInt = 2147483647
 
+function makeTimerEntry(key, refresh, delay) {
+  return {
+    key,
+    timer: setTimeout(refresh, delay),
+    dispose: disposeTimerEntry,
+  }
+}
+
+function disposeTimerEntry() {
+  clearTimeout(this.timer)
+  this.timer = null
+}
+
+function makeRecordEntry(key, refresh, ds) {
+  const entry = {
+    key,
+    refresh,
+    record: ds.record.getRecord(key),
+    dispose: disposeRecordEntry,
+  }
+  entry.record.on('update', refresh)
+  return entry
+}
+
+function disposeRecordEntry() {
+  this.record.unref()
+  this.record.off('update', this.refresh)
+  this.record = null
+}
+
+function pipe(value, ...fns) {
+  for (const fn of fns) {
+    value = fn(value)
+    if (value == null) {
+      return undefined
+    }
+  }
+  return value
+}
+
 module.exports = ({ ds } = {}) => {
-  function makeTimerEntry(key, refresh, delay) {
-    return {
-      key,
-      timer: setTimeout(refresh, delay),
-      dispose: disposeTimerEntry,
-    }
-  }
-
-  function disposeTimerEntry() {
-    clearTimeout(this.timer)
-    this.timer = null
-  }
-
-  function makeRecordEntry(key, refresh) {
-    const entry = {
-      key,
-      refresh,
-      record: ds.record.getRecord(key),
-      dispose: disposeRecordEntry,
-    }
-    entry.record.on('update', refresh)
-    return entry
-  }
-
-  function disposeRecordEntry() {
-    this.record.unref()
-    this.record.off('update', this.refresh)
-    this.record = null
-  }
-
-  function pipe(value, ...fns) {
-    for (const fn of fns) {
-      value = fn(value)
-      if (value == null) {
-        return undefined
-      }
-    }
-    return value
-  }
-
   return weakCache((expression) => {
     let script
     try {
@@ -143,7 +143,7 @@ module.exports = ({ ds } = {}) => {
             state = key.startsWith('{') || key.includes('?') ? ds.record.PROVIDER : ds.record.SERVER
           }
 
-          const entry = getEntry(key, makeRecordEntry)
+          const entry = getEntry(key, makeRecordEntry, ds)
 
           if (entry.record.state < state) {
             throw kWait
