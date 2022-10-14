@@ -41,9 +41,10 @@ module.exports = ({ ds } = {}) => {
               entry = {
                 isUsed: false,
                 record: ds.record.getRecord(recordId),
-                dispose () {
+                dispose() {
                   this.record.unref()
                   this.record.off('update', refresh)
+                  this.record = null
                 },
               }
               entry.record.on('update', refresh)
@@ -77,9 +78,9 @@ module.exports = ({ ds } = {}) => {
           const getTimer = (dueTime, undueValue, dueValue) => {
             dueTime = Number.isFinite(dueTime)
               ? dueTime
-              : dueTime?.valueOf
-                ? dueTime.valueOf()
-                : 0
+              : typeof dueTime?.valueOf === 'function'
+              ? dueTime.valueOf()
+              : 0
             const nowTime = Date.now()
 
             if (nowTime >= dueTime) {
@@ -93,10 +94,10 @@ module.exports = ({ ds } = {}) => {
               entry = {
                 isUsed: false,
                 timer: setTimeout(refresh, delay),
-                dispose () {
+                dispose() {
                   clearTimeout(this.timer)
                   this.timer = null
-                }
+                },
               }
               entries.set(dueTime, entry)
             }
@@ -105,7 +106,7 @@ module.exports = ({ ds } = {}) => {
             return undueValue
           }
 
-          const pipe = (value, ...funcs) => {
+          const _ = (value, ...funcs) => {
             for (const func of funcs) {
               value = func(value)
               if (value == null) {
@@ -115,19 +116,18 @@ module.exports = ({ ds } = {}) => {
             return value
           }
 
-          pipe.asset = (type) => (id) => hasAssetType(id, type, false)
-          pipe.ds = (domain, path, state) => (id) => getRecord(id + domain, path, state)
+          _.asset = (type) => (id) => hasAssetType(id, type)
+          _.ds = (domain, path, state) => (id) => getRecord(`${id}:${domain}`, path, state)
 
           const context = vm.createContext({
             ...globals,
             $: args,
             nxt: {
-              ...args,
               ds: getRecord,
               asset: hasAssetType,
               hashaint,
               timer: getTimer,
-              _: pipe,
+              _,
             },
           })
 
