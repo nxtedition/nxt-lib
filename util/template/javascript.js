@@ -3,10 +3,14 @@ const weakCache = require('../../weakCache')
 const rxjs = require('rxjs')
 const vm = require('node:vm')
 const objectHash = require('object-hash')
+const datefns = require('date-fns')
+const JSON5 = require('json5')
 
 const globals = {
   fp: require('lodash/fp'),
-  moment: require('moment'),
+  moment: require('moment-timezone'),
+  datefns,
+  JSON5,
 }
 
 const kWait = Symbol('kWait')
@@ -19,6 +23,8 @@ module.exports = ({ ds } = {}) => {
 
       return (args) => {
         return new rxjs.Observable((o) => {
+          // TODO (perf): This could be faster by using an array + indices.
+          // A bit similar to how react-hooks works.
           const entries = new Map()
 
           let refreshing = false
