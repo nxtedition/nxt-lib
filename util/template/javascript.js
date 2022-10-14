@@ -51,8 +51,11 @@ function disposeRecordEntry() {
 function pipe(value, ...fns) {
   for (const fn of fns) {
     value = fn(value)
-    if (value == null || value === kWait) {
-      return value
+    if (value === kWait) {
+      return undefined
+    }
+    if (value == null) {
+      return null
     }
   }
   return value
