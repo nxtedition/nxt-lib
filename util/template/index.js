@@ -173,6 +173,7 @@ module.exports = ({ ds } = {}) => {
   }
 
   return {
+    compilers,
     resolveTemplate,
     onResolveTemplate,
     compileTemplate,
