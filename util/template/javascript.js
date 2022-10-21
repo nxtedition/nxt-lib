@@ -87,14 +87,8 @@ module.exports = ({ ds } = {}) => {
             timer: getTimer,
           },
           _: Object.assign((...args) => pipe(...args), {
-            asset:
-              (type, state, throws = false) =>
-              (id) =>
-                getHasRawAssetType(id, type, state, throws === true),
-            ds:
-              (postfix, state, throws = false) =>
-              (id) =>
-                getRecord(`${id}${postfix}`, state, throws === true),
+            asset: (type, state, throws) => (id) => getHasRawAssetType(id, type, state, throws),
+            ds: (postfix, state, throws) => (id) => getRecord(`${id}${postfix}`, state, throws),
             timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
           }),
         })
@@ -170,7 +164,7 @@ module.exports = ({ ds } = {}) => {
           const entry = getEntry(key, makeRecordEntry, ds)
 
           if (entry.record.state < state) {
-            if (throws === true || throws == null) {
+            if (throws ?? true) {
               throw kSuspend
             } else {
               return null
@@ -181,11 +175,7 @@ module.exports = ({ ds } = {}) => {
         }
 
         function getHasRawAssetType(id, type, state, throws) {
-          const data = getRecord(
-            id + ':asset.rawTypes?',
-            state ?? ds.record.PROVIDER,
-            throws ?? false
-          )
+          const data = getRecord(id + ':asset.rawTypes?', state ?? ds.record.PROVIDER, throws ?? true)
           return data && data.value.includes(type) ? id : null
         }
 
