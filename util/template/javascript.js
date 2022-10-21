@@ -51,7 +51,7 @@ function disposeRecordEntry() {
 function pipe(value, ...fns) {
   for (const fn of fns) {
     value = fn(value)
-    if (value == null) {
+    if (value === null) {
       return value
     }
   }
@@ -81,14 +81,20 @@ module.exports = ({ ds } = {}) => {
           $: args,
           nxt: {
             suspend,
-            get: getRecord,
+            ds: getRecord,
             asset: getHasRawAssetType,
             hash: objectHash,
             timer: getTimer,
           },
           _: Object.assign((...args) => pipe(...args), {
-            asset: (type) => (id) => getHasRawAssetType(id, type),
-            ds: (postfix, state) => (id) => getRecord(`${id}${postfix}`, state),
+            asset:
+              (type, state, throws = false) =>
+              (id) =>
+                getHasRawAssetType(id, type, state, throws === true),
+            ds:
+              (postfix, state, throws = false) =>
+              (id) =>
+                getRecord(`${id}${postfix}`, state, throws === true),
             timer: (dueTime) => (dueValue) => getTimer(dueTime, dueValue),
           }),
         })
@@ -151,7 +157,7 @@ module.exports = ({ ds } = {}) => {
           return entry
         }
 
-        function getRecord(key, state) {
+        function getRecord(key, state, throws) {
           if (state == null) {
             state = key.startsWith('{') || key.includes('?') ? ds.record.PROVIDER : ds.record.SERVER
           } else if (typeof state === 'string') {
@@ -164,16 +170,23 @@ module.exports = ({ ds } = {}) => {
           const entry = getEntry(key, makeRecordEntry, ds)
 
           if (entry.record.state < state) {
-            // TODO (perf): Avoid throw hack...
-            throw kSuspend
+            if (throws === true || throws == null) {
+              throw kSuspend
+            } else {
+              return null
+            }
           }
 
           return entry.record.data
         }
 
-        function getHasRawAssetType(id, type) {
-          const data = getRecord(id + ':asset.rawTypes?', ds.record.PROVIDER)
-          return data === kSuspend ? kSuspend : data.value.includes(type) ? id : null
+        function getHasRawAssetType(id, type, state, throws) {
+          const data = getRecord(
+            id + ':asset.rawTypes?',
+            state ?? ds.record.PROVIDER,
+            throws ?? false
+          )
+          return data && data.value.includes(type) ? id : null
         }
 
         function getTimer(dueTime, dueValue = dueTime, undueValue = null) {
