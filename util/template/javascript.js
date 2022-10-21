@@ -51,7 +51,7 @@ function disposeRecordEntry() {
 function pipe(value, ...fns) {
   for (const fn of fns) {
     value = fn(value)
-    if (value === null) {
+    if (value == null) {
       return value
     }
   }
@@ -175,7 +175,11 @@ module.exports = ({ ds } = {}) => {
         }
 
         function getHasRawAssetType(id, type, state, throws) {
-          const data = getRecord(id + ':asset.rawTypes?', state ?? ds.record.PROVIDER, throws ?? true)
+          const data = getRecord(
+            id + ':asset.rawTypes?',
+            state ?? ds.record.PROVIDER,
+            throws ?? true
+          )
           return data && data.value.includes(type) ? id : null
         }
 
