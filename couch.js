@@ -224,7 +224,6 @@ module.exports = function (opts) {
           '/_changes' +
           `?${new URLSearchParams({
             ...params,
-            since: params?.since ?? 0,
             ...options.query,
             feed: 'continuous',
           })}`,
@@ -324,7 +323,6 @@ module.exports = function (opts) {
               '/_changes' +
               `?${new URLSearchParams({
                 ...params,
-                since: params?.since ?? 0,
                 ...options.query,
                 limit: Math.min(remaining, batchSize),
                 feed: live ? 'longpoll' : 'normal',
@@ -395,7 +393,9 @@ module.exports = function (opts) {
           return
         } catch (err) {
           if (retry && err.name !== 'AbortError' && err.code !== 'UND_ERR_ABORTED') {
-            Object.assign(params, await retry(err, retryCount++, params))
+            const retry = { since: params.since }
+            Object.assign(retry, await retry(err, retryCount++, retry))
+            params.since = retry.since ?? 0
           } else {
             throw err
           }
