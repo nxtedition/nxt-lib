@@ -224,6 +224,7 @@ module.exports = function (opts) {
           '/_changes' +
           `?${new URLSearchParams({
             ...params,
+            since: params?.since ?? 0,
             ...options.query,
             feed: 'continuous',
           })}`,
@@ -323,6 +324,7 @@ module.exports = function (opts) {
               '/_changes' +
               `?${new URLSearchParams({
                 ...params,
+                since: params?.since ?? 0,
                 ...options.query,
                 limit: Math.min(remaining, batchSize),
                 feed: live ? 'longpoll' : 'normal',
