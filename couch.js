@@ -149,8 +149,12 @@ module.exports = function (opts) {
       params.include_docs = true
     }
 
+    if (options.seq_interval != null) {
+      params.seq_interval = options.seq_interval
+    }
+
     if (options.since != null) {
-      params.since = options.since || 0
+      params.since = options.since
     }
 
     if (options.style != null) {
@@ -599,63 +603,67 @@ module.exports = function (opts) {
       params.include_docs = true
     }
 
+    if (options.include_docs) {
+      params.include_docs = true
+    }
+
     if (options.sorted) {
       params.sorted = true
     }
 
-    if (options.key) {
+    if (options.key != null) {
       params.key = JSON.stringify(options.key)
     }
 
-    if (options.start_key) {
+    if (options.start_key != null) {
       options.startkey = options.start_key
     }
 
-    if (options.startkey) {
+    if (options.startkey != null) {
       params.startkey = JSON.stringify(options.startkey)
     }
 
-    if (options.startkey_docid) {
+    if (options.startkey_docid != null) {
       params.startkey_docid = JSON.stringify(options.startkey_docid)
     }
 
-    if (options.end_key) {
+    if (options.end_key != null) {
       options.endkey = options.end_key
     }
 
-    if (options.endkey) {
+    if (options.endkey != null) {
       params.endkey = JSON.stringify(options.endkey)
     }
 
-    if (typeof options.inclusive_end !== 'undefined') {
+    if (options.inclusive_end != null) {
       params.inclusive_end = !!options.inclusive_end
     }
 
-    if (typeof options.limit !== 'undefined') {
+    if (options.limit != null) {
       params.limit = options.limit
     }
 
-    if (typeof options.skip !== 'undefined') {
+    if (options.skip != null) {
       params.skip = options.skip
     }
 
-    if (typeof options.stale !== 'undefined') {
+    if (options.stale != null) {
       params.stale = options.stale
     }
 
-    if (typeof options.reduce !== 'undefined') {
+    if (options.reduce != null) {
       params.reduce = options.reduce
     }
 
-    if (typeof options.group !== 'undefined') {
+    if (options.group != null) {
       params.group = options.group
     }
 
-    if (typeof options.group_level !== 'undefined') {
+    if (options.group_level != null) {
       params.group_level = options.group_level
     }
 
-    if (typeof options.keys !== 'undefined') {
+    if (options.keys != null) {
       method = 'POST'
       body = { keys: options.keys }
       headers.push('Content-Type', 'application/json')
