@@ -75,7 +75,7 @@
     "lodash": "^4.17.21",
     "lru-cache": "^7.14.0",
     "mime": "^3.0.0",
-    "moment-timezone": "^0.5.34",
+    "moment-timezone": "^0.5.38",
     "nconf": "^0.12.0",
     "nested-error-stacks": "^2.1.1",
     "object-hash": "^3.0.0",
@@ -85,7 +85,7 @@
     "split-string": "^6.0.0",
     "tap": "^16.3.0",
     "toobusy-js": "^0.5.1",
-    "undici": "^5.9.1",
+    "undici": "^5.11.0",
     "url-join": "^4.0.0"
   },
   "devDependencies": {
