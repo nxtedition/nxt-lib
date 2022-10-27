@@ -397,9 +397,9 @@ module.exports = function (opts) {
           return
         } catch (err) {
           if (retry && err.name !== 'AbortError' && err.code !== 'UND_ERR_ABORTED') {
-            const retry = { since: params.since }
-            Object.assign(retry, await retry(err, retryCount++, retry))
-            params.since = retry.since ?? 0
+            const retryState = { since: params.since }
+            Object.assign(retryState, await retry(err, retryCount++, retryState))
+            params.since = retryState.since ?? 0
           } else {
             throw err
           }
