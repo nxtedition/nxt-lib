@@ -73,16 +73,9 @@ module.exports = function cached(fn, options, keySelector) {
       if (!entry) {
         const observable = bufferSize ? new ReplaySubject(bufferSize) : Subject()
 
-        let subscription
-        try {
-          subscription = fn(...args).subscribe(observable)
-        } catch (err) {
-          subscription = Observable.throw(err).subscribe(observable)
-        }
-
         entry = {
           observable,
-          subscription,
+          subscription: fn(...args).subscribe(observable),
           refs: 0,
           timestamp: null,
         }
