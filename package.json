@@ -83,7 +83,6 @@
     "qs": "^6.11.0",
     "request-target": "^1.0.2",
     "split-string": "^6.0.0",
-    "tap": "^16.3.0",
     "toobusy-js": "^0.5.1",
     "undici": "^5.11.0",
     "url-join": "^4.0.0"
@@ -102,7 +101,8 @@
     "lint-staged": "^13.0.3",
     "pinst": "^3.0.0",
     "prettier": "^2.7.1",
-    "rxjs": "^7.5.6"
+    "rxjs": "^7.5.6",
+    "tap": "^16.3.0"
   },
   "peerDependencies": {
     "@nxtedition/deepstream.io-client-js": ">=14.1.0",
