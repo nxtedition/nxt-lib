@@ -37,7 +37,7 @@ module.exports.request = async function request(ctx, next) {
   ctx.signal = signal
   ctx.method = req.method
   ctx.url = requestTarget(req)
-  ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : null
+  ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : {}
 
   res.setHeader('request-id', req.id)
 
