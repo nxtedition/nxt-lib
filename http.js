@@ -287,7 +287,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
     }
 
     req.on('error', (err) => {
-      reqLogger.warn({ err }, 'stream error')
+      reqLogger.warn({ err }, 'request error')
     })
     socket.on('error', (err) => {
       reqLogger.warn({ err }, 'stream error')
