@@ -4,7 +4,7 @@ const tp = require('node:timers/promises')
 const WRITE_INDEX = 0
 const READ_INDEX = 1
 
-export function alloc(size) {
+function alloc(size) {
   return {
     sharedState: new SharedArrayBuffer(16),
     sharedBuffer: new SharedArrayBuffer(size),
@@ -22,7 +22,7 @@ let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 // to handle infinite amount of data would be preferrable but is
 // more complicated.
 
-export async function reader({ sharedState, sharedBuffer }, cb) {
+async function reader({ sharedState, sharedBuffer }, cb) {
   const state = new BigInt64Array(sharedState)
   const buffer = Buffer.from(sharedBuffer)
   const size = buffer.byteLength - 4
@@ -75,7 +75,7 @@ export async function reader({ sharedState, sharedBuffer }, cb) {
   }
 }
 
-export function writer({ sharedState, sharedBuffer, logger }) {
+function writer({ sharedState, sharedBuffer, logger }) {
   const state = new BigInt64Array(sharedState)
   const buffer = Buffer.from(sharedBuffer)
   const size = buffer.byteLength - 4
@@ -180,4 +180,10 @@ export function writer({ sharedState, sharedBuffer, logger }) {
       return queue.length
     },
   }
+}
+
+module.exports = {
+  alloc,
+  reader,
+  writer,
 }
