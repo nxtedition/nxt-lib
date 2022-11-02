@@ -514,7 +514,7 @@ module.exports = function (appConfig, onTerminate) {
     } else if (typeof appConfig.stats === 'object') {
       stats$ = rxjs.timer(0, 10e3).pipe(rxjs.map(() => appConfig.stats))
     } else {
-      stats$ = rxjs.of({})
+      stats$ = rxjs.timer(0, 10e3)
     }
 
     stats$ = stats$.pipe(
