@@ -1,4 +1,4 @@
-const rxjs = require('rxjs')
+const { Observable, ReplaySubject, Subject } = require('rxjs')
 
 const registry = new FinalizationRegistry(({ interval, array }) => {
   clearInterval(interval)
@@ -67,11 +67,11 @@ module.exports = function cached(fn, options, keySelector) {
   const getter = function (...args) {
     const key = keySelector(...args)
 
-    return new rxjs.Observable((o) => {
+    return new Observable((o) => {
       let entry = cache.get(key)
 
       if (!entry) {
-        const observable = bufferSize ? new rxjs.ReplaySubject(bufferSize) : rxjs.Subject()
+        const observable = bufferSize ? new ReplaySubject(bufferSize) : Subject()
 
         entry = {
           observable,
