@@ -302,7 +302,6 @@ module.exports = function (appConfig, onTerminate) {
 
   if (appConfig.status) {
     const rxjs = require('rxjs')
-    const rx = require('rxjs/operators')
     const undici = require('undici')
     const fp = require('lodash/fp')
     const hashString = require('./hash')
@@ -319,7 +318,7 @@ module.exports = function (appConfig, onTerminate) {
         .catch((err) => rxjs.of({ warnings: [err.message] }))
         .repeatWhen(() => rxjs.timer(10e3))
     } else if (appConfig.status && typeof appConfig.status === 'object') {
-      status$ = rxjs.timer(0, 10e3).pipe(rx.exhaustMap(() => appConfig.status))
+      status$ = rxjs.timer(0, 10e3).pipe(rxjs.exhaustMap(() => appConfig.status))
     } else {
       status$ = rxjs.of({})
     }
@@ -327,8 +326,8 @@ module.exports = function (appConfig, onTerminate) {
     status$ = rxjs
       .combineLatest([
         status$.pipe(
-          rx.filter(Boolean),
-          rx.catchError((err) => {
+          rxjs.filter(Boolean),
+          rxjs.catchError((err) => {
             logger.error({ err }, 'monitor.status')
             return rxjs.of([
               {
@@ -339,13 +338,15 @@ module.exports = function (appConfig, onTerminate) {
               },
             ])
           }),
-          rx.startWith([]),
-          rx.distinctUntilChanged(fp.isEqual),
-          rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
+          rxjs.startWith([]),
+          rxjs.distinctUntilChanged(fp.isEqual),
+          rxjs.repeat({
+            delay: 10e3,
+          })
         ),
         toobusy
           ? rxjs.timer(0, 1e3).pipe(
-              rx.map(() =>
+              rxjs.map(() =>
                 toobusy.lag() > 1e3
                   ? [
                       {
@@ -357,13 +358,13 @@ module.exports = function (appConfig, onTerminate) {
                     ]
                   : []
               ),
-              rx.startWith([]),
-              rx.distinctUntilChanged(fp.isEqual)
+              rxjs.startWith([]),
+              rxjs.distinctUntilChanged(fp.isEqual)
             )
           : rxjs.of({}),
         couch
           ? rxjs.timer(0, 10e3).pipe(
-              rx.exhaustMap(async () => {
+              rxjs.exhaustMap(async () => {
                 try {
                   await couch.info()
                 } catch (err) {
@@ -377,8 +378,8 @@ module.exports = function (appConfig, onTerminate) {
                   ]
                 }
               }),
-              rx.startWith([]),
-              rx.distinctUntilChanged(fp.isEqual)
+              rxjs.startWith([]),
+              rxjs.distinctUntilChanged(fp.isEqual)
             )
           : rxjs.of({}),
         ds
@@ -390,7 +391,7 @@ module.exports = function (appConfig, onTerminate) {
               const subscription = rxjs
                 .timer(0, 10e3)
                 .pipe(
-                  rx.exhaustMap(async () => {
+                  rxjs.exhaustMap(async () => {
                     try {
                       const { body } = await client.request({ method: 'GET', path: '/healthcheck' })
                       await body.dump()
@@ -418,13 +419,13 @@ module.exports = function (appConfig, onTerminate) {
                 client.destroy()
                 subscription.unsubscribe()
               }
-            }).pipe(rx.startWith([]), rx.distinctUntilChanged(fp.isEqual))
+            }).pipe(rxjs.startWith([]), rxjs.distinctUntilChanged(fp.isEqual))
           : rxjs.of({}),
         rxjs.timer(0, 10e3),
       ])
       .pipe(
-        rx.auditTime(1e3),
-        rx.map(([status, lag, couch, ds]) => {
+        rxjs.auditTime(1e3),
+        rxjs.map(([status, lag, couch, ds]) => {
           const messages = [
             lag,
             couch,
@@ -459,21 +460,26 @@ module.exports = function (appConfig, onTerminate) {
 
           return { ...status, messages, timestamp: Date.now() }
         }),
-        rx.catchError((err) => {
+        rxjs.catchError((err) => {
           logger.error({ err }, 'monitor.status')
           return rxjs.of({
             messages: [{ id: 'app:monitor_status', level: 50, code: err.code, msg: err.message }],
           })
         }),
-        rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
-        rx.startWith({}),
-        rx.distinctUntilChanged(fp.isEqual),
-        rx.publishReplay(1),
-        rx.refCount()
+        rxjs.repeat({
+          delay: 10e3,
+        }),
+        rxjs.startWith({}),
+        rxjs.distinctUntilChanged(fp.isEqual),
+        rxjs.shareReplay(1)
       )
 
     const loggerSubscription = status$
-      .pipe(rx.pluck('messages'), rx.startWith([]), rx.pairwise())
+      .pipe(
+        rxjs.map((x) => x.messages),
+        rxjs.startWith([]),
+        rxjs.pairwise()
+      )
       .subscribe(([prev, next]) => {
         for (const { level, msg, ...message } of fp.differenceBy('id', next, prev)) {
           logger.info(message, `status added: ${msg}`)
@@ -493,7 +499,6 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.stats) {
     const v8 = require('v8')
     const rxjs = require('rxjs')
-    const rx = require('rxjs/operators')
     const { eventLoopUtilization } = require('perf_hooks').performance
 
     let stats$
@@ -501,35 +506,33 @@ module.exports = function (appConfig, onTerminate) {
       stats$ = appConfig.stats
     } else if (typeof appConfig.stats === 'function') {
       stats$ = rxjs.timer(0, 10e3).pipe(
-        rx.exhaustMap(() => {
+        rxjs.exhaustMap(() => {
           const ret = appConfig.stats({ ds, couch, logger })
           return ret?.then || ret?.subscribe ? ret : rxjs.of(ret)
         })
       )
     } else if (typeof appConfig.stats === 'object') {
-      stats$ = rxjs.timer(0, 10e3).pipe(rx.map(() => appConfig.stats))
+      stats$ = rxjs.timer(0, 10e3).pipe(rxjs.map(() => appConfig.stats))
     } else {
       stats$ = rxjs.of({})
     }
 
     stats$ = stats$.pipe(
-      rx.auditTime(1e3),
-      rx.filter(Boolean),
-      rx.retryWhen((err$) =>
-        err$.pipe(
-          rx.tap((err) => logger.error({ err }, 'monitor.stats')),
-          rx.delay(10e3)
-        )
-      ),
-      rx.startWith({}),
-      rx.publishReplay(1),
-      rx.refCount()
+      rxjs.auditTime(1e3),
+      rxjs.filter(Boolean),
+      rxjs.retry({
+        delay(err) {
+          logger.error({ err }, 'monitor.stats')
+        },
+      }),
+      rxjs.startWith({}),
+      rxjs.shareReplay(1)
     )
 
     monitorProviders.stats$ = stats$
 
     let elu1 = eventLoopUtilization?.()
-    const subscription = stats$.pipe(rx.auditTime(10e3)).subscribe((stats) => {
+    const subscription = stats$.pipe(rxjs.auditTime(10e3)).subscribe((stats) => {
       if (process.env.NODE_ENV === 'production') {
         const elu2 = eventLoopUtilization?.()
         logger.debug(
