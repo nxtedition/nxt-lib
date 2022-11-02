@@ -1,5 +1,4 @@
 const rxjs = require('rxjs')
-const rx = require('rxjs/operators')
 const { AbortError } = require('../errors')
 
 module.exports = function lastValueFrom(x$, config) {
@@ -7,9 +6,9 @@ module.exports = function lastValueFrom(x$, config) {
   const signal = hasConfig ? config.signal : undefined
 
   if (signal) {
-    x$ = signal.aborted ? rxjs.EMPTY : x$.pipe(rx.takeUntil(rxjs.fromEvent(signal, 'abort')))
-    x$ = x$.pipe(rx.throwIfEmpty(() => new AbortError()))
+    x$ = signal.aborted ? rxjs.EMPTY : x$.pipe(rxjs.takeUntil(rxjs.fromEvent(signal, 'abort')))
+    x$ = x$.pipe(rxjs.throwIfEmpty(() => new AbortError()))
   }
 
-  return x$.pipe(rx.last(hasConfig ? config.defaultValue : undefined)).toPromise()
+  return rxjs.lastValueFrom(x$, config)
 }

@@ -1,5 +1,4 @@
-const rx = require('rxjs/operators')
-const Observable = require('rxjs')
+const rxjs = require('rxjs')
 const fp = require('lodash/fp')
 const getNxtpressionsCompiler = require('./nextpressions')
 const getJavascriptCompiler = require('./javascript')
@@ -13,16 +12,14 @@ module.exports = ({ ds } = {}) => {
   }
 
   async function resolveObjectTemplate(...args) {
-    return resolveObjectTemplate(...args)
-      .pipe(rx.first())
-      .toPromise()
+    return rxjs.firstValueFrom(resolveObjectTemplate(...args))
   }
 
   function onResolveObjectTemplate(obj, ...args) {
     try {
       return compileObjectTemplate(obj)(...args)
     } catch (err) {
-      return Observable.throwError(err)
+      return rxjs.throwError(() => err)
     }
   }
 
@@ -33,12 +30,12 @@ module.exports = ({ ds } = {}) => {
     }
 
     if (arr.length === 0) {
-      return () => Observable.of([])
+      return () => rxjs.of([])
     }
 
     const resolvers = arr.map((template) => compileTemplate(template))
 
-    return (...args) => Observable.combineLatest(resolvers.map((resolver) => resolver(...args)))
+    return (...args) => rxjs.combineLatest(resolvers.map((resolver) => resolver(...args)))
   }
 
   // TODO (perf): Optimize...
@@ -50,14 +47,14 @@ module.exports = ({ ds } = {}) => {
     const keys = Object.keys(obj)
 
     if (keys.length === 0) {
-      return () => Observable.of({})
+      return () => rxjs.of({})
     }
 
     const resolvers = Object.values(obj).map((template) => compileTemplate(template))
 
     return (...args) =>
-      Observable.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
-        rx.map((values) => {
+      rxjs.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
+        rxjs.map((values) => {
           const ret = {}
           for (let n = 0; n < values.length; ++n) {
             ret[keys[n]] = values[n]
@@ -105,7 +102,7 @@ module.exports = ({ ds } = {}) => {
     const match = inner(str)
 
     if (!match) {
-      return () => Observable.of(str)
+      return () => rxjs.of(str)
     }
 
     const { pre, type, body, post } = match
@@ -123,7 +120,7 @@ module.exports = ({ ds } = {}) => {
 
     return (...args) =>
       expr(...args).pipe(
-        rx.switchMap((body) => compileStringTemplate(`${pre}${stringify(body)}${post}`)(...args))
+        rxjs.switchMap((body) => compileStringTemplate(`${pre}${stringify(body)}${post}`)(...args))
       )
   })
 
@@ -150,25 +147,23 @@ module.exports = ({ ds } = {}) => {
     } else if (fp.isString(template)) {
       return compileStringTemplate(template)
     } else {
-      return () => Observable.of(template)
+      return () => rxjs.of(template)
     }
   }
 
   async function resolveTemplate(template, ...args) {
-    return onResolveTemplate(template, ...args)
-      .pipe(rx.first())
-      .toPromise()
+    return rxjs.firstValueFrom(onResolveTemplate(template, ...args))
   }
 
   function onResolveTemplate(str, ...args) {
     if (fp.isString(str) && str.lastIndexOf('{{') === -1) {
-      return Observable.of(str)
+      return rxjs.of(str)
     }
 
     try {
       return compileTemplate(str)(...args)
     } catch (err) {
-      return Observable.throwError(err)
+      return rxjs.throwError(() => err)
     }
   }
 

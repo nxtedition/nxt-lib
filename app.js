@@ -561,7 +561,7 @@ module.exports = function (appConfig, onTerminate) {
 
     if (isMainThread && appConfig.monitor !== true) {
       const os = require('os')
-      const rx = require('rxjs/operators')
+      const rxjs = require('rxjs')
 
       const containerId = appConfig.containerId ?? os.hostname()
       const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
@@ -571,7 +571,7 @@ module.exports = function (appConfig, onTerminate) {
 
         if (id === serviceName) {
           // TODO (fix): If id === serviceName check if there are multiple instances.
-          return monitorProviders[prop + '$']?.pipe(rx.map((value) => ({ [hostname]: value })))
+          return monitorProviders[prop + '$']?.pipe(rxjs.map((value) => ({ [hostname]: value })))
         }
 
         if (id === hostname) {
