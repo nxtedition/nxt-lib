@@ -22,7 +22,8 @@
     "errors.js",
     "worker.js",
     "shared.js",
-    "proxy.js"
+    "proxy.js",
+    "docker-secrets.js"
   ],
   "scripts": {
     "prepare": "husky install",
