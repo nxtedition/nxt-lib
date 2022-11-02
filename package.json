@@ -21,6 +21,7 @@
     "app.js",
     "errors.js",
     "worker.js",
+    "shared.js",
     "proxy.js"
   ],
   "scripts": {
