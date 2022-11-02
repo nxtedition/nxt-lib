@@ -556,7 +556,7 @@ module.exports = function (appConfig, onTerminate) {
   if (ds && Object.keys(monitorProviders).length && appConfig.monitor !== false) {
     const { isMainThread } = require('node:worker_threads')
 
-    if (isMainThread && appConfig.monitor !== true) {
+    if (isMainThread) {
       const os = require('os')
       const rx = require('rxjs/operators')
 
