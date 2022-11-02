@@ -509,10 +509,14 @@ module.exports = function (appConfig, onTerminate) {
     } else if (typeof appConfig.stats === 'object') {
       stats$ = rxjs.timer(0, 10e3).pipe(rx.map(() => appConfig.stats))
     } else {
-      stats$ = rxjs.timer(0, 10e3)
+      stats$ = rxjs.timer(0, 10e3).pipe(rx.map(() => ({})))
     }
 
     stats$ = stats$.pipe(
+      rxjs.map((x) => ({
+        ...x,
+        timestamp: Date.now(),
+      })),
       rx.auditTime(1e3),
       rx.filter(Boolean),
       rx.retryWhen((err$) =>
