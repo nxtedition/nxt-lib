@@ -22,6 +22,19 @@ function getDockerSecretsSync({ dir = '/run/secrets' } = {}) {
   return secrets
 }
 
+function getDockerSecretSync(file, { dir = '/run/secrets', signal } = {}) {
+  try {
+    const [, ext] = file.split('.')
+    const content = fs.readFileSync(path.join(dir, file), { encoding: 'utf8', signal })
+    return ext === 'json' ? JSON.parse(content) : content
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return null
+    }
+    throw err
+  }
+}
+
 async function getDockerSecret(file, { dir = '/run/secrets', signal } = {}) {
   try {
     const [, ext] = file.split('.')
@@ -37,5 +50,6 @@ async function getDockerSecret(file, { dir = '/run/secrets', signal } = {}) {
 
 module.exports = {
   getDockerSecretsSync,
+  getDockerSecretSync,
   getDockerSecret,
 }
