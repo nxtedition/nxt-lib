@@ -1,4 +1,4 @@
-const getDockerSecrets = require('./docker-secrets')
+const { getDockerSecretsSync } = require('./docker-secrets')
 
 module.exports = function (appConfig, onTerminate) {
   let ds
@@ -46,7 +46,7 @@ module.exports = function (appConfig, onTerminate) {
         isProduction: process.env.NODE_ENV === 'production',
         ...cleanAppConfig(appConfig),
         ...appConfig.config,
-        ...(appConfig.secrets !== false ? getDockerSecrets() : {}), // TODO: deep merge?
+        ...(appConfig.secrets !== false ? getDockerSecretsSync() : {}), // TODO: deep merge?
       })
       .get()
 
