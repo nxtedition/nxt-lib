@@ -516,7 +516,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     stats$ = stats$.pipe(
-      rxjs.map((x) => ({
+      rx.map((x) => ({
         ...x,
         timestamp: Date.now(),
       })),
