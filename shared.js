@@ -49,7 +49,8 @@ async function reader({ sharedState, sharedBuffer }, cb) {
         assert(dataLen + 4 <= size)
         assert(dataPos + dataLen <= size)
 
-        const thenable = cb(Buffer.from(sharedBuffer, dataPos, dataLen))
+        const buffer = Buffer.from(sharedBuffer, dataPos, dataLen)
+        const thenable = cb(buffer)
         if (thenable) {
           notifyNT()
           await thenable
@@ -65,10 +66,9 @@ async function reader({ sharedState, sharedBuffer }, cb) {
       }
     }
 
-    notifyNT()
-
     const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, BigInt(writePos))
     if (async) {
+      notifyNT()
       await value
     }
     writePos = Number(Atomics.load(state, WRITE_INDEX))
@@ -83,10 +83,19 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
   let writePos = 0
   let readPos = 0
+  let notifying = false
 
   function notifyNT() {
     Atomics.store(state, WRITE_INDEX, BigInt(writePos))
     Atomics.notify(state, WRITE_INDEX)
+    notifying = false
+  }
+
+  function notify() {
+    if (!notifying) {
+      notifying = true
+      process.nextTick(notifyNT)
+    }
   }
 
   async function flush() {
@@ -119,7 +128,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
     if (sequential < required) {
       buffer.writeInt32LE(-sequential, position)
       writePos += sequential
-      notifyNT() // TODO (perf): Less aggressive notification...
+      notify()
       return tryWrite(len, fn, arg1, arg2, arg3)
     }
 
@@ -134,7 +143,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
     buffer.writeInt32LE(dataLen, dataPos - 4)
     writePos += dataLen + 4
-    notifyNT() // TODO (perf): Less aggressive notification...
+    notify()
 
     return true
   }
