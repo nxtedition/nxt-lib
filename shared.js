@@ -91,13 +91,6 @@ function writer({ sharedState, sharedBuffer, logger }) {
     notifying = false
   }
 
-  function notify() {
-    if (!notifying) {
-      notifying = true
-      process.nextTick(notifyNT)
-    }
-  }
-
   async function flush() {
     while (queue.length) {
       if (tryWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
@@ -128,7 +121,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
     if (sequential < required) {
       buffer.writeInt32LE(-sequential, position)
       writePos += sequential
-      notify()
+      notifyNT()
       return tryWrite(len, fn, arg1, arg2, arg3)
     }
 
@@ -143,7 +136,11 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
     buffer.writeInt32LE(dataLen, dataPos - 4)
     writePos += dataLen + 4
-    notify()
+
+    if (!notifying) {
+      notifying = true
+      queueMicrotask(notifyNT)
+    }
 
     return true
   }
