@@ -96,16 +96,23 @@ module.exports = ({ ds } = {}) => {
         let _refreshing = false
         let _counter = 0
         let _value = kEmpty
+        let _disposed = false
 
         refreshNT()
 
         return () => {
+          _disposed = true
           for (const entry of _entries.values()) {
             entry.dispose()
           }
+          _entries.clear()
         }
 
         function refreshNT() {
+          if (_disposed) {
+            return
+          }
+
           _refreshing = false
           _counter = (_counter + 1) & maxInt
 
