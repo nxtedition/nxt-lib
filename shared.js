@@ -129,7 +129,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
     const dataLen = fn(dataPos, buffer, arg1, arg2, arg3) - dataPos
 
     if (dataLen < 0 || dataLen > len) {
-      logger?.error({ len, dataLen }, 'invalid data size')
+      logger?.error({ err: new Error('invalid data size'), len, dataLen })
     }
 
     assert(dataPos + dataLen <= size)
