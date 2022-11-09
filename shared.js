@@ -29,6 +29,10 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
   const buffer = Buffer.from(sharedBuffer)
   const size = buffer.byteLength - 4
 
+  if (!Atomics.isLockFree(state.BYTES_PER_ELEMENT)) {
+    logger?.warn('atomics are not lockfree')
+  }
+
   let readPos = 0
   let writePos = 0
   let yieldPos = readPos + yieldLen
@@ -88,6 +92,10 @@ function writer({ sharedState, sharedBuffer, logger }) {
   const buffer = Buffer.from(sharedBuffer)
   const size = buffer.byteLength - 4
   const queue = []
+
+  if (!Atomics.isLockFree(state.BYTES_PER_ELEMENT)) {
+    logger?.warn('atomics are not lockfree')
+  }
 
   let writePos = 0
   let readPos = 0
