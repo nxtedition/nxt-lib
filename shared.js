@@ -107,20 +107,13 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
   let writePos = 0
   let readPos = 0
-  let yieldPos = writePos + yieldLen
-
   let notifying = false
 
   function notifyNT() {
-    yieldPos = writePos + yieldLen
+    notifying = false
     const writePosN = BigInt(writePos)
     Atomics.store(state, WRITE_INDEX, writePosN)
     Atomics.notify(state, WRITE_INDEX)
-  }
-
-  function notify() {
-    notifying = false
-    notifyNT()
   }
 
   async function flush() {
@@ -182,11 +175,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
     if (!notifying) {
       notifying = true
-      queueMicrotask(notify)
-    }
-
-    if (writePos >= yieldPos) {
-      notifyNT()
+      queueMicrotask(notifyNT)
     }
 
     return true
