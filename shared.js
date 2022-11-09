@@ -71,7 +71,7 @@ async function reader({ sharedState, sharedBuffer }, cb) {
       }
     }
 
-    const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, BigInt(writePos))
+    const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, BigInt(writePos), 1e3)
     if (async) {
       notifyNT()
       await value
