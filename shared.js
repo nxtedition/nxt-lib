@@ -95,7 +95,11 @@ function writer({ sharedState, sharedBuffer, logger }) {
   function notifyNT() {
     Atomics.store(state, WRITE_INDEX, BigInt(writePos))
     Atomics.notify(state, WRITE_INDEX)
+  }
+
+  function notify() {
     notifying = false
+    notifyNT()
   }
 
   async function flush() {
@@ -146,7 +150,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
     if (!notifying) {
       notifying = true
-      setImmediate(notifyNT)
+      setImmediate(notify)
     }
 
     if (writePos >= yieldPos) {
