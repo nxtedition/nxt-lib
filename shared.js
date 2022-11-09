@@ -34,7 +34,8 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
   let yieldPos = readPos + yieldLen
 
   function notifyNT() {
-    Atomics.store(state, READ_INDEX, BigInt(readPos))
+    const readPosN = BigInt(readPos)
+    Atomics.store(state, READ_INDEX, readPosN)
     Atomics.notify(state, READ_INDEX)
   }
 
@@ -71,7 +72,8 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
       }
     }
 
-    const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, BigInt(writePos), 1e3)
+    const writePosN = BigInt(writePos)
+    const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, writePosN, 1e3)
     const result = async ? await value : value
     if (result === 'timed-out') {
       logger?.warn('timed-out')
@@ -95,7 +97,8 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
   function notifyNT() {
     yieldPos = writePos + yieldLen
-    Atomics.store(state, WRITE_INDEX, BigInt(writePos))
+    const writePosN = BigInt(writePos)
+    Atomics.store(state, WRITE_INDEX, writePosN)
     Atomics.notify(state, WRITE_INDEX)
   }
 
@@ -109,7 +112,8 @@ function writer({ sharedState, sharedBuffer, logger }) {
       if (tryWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
-        const { async, value } = Atomics.waitAsync(state, READ_INDEX, BigInt(readPos), 1e3)
+        const readPosN = BigInt(readPos)
+        const { async, value } = Atomics.waitAsync(state, READ_INDEX, readPosN, 1e3)
         const result = async ? await value : value
         if (result === 'timed-out') {
           logger?.warn('timed-out')
