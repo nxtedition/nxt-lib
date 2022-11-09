@@ -24,11 +24,9 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
   const buffer32 = new Int32Array(sharedBuffer)
   const size = align8(sharedBuffer.byteLength) - 16
   const buffer = Buffer.from(sharedBuffer, 0, size)
-  const yieldLen = 256 * 1024
 
   let readPos = 0
   let writePos = 0
-  let yieldPos = readPos + yieldLen
 
   while (true) {
     while (readPos !== writePos) {
@@ -52,14 +50,11 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
 
       readPos = align8(readPos + dataLen + 4) % size
       Atomics.store(state, READ_INDEX, readPos)
-
-      // Yield to IO sometimes.
-      if (readPos >= yieldPos) {
-        yieldPos = readPos + yieldLen
-        Atomics.notify(state, READ_INDEX)
-        await tp.setImmediate()
-      }
     }
+
+    Atomics.notify(state, READ_INDEX)
+
+    await tp.setImmediate()
 
     writePos = Atomics.load(state, WRITE_INDEX)
     if (readPos === writePos) {
