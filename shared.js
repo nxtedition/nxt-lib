@@ -15,19 +15,12 @@ let poolSize = 1024 * 1024
 let poolOffset = 0
 let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 
-// TODO (fix): Max number of bytes written/read is 2^53-1 which
-// is enough for 1 MiB/s for 285 years or 1 GiB/s per 0.285 years.
-// Total amount of that is split between all workers. With 16
-// workers the above increases to 4560 and 4.560 years. Being able
-// to handle infinite amount of data would be preferrable but is
-// more complicated.
-
-const yieldLen = 256 * 1024
-
 async function reader({ sharedState, sharedBuffer, logger }, cb) {
-  const state = new BigInt64Array(sharedState)
+  const state = new Int32Array(sharedState)
   const buffer32 = new Int32Array(sharedBuffer)
   const size = Math.floor(sharedBuffer.byteLength / 8) * 8 - 8
+  const buffer = Buffer.from(sharedBuffer, 0, size)
+  const yieldLen = 256 * 1024
 
   assert((size & 0x7) === 0)
   if (!Atomics.isLockFree(state.BYTES_PER_ELEMENT)) {
@@ -39,16 +32,13 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
   let yieldPos = readPos + yieldLen
 
   function notifyNT() {
-    const readPosN = BigInt(readPos)
-    Atomics.store(state, READ_INDEX, readPosN)
     Atomics.notify(state, READ_INDEX)
   }
 
   while (true) {
-    while (readPos < writePos) {
-      const position = readPos % size
-      const dataLen = buffer32[position >> 2]
-      const dataPos = position + 4
+    while (readPos !== writePos) {
+      const dataLen = buffer32[readPos >> 2]
+      const dataPos = readPos + 4
 
       if (dataLen < 0) {
         readPos -= dataLen
@@ -57,8 +47,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
         assert(dataLen + 4 <= size)
         assert(dataPos + dataLen <= size)
 
-        const buffer = Buffer.from(sharedBuffer, dataPos, dataLen)
-        const thenable = cb(buffer)
+        const thenable = cb(buffer, dataPos, dataLen)
         if (thenable) {
           notifyNT()
           await thenable
@@ -72,6 +61,9 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
         readPos += 1
       }
 
+      readPos %= size
+      Atomics.store(state, READ_INDEX, readPos)
+
       // Yield to IO sometimes.
       if (readPos >= yieldPos) {
         yieldPos = readPos + yieldLen
@@ -80,24 +72,22 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
       }
     }
 
-    let writePosN = Atomics.load(state, WRITE_INDEX)
-    if (readPos >= writePosN) {
-      const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, writePosN, 1e3)
-      const result = async ? await value : value
-      if (result === 'timed-out') {
-        logger?.warn('timed-out')
+    writePos = Atomics.load(state, WRITE_INDEX)
+    if (readPos === writePos) {
+      const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, writePos)
+      if (async) {
+        await value
       }
-      writePosN = Atomics.load(state, WRITE_INDEX)
+      writePos = Atomics.load(state, WRITE_INDEX)
     }
-    writePos = Number(writePosN)
   }
 }
 
 function writer({ sharedState, sharedBuffer, logger }) {
-  const state = new BigInt64Array(sharedState)
-  const buffer = Buffer.from(sharedBuffer)
+  const state = new Int32Array(sharedState)
   const buffer32 = new Int32Array(sharedBuffer)
-  const size = Math.floor(buffer.byteLength / 8) * 8 - 8
+  const size = Math.floor(sharedBuffer.byteLength / 8) * 8 - 8
+  const buffer = Buffer.from(sharedBuffer, 0, size)
   const queue = []
 
   assert((size & 0x7) === 0)
@@ -111,8 +101,6 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
   function notifyNT() {
     notifying = false
-    const writePosN = BigInt(writePos)
-    Atomics.store(state, WRITE_INDEX, writePosN)
     Atomics.notify(state, WRITE_INDEX)
   }
 
@@ -121,40 +109,46 @@ function writer({ sharedState, sharedBuffer, logger }) {
       if (tryWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
-        const readPosN = BigInt(readPos)
-        const { async, value } = Atomics.waitAsync(state, READ_INDEX, readPosN, 1e3)
-        const result = async ? await value : value
-        if (result === 'timed-out') {
-          logger?.warn('timed-out')
+        const { async, value } = Atomics.waitAsync(state, READ_INDEX, readPos)
+        if (async) {
+          await value
         }
-
-        readPos = Number(Atomics.load(state, READ_INDEX))
+        readPos = Atomics.load(state, READ_INDEX)
       }
     }
   }
 
   function tryWrite(len, fn, arg1, arg2, arg3) {
     const required = len + 4
-    const used = writePos - readPos
-    const available = size - used
-    const position = writePos % size
-    const sequential = size - position
+
+    let sequential
+    let available
+
+    if (writePos >= readPos) {
+      // |----RxxxxxxW---|
+      available = readPos + (size - writePos)
+      sequential = size - writePos
+    } else {
+      // |xxxxW------Rxxx|
+      available = writePos + (size - readPos)
+      sequential = readPos - writePos
+    }
 
     assert(required <= size)
-    assert((position & 0x7) === 0)
+    assert((writePos & 0x7) === 0)
 
     if (available < required) {
       return false
     }
 
     if (sequential < required) {
-      buffer32[position >> 2] = -sequential
+      buffer32[writePos >> 2] = -sequential
       writePos += sequential
       notifyNT()
       return tryWrite(len, fn, arg1, arg2, arg3)
     }
 
-    const dataPos = position + 4
+    const dataPos = writePos + 4
     const dataLen = fn(dataPos, buffer, arg1, arg2, arg3) - dataPos
 
     if (dataLen < 0 || dataLen > len) {
@@ -164,7 +158,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
     assert(dataPos + dataLen <= size)
     assert((dataPos & 0x3) === 0)
 
-    buffer32[position >> 2] = dataLen
+    buffer32[writePos >> 2] = dataLen
     writePos += dataLen + 4
 
     // Align to 8 bytes.
@@ -172,6 +166,9 @@ function writer({ sharedState, sharedBuffer, logger }) {
       writePos |= 0x7
       writePos += 1
     }
+
+    writePos %= size
+    Atomics.store(state, WRITE_INDEX, writePos)
 
     if (!notifying) {
       notifying = true
