@@ -36,21 +36,21 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
       const dataPos = readPos + 4
 
       if (dataLen < 0) {
-        readPos -= dataLen
-      } else {
-        assert(dataLen >= 0)
-        assert(dataLen + 4 <= size)
-        assert(dataPos + dataLen <= size)
-
-        const thenable = cb(buffer, dataPos, dataLen)
-        if (thenable) {
-          Atomics.notify(state, READ_INDEX)
-          await thenable
-        }
-        readPos += dataLen + 4
+        readPos = 0
+        continue
       }
 
-      readPos = align8(readPos) % size
+      assert(dataLen >= 0)
+      assert(dataLen + 4 <= size)
+      assert(dataPos + dataLen <= size)
+
+      const thenable = cb(buffer, dataPos, dataLen)
+      if (thenable) {
+        Atomics.notify(state, READ_INDEX)
+        await thenable
+      }
+
+      readPos = align8(readPos + dataLen + 4) % size
       Atomics.store(state, READ_INDEX, readPos)
 
       // Yield to IO sometimes.
@@ -126,8 +126,8 @@ function writer({ sharedState, sharedBuffer, logger }) {
     }
 
     if (sequential < required) {
-      buffer32[writePos >> 2] = -sequential
-      writePos += sequential
+      buffer32[writePos >> 2] = -1
+      writePos = 0
       notifyNT()
       return tryWrite(len, fn, arg1, arg2, arg3)
     }
@@ -143,9 +143,8 @@ function writer({ sharedState, sharedBuffer, logger }) {
     assert((dataPos & 0x3) === 0)
 
     buffer32[writePos >> 2] = dataLen
-    writePos += dataLen + 4
 
-    writePos = align8(writePos) % size
+    writePos = align8(writePos + dataLen + 4) % size
     Atomics.store(state, WRITE_INDEX, writePos)
 
     if (!notifying) {
