@@ -24,7 +24,7 @@ let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 
 const yieldLen = 256 * 1024
 
-async function reader({ sharedState, sharedBuffer }, cb) {
+async function reader({ sharedState, sharedBuffer, logger }, cb) {
   const state = new BigInt64Array(sharedState)
   const buffer = Buffer.from(sharedBuffer)
   const size = buffer.byteLength - 4
@@ -72,10 +72,11 @@ async function reader({ sharedState, sharedBuffer }, cb) {
     }
 
     const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, BigInt(writePos), 1e3)
-    if (async) {
-      notifyNT()
-      await value
+    const result = async ? await value : value
+    if (result === 'timed-out') {
+      logger?.warn('timed-out')
     }
+
     writePos = Number(Atomics.load(state, WRITE_INDEX))
   }
 }
@@ -109,9 +110,11 @@ function writer({ sharedState, sharedBuffer, logger }) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
         const { async, value } = Atomics.waitAsync(state, READ_INDEX, BigInt(readPos), 1e3)
-        if (async) {
-          await value
+        const result = async ? await value : value
+        if (result === 'timed-out') {
+          logger?.warn('timed-out')
         }
+
         readPos = Number(Atomics.load(state, READ_INDEX))
       }
     }
