@@ -150,7 +150,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
     if (!notifying) {
       notifying = true
-      setImmediate(notify)
+      queueMicrotask(notify)
     }
 
     if (writePos >= yieldPos) {
