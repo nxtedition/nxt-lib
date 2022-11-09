@@ -11,6 +11,10 @@ function alloc(size) {
   }
 }
 
+function align8(value) {
+  return (value | 0x7) + 1
+}
+
 let poolSize = 1024 * 1024
 let poolOffset = 0
 let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
@@ -18,7 +22,7 @@ let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 async function reader({ sharedState, sharedBuffer, logger }, cb) {
   const state = new Int32Array(sharedState)
   const buffer32 = new Int32Array(sharedBuffer)
-  const size = Math.floor(sharedBuffer.byteLength / 8) * 8 - 8
+  const size = align8(sharedBuffer.byteLength) - 16
   const buffer = Buffer.from(sharedBuffer, 0, size)
   const yieldLen = 256 * 1024
 
@@ -55,13 +59,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
         readPos += dataLen + 4
       }
 
-      // Align to 8 bytes.
-      if (readPos & 0x7) {
-        readPos |= 0x7
-        readPos += 1
-      }
-
-      readPos %= size
+      readPos = align8(readPos) % size
       Atomics.store(state, READ_INDEX, readPos)
 
       // Yield to IO sometimes.
@@ -86,7 +84,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
 function writer({ sharedState, sharedBuffer, logger }) {
   const state = new Int32Array(sharedState)
   const buffer32 = new Int32Array(sharedBuffer)
-  const size = Math.floor(sharedBuffer.byteLength / 8) * 8 - 8
+  const size = align8(sharedBuffer.byteLength) - 16
   const buffer = Buffer.from(sharedBuffer, 0, size)
   const queue = []
 
@@ -161,13 +159,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
     buffer32[writePos >> 2] = dataLen
     writePos += dataLen + 4
 
-    // Align to 8 bytes.
-    if (writePos & 0x7) {
-      writePos |= 0x7
-      writePos += 1
-    }
-
-    writePos %= size
+    writePos = align8(writePos) % size
     Atomics.store(state, WRITE_INDEX, writePos)
 
     if (!notifying) {
