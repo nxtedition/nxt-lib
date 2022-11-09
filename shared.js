@@ -26,18 +26,9 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
   const buffer = Buffer.from(sharedBuffer, 0, size)
   const yieldLen = 256 * 1024
 
-  assert((size & 0x7) === 0)
-  if (!Atomics.isLockFree(state.BYTES_PER_ELEMENT)) {
-    logger?.warn('atomics are not lockfree')
-  }
-
   let readPos = 0
   let writePos = 0
   let yieldPos = readPos + yieldLen
-
-  function notifyNT() {
-    Atomics.notify(state, READ_INDEX)
-  }
 
   while (true) {
     while (readPos !== writePos) {
@@ -53,7 +44,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
 
         const thenable = cb(buffer, dataPos, dataLen)
         if (thenable) {
-          notifyNT()
+          Atomics.notify(state, READ_INDEX)
           await thenable
         }
         readPos += dataLen + 4
@@ -65,7 +56,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
       // Yield to IO sometimes.
       if (readPos >= yieldPos) {
         yieldPos = readPos + yieldLen
-        notifyNT()
+        Atomics.notify(state, READ_INDEX)
         await tp.setImmediate()
       }
     }
@@ -87,11 +78,6 @@ function writer({ sharedState, sharedBuffer, logger }) {
   const size = align8(sharedBuffer.byteLength) - 16
   const buffer = Buffer.from(sharedBuffer, 0, size)
   const queue = []
-
-  assert((size & 0x7) === 0)
-  if (!Atomics.isLockFree(state.BYTES_PER_ELEMENT)) {
-    logger?.warn('atomics are not lockfree')
-  }
 
   let writePos = 0
   let readPos = 0
