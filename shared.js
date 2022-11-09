@@ -64,6 +64,11 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
         readPos += dataLen + 4
       }
 
+      if (readPos & 0x7) {
+        readPos |= 0x7
+        readPos += 1
+      }
+
       // Yield to IO sometimes.
       if (readPos >= yieldPos) {
         yieldPos = readPos + yieldLen
@@ -163,6 +168,11 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
     buffer.writeInt32LE(dataLen, dataPos - 4)
     writePos += dataLen + 4
+
+    if (writePos & 0x7) {
+      writePos |= 0x7
+      writePos += 1
+    }
 
     if (!notifying) {
       notifying = true
