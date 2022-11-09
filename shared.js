@@ -34,6 +34,7 @@ async function reader({ sharedState, sharedBuffer }, cb) {
   let yieldPos = readPos + yieldLen
 
   function notifyNT() {
+    yieldPos = readPos + yieldLen
     Atomics.store(state, READ_INDEX, BigInt(readPos))
     Atomics.notify(state, READ_INDEX)
   }
@@ -61,7 +62,6 @@ async function reader({ sharedState, sharedBuffer }, cb) {
 
       // Yield to IO sometimes.
       if (readPos >= yieldPos) {
-        yieldPos = readPos + yieldLen
         notifyNT()
         await tp.setImmediate()
       }
@@ -93,6 +93,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
   let notifying = false
 
   function notifyNT() {
+    yieldPos = writePos + yieldLen
     Atomics.store(state, WRITE_INDEX, BigInt(writePos))
     Atomics.notify(state, WRITE_INDEX)
   }
@@ -154,7 +155,6 @@ function writer({ sharedState, sharedBuffer, logger }) {
     }
 
     if (writePos >= yieldPos) {
-      yieldPos = writePos + yieldLen
       notifyNT()
     }
 
