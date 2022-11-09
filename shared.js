@@ -26,9 +26,10 @@ const yieldLen = 256 * 1024
 
 async function reader({ sharedState, sharedBuffer, logger }, cb) {
   const state = new BigInt64Array(sharedState)
-  const buffer = Buffer.from(sharedBuffer)
-  const size = buffer.byteLength - 4
+  const buffer32 = new Int32Array(sharedBuffer)
+  const size = Math.floor(sharedBuffer.byteLength / 8) * 8 - 8
 
+  assert((size & 0x7) === 0)
   if (!Atomics.isLockFree(state.BYTES_PER_ELEMENT)) {
     logger?.warn('atomics are not lockfree')
   }
@@ -45,8 +46,9 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
 
   while (true) {
     while (readPos < writePos) {
-      const dataPos = (readPos % size) + 4
-      const dataLen = buffer.readInt32LE(dataPos - 4)
+      const position = readPos % size
+      const dataLen = buffer32[position >> 2]
+      const dataPos = position + 4
 
       if (dataLen < 0) {
         readPos -= dataLen
@@ -64,6 +66,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
         readPos += dataLen + 4
       }
 
+      // Align to 8 bytes.
       if (readPos & 0x7) {
         readPos |= 0x7
         readPos += 1
@@ -75,29 +78,29 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
         notifyNT()
         await tp.setImmediate()
       }
+    }
 
-      if (readPos >= writePos) {
-        writePos = Number(Atomics.load(state, WRITE_INDEX))
+    let writePosN = Atomics.load(state, WRITE_INDEX)
+    if (readPos >= writePosN) {
+      const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, writePosN, 1e3)
+      const result = async ? await value : value
+      if (result === 'timed-out') {
+        logger?.warn('timed-out')
       }
+      writePosN = Atomics.load(state, WRITE_INDEX)
     }
-
-    const writePosN = BigInt(writePos)
-    const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, writePosN, 1e3)
-    const result = async ? await value : value
-    if (result === 'timed-out') {
-      logger?.warn('timed-out')
-    }
-
-    writePos = Number(Atomics.load(state, WRITE_INDEX))
+    writePos = Number(writePosN)
   }
 }
 
 function writer({ sharedState, sharedBuffer, logger }) {
   const state = new BigInt64Array(sharedState)
   const buffer = Buffer.from(sharedBuffer)
-  const size = buffer.byteLength - 4
+  const buffer32 = new Int32Array(sharedBuffer)
+  const size = Math.floor(buffer.byteLength / 8) * 8 - 8
   const queue = []
 
+  assert((size & 0x7) === 0)
   if (!Atomics.isLockFree(state.BYTES_PER_ELEMENT)) {
     logger?.warn('atomics are not lockfree')
   }
@@ -145,13 +148,14 @@ function writer({ sharedState, sharedBuffer, logger }) {
     const sequential = size - position
 
     assert(required <= size)
+    assert((position & 0x7) === 0)
 
     if (available < required) {
       return false
     }
 
     if (sequential < required) {
-      buffer.writeInt32LE(-sequential, position)
+      buffer32[position >> 2] = -sequential
       writePos += sequential
       notifyNT()
       return tryWrite(len, fn, arg1, arg2, arg3)
@@ -165,10 +169,12 @@ function writer({ sharedState, sharedBuffer, logger }) {
     }
 
     assert(dataPos + dataLen <= size)
+    assert((dataPos & 0x3) === 0)
 
-    buffer.writeInt32LE(dataLen, dataPos - 4)
+    buffer32[position >> 2] = dataLen
     writePos += dataLen + 4
 
+    // Align to 8 bytes.
     if (writePos & 0x7) {
       writePos |= 0x7
       writePos += 1
