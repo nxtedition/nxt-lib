@@ -22,11 +22,12 @@ let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 // to handle infinite amount of data would be preferrable but is
 // more complicated.
 
+const yieldLen = 256 * 1024
+
 async function reader({ sharedState, sharedBuffer }, cb) {
   const state = new BigInt64Array(sharedState)
   const buffer = Buffer.from(sharedBuffer)
   const size = buffer.byteLength - 4
-  const yieldLen = 256 * 1024
 
   let readPos = 0
   let writePos = 0
@@ -64,6 +65,10 @@ async function reader({ sharedState, sharedBuffer }, cb) {
         notifyNT()
         await tp.setImmediate()
       }
+
+      if (readPos >= writePos) {
+        writePos = Number(Atomics.load(state, WRITE_INDEX))
+      }
     }
 
     const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, BigInt(writePos))
@@ -83,6 +88,8 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
   let writePos = 0
   let readPos = 0
+  let yieldPos = writePos + yieldLen
+
   let notifying = false
 
   function notifyNT() {
@@ -139,7 +146,12 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
     if (!notifying) {
       notifying = true
-      queueMicrotask(notifyNT)
+      setImmediate(notifyNT)
+    }
+
+    if (writePos >= yieldPos) {
+      yieldPos = writePos + yieldLen
+      notifyNT()
     }
 
     return true
