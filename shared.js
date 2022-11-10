@@ -112,7 +112,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
       sequential = size - writePos
     } else {
       // |xxxxW------Rxxx|
-      available = writePos + (size - readPos)
+      available = writePos + (size - readPos - 1)
       sequential = readPos - writePos
     }
 
