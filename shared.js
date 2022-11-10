@@ -55,14 +55,15 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
 
       const thenable = cb(buffer, dataPos, dataLen)
       if (thenable) {
+        Atomics.store(state, READ_INDEX, readPos)
         Atomics.notify(state, READ_INDEX)
         await thenable
       }
 
       readPos = align8(readPos + dataLen + 4) % size
-      Atomics.store(state, READ_INDEX, readPos)
     }
 
+    Atomics.store(state, READ_INDEX, readPos)
     Atomics.notify(state, READ_INDEX)
 
     await tp.setImmediate()
