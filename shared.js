@@ -27,6 +27,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
 
   let readPos = 0
   let writePos = 0
+  let yieldPos = 0
 
   await Promise.resolve()
 
@@ -61,6 +62,13 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
       }
 
       readPos = align8(readPos + dataLen + 4) % size
+      yieldPos = yieldPos + dataLen + 4
+
+      if (yieldPos > 256 * 1024) {
+        yieldPos = 0
+        Atomics.store(state, READ_INDEX, readPos)
+        Atomics.notify(state, READ_INDEX)
+      }
     }
 
     Atomics.store(state, READ_INDEX, readPos)
