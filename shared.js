@@ -12,7 +12,11 @@ function alloc(size) {
 }
 
 function align8(value) {
-  return (value | 0x7) + 1
+  if (value & 0x7) {
+    value |= 0x7
+    value += 1
+  }
+  return value
 }
 
 let poolSize = 1024 * 1024
@@ -186,12 +190,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
     const buf = Buffer.from(poolBuffer, poolOffset, pos)
 
     poolOffset += pos
-
-    // Ensure aligned slices
-    if (poolOffset & 0x7) {
-      poolOffset |= 0x7
-      poolOffset += 1
-    }
+    poolOffset = align8(poolOffset)
 
     queue.push(buf)
     if (queue.length === 1) {
