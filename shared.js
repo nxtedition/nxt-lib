@@ -28,6 +28,8 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
   let readPos = 0
   let writePos = 0
 
+  await Promise.resolve()
+
   while (true) {
     while (readPos !== writePos) {
       const dataLen = buffer32[readPos >> 2]
