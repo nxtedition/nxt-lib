@@ -33,6 +33,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
 
   while (true) {
     writePos = Atomics.load(state, WRITE_INDEX)
+
     if (readPos === writePos) {
       const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, writePos)
       if (async) {
@@ -66,8 +67,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
 
       if (yieldPos > 256 * 1024) {
         yieldPos = 0
-        Atomics.store(state, READ_INDEX, readPos)
-        Atomics.notify(state, READ_INDEX)
+        break
       }
     }
 
