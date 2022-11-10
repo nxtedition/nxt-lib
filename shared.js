@@ -117,12 +117,12 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
     if (writePos >= readPos) {
       // |----RxxxxxxW---|
-      available = readPos + (size - writePos)
-      sequential = size - writePos
+      available = readPos + (size - writePos) - 8
+      sequential = size - writePos - 8
     } else {
       // |xxxxW------Rxxx|
-      available = writePos + (size - readPos) - 1
-      sequential = readPos - writePos
+      available = writePos + (size - readPos) - 8
+      sequential = readPos - writePos - 8
     }
 
     assert(required <= size)
