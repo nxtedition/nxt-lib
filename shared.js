@@ -83,6 +83,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
   function notifyNT() {
     notifying = false
+    Atomics.store(state, WRITE_INDEX, writePos)
     Atomics.notify(state, WRITE_INDEX)
   }
 
@@ -112,7 +113,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
       sequential = size - writePos
     } else {
       // |xxxxW------Rxxx|
-      available = writePos + (size - readPos - 1)
+      available = writePos + (size - readPos) - 1
       sequential = readPos - writePos
     }
 
@@ -143,7 +144,6 @@ function writer({ sharedState, sharedBuffer, logger }) {
     buffer32[writePos >> 2] = dataLen
 
     writePos = align8(writePos + dataLen + 4) % size
-    Atomics.store(state, WRITE_INDEX, writePos)
 
     if (!notifying) {
       notifying = true
