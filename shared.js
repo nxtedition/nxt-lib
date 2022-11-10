@@ -62,7 +62,9 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
         await thenable
       }
 
-      readPos = align8(readPos + dataLen + 4) % size
+      readPos = align8(readPos + dataLen + 4)
+      readPos = readPos >= size ? readPos - size : readPos
+
       yieldPos = yieldPos + dataLen + 4
 
       if (yieldPos > 256 * 1024) {
@@ -151,7 +153,8 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
     buffer32[writePos >> 2] = dataLen
 
-    writePos = align8(writePos + dataLen + 4) % size
+    writePos = align8(writePos + dataLen + 4)
+    writePos = writePos >= size ? writePos - size : writePos
 
     if (!notifying) {
       notifying = true
