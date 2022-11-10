@@ -97,6 +97,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
   function notifyNT() {
     notifying = false
+    readPos = Atomics.load(state, READ_INDEX)
     Atomics.store(state, WRITE_INDEX, writePos)
     Atomics.notify(state, WRITE_INDEX)
   }
