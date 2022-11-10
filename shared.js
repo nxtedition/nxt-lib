@@ -119,17 +119,20 @@ function writer({ sharedState, sharedBuffer, logger }) {
   function tryWrite(len, fn, arg1, arg2, arg3) {
     const required = len + 4
 
-    let sequential
     let available
-
     if (writePos >= readPos) {
       // |----RxxxxxxW---|
       available = readPos + (size - writePos) - 8
-      sequential = size - writePos - 8
+
+      const sequential = size - writePos - 8
+      if (sequential < required) {
+        buffer32[writePos >> 2] = -1
+        writePos = 0
+        available = readPos - 8
+      }
     } else {
       // |xxxxW------Rxxx|
       available = writePos + (size - readPos) - 8
-      sequential = readPos - writePos - 8
     }
 
     assert(required <= size)
@@ -137,13 +140,6 @@ function writer({ sharedState, sharedBuffer, logger }) {
 
     if (available < required) {
       return false
-    }
-
-    if (sequential < required) {
-      buffer32[writePos >> 2] = -1
-      writePos = 0
-      notifyNT()
-      return tryWrite(len, fn, arg1, arg2, arg3)
     }
 
     const dataPos = writePos + 4
