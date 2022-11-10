@@ -31,6 +31,15 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
   await Promise.resolve()
 
   while (true) {
+    writePos = Atomics.load(state, WRITE_INDEX)
+    if (readPos === writePos) {
+      const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, writePos)
+      if (async) {
+        await value
+      }
+      writePos = Atomics.load(state, WRITE_INDEX)
+    }
+
     while (readPos !== writePos) {
       const dataLen = buffer32[readPos >> 2]
       const dataPos = readPos + 4
@@ -57,15 +66,6 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
     Atomics.notify(state, READ_INDEX)
 
     await tp.setImmediate()
-
-    writePos = Atomics.load(state, WRITE_INDEX)
-    if (readPos === writePos) {
-      const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, writePos)
-      if (async) {
-        await value
-      }
-      writePos = Atomics.load(state, WRITE_INDEX)
-    }
   }
 }
 
