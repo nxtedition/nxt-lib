@@ -63,6 +63,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
       if (thenable) {
         Atomics.store(state, READ_INDEX, readPos)
         Atomics.notify(state, READ_INDEX)
+
         await thenable
       }
 
