@@ -93,14 +93,18 @@ function writer({ sharedState, sharedBuffer }) {
   const queue = []
 
   let readPos = Atomics.load(state, READ_INDEX)
-  let writePos = Atomics.load(state, WRITE_INDEX)
+  let storePos = Atomics.load(state, WRITE_INDEX)
+  let writePos = storePos
   let notifying = false
 
   function notifyNT() {
     notifying = false
     readPos = Atomics.load(state, READ_INDEX)
     Atomics.store(state, WRITE_INDEX, writePos)
-    Atomics.notify(state, WRITE_INDEX)
+    if (storePos === readPos) {
+      Atomics.notify(state, WRITE_INDEX)
+    }
+    storePos = writePos
   }
 
   async function flush() {
