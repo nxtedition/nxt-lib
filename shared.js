@@ -23,7 +23,7 @@ let poolSize = 1024 * 1024
 let poolOffset = 0
 let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 
-async function reader({ sharedState, sharedBuffer, logger }, cb) {
+async function reader({ sharedState, sharedBuffer }, cb) {
   const state = new Int32Array(sharedState)
   const buffer32 = new Int32Array(sharedBuffer)
   const size = sharedBuffer.byteLength
@@ -85,7 +85,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
   }
 }
 
-function writer({ sharedState, sharedBuffer, logger }) {
+function writer({ sharedState, sharedBuffer }) {
   const state = new Int32Array(sharedState)
   const buffer32 = new Int32Array(sharedBuffer)
   const size = sharedBuffer.byteLength
