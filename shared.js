@@ -29,8 +29,8 @@ async function reader({ sharedState, sharedBuffer }, cb) {
   const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
 
-  let readPos = 0
-  let writePos = 0
+  let readPos = Atomics.load(state, READ_INDEX)
+  let writePos = Atomics.load(state, WRITE_INDEX)
   let yieldPos = 0
 
   await Promise.resolve()
@@ -92,8 +92,8 @@ function writer({ sharedState, sharedBuffer }) {
   const buffer = Buffer.from(sharedBuffer, 0, size)
   const queue = []
 
-  let writePos = 0
-  let readPos = 0
+  let readPos = Atomics.load(state, READ_INDEX)
+  let writePos = Atomics.load(state, WRITE_INDEX)
   let notifying = false
 
   function notifyNT() {
