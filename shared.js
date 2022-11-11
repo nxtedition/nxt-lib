@@ -146,7 +146,7 @@ function writer({ sharedState, sharedBuffer, logger }) {
     const dataPos = writePos + 4
     const dataLen = fn(dataPos, buffer, arg1, arg2, arg3) - dataPos
 
-    assert(dataLen > 0 && dataLen <= len + 4)
+    assert(dataLen >= 0 && dataLen <= len + 4)
     assert(dataPos + dataLen <= size)
     assert((dataPos & 0x3) === 0)
 
