@@ -192,7 +192,7 @@ function writer({ sharedState, sharedBuffer }) {
 
     queue.push(buf)
     if (queue.length === 1) {
-      setImmediate(flush)
+      queueMicrotask(flush)
     }
   }
 
