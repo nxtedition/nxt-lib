@@ -120,6 +120,8 @@ function writer({ sharedState, sharedBuffer }) {
   function tryWrite(len, fn, arg1, arg2, arg3) {
     const required = len + 4 + 8 + 8
 
+    assert(required <= size)
+
     let available
     if (writePos >= readPos) {
       // 0----RxxxxxxW---S
@@ -137,9 +139,6 @@ function writer({ sharedState, sharedBuffer }) {
       available = writePos + (size - readPos)
     }
 
-    assert(required <= size)
-    assert((writePos & 0x7) === 0)
-
     if (available < required) {
       return false
     }
@@ -149,7 +148,6 @@ function writer({ sharedState, sharedBuffer }) {
 
     assert(dataLen >= 0 && dataLen <= len + 4)
     assert(dataPos + dataLen <= size)
-    assert((dataPos & 0x3) === 0)
 
     buffer32[writePos >> 2] = dataLen
 
