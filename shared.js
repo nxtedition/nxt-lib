@@ -26,7 +26,7 @@ let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 async function reader({ sharedState, sharedBuffer, logger }, cb) {
   const state = new Int32Array(sharedState)
   const buffer32 = new Int32Array(sharedBuffer)
-  const size = align8(sharedBuffer.byteLength) - 16
+  const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
 
   let readPos = 0
@@ -87,7 +87,7 @@ async function reader({ sharedState, sharedBuffer, logger }, cb) {
 function writer({ sharedState, sharedBuffer, logger }) {
   const state = new Int32Array(sharedState)
   const buffer32 = new Int32Array(sharedBuffer)
-  const size = align8(sharedBuffer.byteLength) - 16
+  const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
   const queue = []
 
@@ -117,22 +117,23 @@ function writer({ sharedState, sharedBuffer, logger }) {
   }
 
   function tryWrite(len, fn, arg1, arg2, arg3) {
-    const required = len + 4
+    const required = len + 4 + 8 + 8
 
     let available
     if (writePos >= readPos) {
-      // |----RxxxxxxW---|
-      available = readPos + (size - writePos) - 8
+      // 0----RxxxxxxW---S
 
-      const sequential = size - writePos - 8
+      const sequential = size - writePos
       if (sequential < required) {
         buffer32[writePos >> 2] = -1
         writePos = 0
-        available = readPos - 8
+        available = readPos
+      } else {
+        available = readPos + (size - writePos)
       }
     } else {
-      // |xxxxW------Rxxx|
-      available = writePos + (size - readPos) - 8
+      // 0xxxxW------RxxxS
+      available = writePos + (size - readPos)
     }
 
     assert(required <= size)
@@ -166,8 +167,10 @@ function writer({ sharedState, sharedBuffer, logger }) {
   }
 
   function write(len, fn, arg1, arg2, arg3) {
-    assert(len >= 0)
-    assert(len + 4 <= size)
+    const required = len + 4 + 8 + 8
+
+    assert(required >= 0)
+    assert(required <= size)
 
     if (!queue.length && tryWrite(len, fn, arg1, arg2, arg3)) {
       return
