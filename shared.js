@@ -25,7 +25,7 @@ let poolSize = 1024 * 1024
 let poolOffset = 0
 let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 
-async function reader({ sharedState, sharedBuffer }, cb) {
+async function reader({ sharedState, sharedBuffer, pollInterval }, cb) {
   const state = new Int32Array(sharedState)
   const buffer32 = new Int32Array(sharedBuffer)
   const size = sharedBuffer.byteLength
@@ -72,7 +72,12 @@ async function reader({ sharedState, sharedBuffer }, cb) {
 
     Atomics.store(state, READ_INDEX, readPos)
 
-    await tp.setImmediate()
+    if (pollInterval != null) {
+      await tp.setTimeout(pollInterval)
+    } else {
+      await tp.setImmediate()
+    }
+
     writePos = Atomics.load(state, WRITE_INDEX)
   }
 }
