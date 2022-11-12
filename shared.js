@@ -1,12 +1,14 @@
 const assert = require('node:assert')
 const tp = require('node:timers/promises')
 
+// Make sure write and read are in different
+// cache lines.
 const WRITE_INDEX = 0
-const READ_INDEX = 32
+const READ_INDEX = 16
 
 function alloc(size) {
   return {
-    sharedState: new SharedArrayBuffer(256),
+    sharedState: new SharedArrayBuffer(128),
     sharedBuffer: new SharedArrayBuffer(size),
   }
 }
