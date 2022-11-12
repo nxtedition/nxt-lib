@@ -31,23 +31,13 @@ async function reader({ sharedState, sharedBuffer }, cb) {
   const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
 
+  await tp.setImmediate()
+
   let readPos = Atomics.load(state, READ_INDEX)
   let writePos = Atomics.load(state, WRITE_INDEX)
   let yieldPos = 0
 
-  await Promise.resolve()
-
   while (true) {
-    writePos = Atomics.load(state, WRITE_INDEX)
-
-    if (readPos === writePos) {
-      const { async, value } = Atomics.waitAsync(state, WRITE_INDEX, writePos)
-      if (async) {
-        await value
-      }
-      writePos = Atomics.load(state, WRITE_INDEX)
-    }
-
     while (readPos !== writePos) {
       const dataLen = buffer32[readPos >> 2]
       const dataPos = readPos + 4
@@ -81,9 +71,9 @@ async function reader({ sharedState, sharedBuffer }, cb) {
     }
 
     Atomics.store(state, READ_INDEX, readPos)
-    Atomics.notify(state, READ_INDEX)
 
     await tp.setImmediate()
+    writePos = Atomics.load(state, WRITE_INDEX)
   }
 }
 
@@ -96,25 +86,13 @@ function writer({ sharedState, sharedBuffer }) {
 
   let readPos = Atomics.load(state, READ_INDEX)
   let writePos = Atomics.load(state, WRITE_INDEX)
-  let notifying = false
-
-  function notifyNT() {
-    notifying = false
-    readPos = Atomics.load(state, READ_INDEX)
-    Atomics.store(state, WRITE_INDEX, writePos)
-    Atomics.notify(state, WRITE_INDEX)
-  }
 
   async function flush() {
     while (queue.length) {
       if (tryWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
-        const { async, value } = Atomics.waitAsync(state, READ_INDEX, readPos)
-        if (async) {
-          await value
-        }
-        readPos = Atomics.load(state, READ_INDEX)
+        await tp.setTimeout(10)
       }
     }
   }
@@ -156,10 +134,8 @@ function writer({ sharedState, sharedBuffer }) {
     writePos = align8(writePos + dataLen + 4)
     writePos = writePos >= size ? writePos - size : writePos
 
-    if (!notifying) {
-      notifying = true
-      queueMicrotask(notifyNT)
-    }
+    readPos = Atomics.load(state, READ_INDEX)
+    Atomics.store(state, WRITE_INDEX, writePos)
 
     return true
   }
