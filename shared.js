@@ -2,11 +2,11 @@ const assert = require('node:assert')
 const tp = require('node:timers/promises')
 
 const WRITE_INDEX = 0
-const READ_INDEX = 1
+const READ_INDEX = 32
 
 function alloc(size) {
   return {
-    sharedState: new SharedArrayBuffer(64),
+    sharedState: new SharedArrayBuffer(256),
     sharedBuffer: new SharedArrayBuffer(size),
   }
 }
@@ -101,9 +101,7 @@ function writer({ sharedState, sharedBuffer }) {
     notifying = false
     readPos = Atomics.load(state, READ_INDEX)
     Atomics.store(state, WRITE_INDEX, writePos)
-    if (storePos === readPos) {
-      Atomics.notify(state, WRITE_INDEX)
-    }
+    Atomics.notify(state, WRITE_INDEX)
     storePos = writePos
   }
 
