@@ -33,7 +33,7 @@ function reader({ sharedState, sharedBuffer }) {
 
   let readPos = Atomics.load(state, READ_INDEX)
 
-  return async function read(cb) {
+  return function read(cb) {
     const writePos = Atomics.load(state, WRITE_INDEX)
 
     while (readPos !== writePos) {
@@ -49,11 +49,7 @@ function reader({ sharedState, sharedBuffer }) {
       assert(dataLen + 4 <= size)
       assert(dataPos + dataLen <= size)
 
-      const thenable = cb(buffer, dataPos, dataLen)
-      if (thenable) {
-        Atomics.store(state, READ_INDEX, readPos)
-        await thenable
-      }
+      cb(buffer, dataPos, dataLen)
 
       readPos = align8(readPos + dataLen + 4)
       readPos = readPos >= size ? readPos - size : readPos
