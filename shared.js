@@ -25,19 +25,17 @@ let poolSize = 1024 * 1024
 let poolOffset = 0
 let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 
-async function reader({ sharedState, sharedBuffer }, cb) {
+function reader({ sharedState, sharedBuffer }) {
   const state = new Int32Array(sharedState)
   const buffer32 = new Int32Array(sharedBuffer)
   const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
 
-  await tp.setImmediate()
-
   let readPos = Atomics.load(state, READ_INDEX)
-  let writePos = Atomics.load(state, WRITE_INDEX)
-  let yieldPos = 0
 
-  while (true) {
+  return async function read(cb) {
+    const writePos = Atomics.load(state, WRITE_INDEX)
+
     while (readPos !== writePos) {
       const dataLen = buffer32[readPos >> 2]
       const dataPos = readPos + 4
@@ -54,26 +52,14 @@ async function reader({ sharedState, sharedBuffer }, cb) {
       const thenable = cb(buffer, dataPos, dataLen)
       if (thenable) {
         Atomics.store(state, READ_INDEX, readPos)
-        Atomics.notify(state, READ_INDEX)
-
         await thenable
       }
 
       readPos = align8(readPos + dataLen + 4)
       readPos = readPos >= size ? readPos - size : readPos
-
-      yieldPos = yieldPos + dataLen + 4
-
-      if (yieldPos > 256 * 1024) {
-        yieldPos = 0
-        break
-      }
     }
 
     Atomics.store(state, READ_INDEX, readPos)
-
-    await tp.setImmediate()
-    writePos = Atomics.load(state, WRITE_INDEX)
   }
 }
 
@@ -84,7 +70,6 @@ function writer({ sharedState, sharedBuffer }) {
   const buffer = Buffer.from(sharedBuffer, 0, size)
   const queue = []
 
-  let readPos = Atomics.load(state, READ_INDEX)
   let writePos = Atomics.load(state, WRITE_INDEX)
 
   async function flush() {
@@ -101,6 +86,8 @@ function writer({ sharedState, sharedBuffer }) {
     const required = len + 4 + 8 + 8
 
     assert(required <= size)
+
+    const readPos = Atomics.load(state, READ_INDEX)
 
     let available
     if (writePos >= readPos) {
@@ -134,7 +121,6 @@ function writer({ sharedState, sharedBuffer }) {
     writePos = align8(writePos + dataLen + 4)
     writePos = writePos >= size ? writePos - size : writePos
 
-    readPos = Atomics.load(state, READ_INDEX)
     Atomics.store(state, WRITE_INDEX, writePos)
 
     return true
