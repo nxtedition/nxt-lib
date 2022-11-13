@@ -35,6 +35,9 @@ function reader({ sharedState, sharedBuffer }) {
 
   return function read(cb) {
     const writePos = Atomics.load(state, WRITE_INDEX)
+    if (readPos === writePos) {
+      return
+    }
 
     while (readPos !== writePos) {
       const dataLen = buffer32[readPos >> 2]
@@ -73,7 +76,7 @@ function writer({ sharedState, sharedBuffer }) {
       if (tryWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
-        await tp.setTimeout(10)
+        await tp.setTimeout(100)
       }
     }
   }
