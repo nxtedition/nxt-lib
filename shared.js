@@ -13,14 +13,6 @@ function alloc(size) {
   }
 }
 
-function align8(value) {
-  if (value & 0x7) {
-    value |= 0x7
-    value += 1
-  }
-  return value
-}
-
 let poolSize = 1024 * 1024
 let poolOffset = 0
 let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
@@ -39,7 +31,7 @@ function reader({ sharedState, sharedBuffer }) {
       return
     }
 
-    while (readPos !== writePos) {
+    do {
       const dataLen = buffer32[readPos >> 2]
       const dataPos = readPos + 4
 
@@ -54,9 +46,14 @@ function reader({ sharedState, sharedBuffer }) {
 
       cb(buffer, dataPos, dataLen)
 
-      readPos = align8(readPos + dataLen + 4)
+      readPos = readPos + dataLen + 4
+      if (readPos & 0x7) {
+        readPos |= 0x7
+        readPos += 1
+      }
+
       readPos = readPos >= size ? readPos - size : readPos
-    }
+    } while (readPos !== writePos)
 
     Atomics.store(state, READ_INDEX, readPos)
   }
@@ -117,7 +114,12 @@ function writer({ sharedState, sharedBuffer }) {
 
     buffer32[writePos >> 2] = dataLen
 
-    writePos = align8(writePos + dataLen + 4)
+    writePos = writePos + dataLen + 4
+    if (writePos & 0x7) {
+      writePos |= 0x7
+      writePos += 1
+    }
+
     writePos = writePos >= size ? writePos - size : writePos
 
     Atomics.store(state, WRITE_INDEX, writePos)
@@ -149,7 +151,10 @@ function writer({ sharedState, sharedBuffer }) {
     const buf = Buffer.from(poolBuffer, poolOffset, pos)
 
     poolOffset += pos
-    poolOffset = align8(poolOffset)
+    if (poolOffset & 0x7) {
+      poolOffset |= 0x7
+      poolOffset += 1
+    }
 
     queue.push(buf)
     if (queue.length === 1) {
