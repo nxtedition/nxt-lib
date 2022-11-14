@@ -129,14 +129,14 @@ function writer({ sharedState, sharedBuffer }) {
     return true
   }
 
-  function write(len, fn, arg1, arg2, arg3) {
+  return function write(len, fn, arg1, arg2, arg3) {
     const required = len + 4 + 8 + 8
 
     assert(required >= 0)
     assert(required <= size)
 
     if (!queue.length && tryWrite(len, fn, arg1, arg2, arg3)) {
-      return
+      return true
     }
 
     // len is usually significantly overprovisioned to account for "worst" case.
@@ -162,13 +162,8 @@ function writer({ sharedState, sharedBuffer }) {
     if (queue.length === 1) {
       queueMicrotask(flush)
     }
-  }
 
-  return {
-    write,
-    get pending() {
-      return queue.length
-    },
+    return false
   }
 }
 
