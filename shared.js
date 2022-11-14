@@ -100,7 +100,7 @@ function writer({ sharedState, sharedBuffer }) {
       }
     } else {
       // 0xxxxW------RxxxS
-      available = writePos + (size - readPos)
+      available = readPos - writePos
     }
 
     if (available < required) {
