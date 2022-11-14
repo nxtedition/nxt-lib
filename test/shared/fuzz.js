@@ -3,13 +3,12 @@ const assert = require('node:assert')
 
 function fuzz(seed) {
   function random() {
-    const x = Math.sin(seed++)
-    return x - Math.floor(x)
+    return Math.abs(Math.sin(seed++))
   }
   const rand = (n) => Math.floor(random() * n)
   const randInt = (a, b) => rand(b - a + 1) + a
 
-  const size = randInt(16, 256) * 4
+  const size = randInt(64, 256) * 4
   const shared = alloc(size)
   const write = writer(shared)
   const read = reader(shared)
@@ -18,13 +17,14 @@ function fuzz(seed) {
   let readIdx = 0
   const values = []
 
-  const cnt = Math.floor(Math.random() * 10000)
+  const cnt = randInt(1000, 10000)
   for (let n = 0; n < cnt; n++) {
     let value
     let expected
+    let writeSize
     try {
       if (random() > 0.5) {
-        const writeSize = randInt(16, size - 64)
+        writeSize = randInt(16, size - 64)
         write(writeSize, (dataPos, buffer) => {
           const value = writeIdx++
           values.push(value)
@@ -40,7 +40,21 @@ function fuzz(seed) {
         })
       }
     } catch (err) {
-      console.error(err, `readIdx: ${readIdx}, value: ${value}, expected: ${expected}, ${n}`)
+      console.error(
+        err,
+        JSON.stringify(
+          {
+            value,
+            expected,
+            writeSize,
+            writeIdx,
+            readIdx,
+            n,
+          },
+          undefined,
+          2
+        )
+      )
       return false
     }
   }
@@ -49,8 +63,7 @@ function fuzz(seed) {
 }
 
 let seed = 0
-const startTime = Date.now()
-while (Date.now() - startTime < 30e3) {
+while (seed < 1000) {
   if (!fuzz(seed++)) {
     break
   }

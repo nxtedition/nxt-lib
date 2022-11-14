@@ -79,7 +79,8 @@ function writer({ sharedState, sharedBuffer }) {
   }
 
   function tryWrite(len, fn, arg1, arg2, arg3) {
-    const required = len + 4 + 8 + 8
+    // TODO (fix): +32 is a hack to ensure we dont cross buffer size or readPos.
+    const required = len + 4 + 32
 
     assert(required <= size)
 
