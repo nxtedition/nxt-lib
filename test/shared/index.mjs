@@ -32,15 +32,21 @@ for (;;) {
     queueMicrotask(async () => {
       let expected = 0
       while (true) {
+        let done = false
         read((data) => {
+          if (done) {
+            return
+          }
           const value = data.readInt32LE(0)
           if (value !== expected) {
             throw new Error(`wrong value actual=${value} expected=${expected}`)
           }
           expected++
+          done ||= expected === numValues
         })
-        if (expected === numValues) {
+        if (done) {
           resolve()
+          return
         }
         if (slowReader) {
           await setTimeout(1)

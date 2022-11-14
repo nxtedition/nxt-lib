@@ -9,7 +9,7 @@ const READ_INDEX = 16
 function alloc(size) {
   return {
     sharedState: new SharedArrayBuffer(128),
-    sharedBuffer: new SharedArrayBuffer(size + 8 + 8),
+    sharedBuffer: new SharedArrayBuffer(size),
   }
 }
 
