@@ -27,19 +27,24 @@ for (;;) {
   const worker = new Worker(workerPath, { workerData: { shared, numValues, minWrite, maxWrite } })
   worker.on('error', console.error)
 
+  const read = reader(shared)
   await new Promise((resolve) => {
-    let expected = 0
-    reader(shared, async (data) => {
-      const value = data.readInt32LE(0)
-      if (value !== expected) {
-        throw new Error(`wrong value actual=${value} expected=${expected}`)
-      }
-      expected++
-      if (expected === numValues) {
-        resolve()
-      }
-      if (slowReader) {
-        await setTimeout(1)
+    queueMicrotask(async () => {
+      let expected = 0
+      while (true) {
+        read((data) => {
+          const value = data.readInt32LE(0)
+          if (value !== expected) {
+            throw new Error(`wrong value actual=${value} expected=${expected}`)
+          }
+          expected++
+        })
+        if (expected === numValues) {
+          resolve()
+        }
+        if (slowReader) {
+          await setTimeout(1)
+        }
       }
     })
   })

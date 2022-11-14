@@ -6,7 +6,7 @@ const { shared, numValues, minWrite, maxWrite } = workerData
 const rand = (n) => Math.floor(Math.random() * n)
 const randInt = (a, b) => rand(b - a + 1) + a
 
-const { write } = writer(shared)
+const write = writer(shared)
 
 parentPort.ref()
 
