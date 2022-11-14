@@ -122,6 +122,8 @@ function writer({ sharedState, sharedBuffer }) {
 
     writePos = writePos >= size ? writePos - size : writePos
 
+    assert(writePos < readPos)
+
     Atomics.store(state, WRITE_INDEX, writePos)
 
     return true
