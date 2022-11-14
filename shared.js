@@ -31,7 +31,7 @@ function reader({ sharedState, sharedBuffer }) {
       return
     }
 
-    do {
+    while (readPos !== writePos) {
       const dataLen = buffer32[readPos >> 2]
       const dataPos = readPos + 4
 
@@ -53,7 +53,7 @@ function reader({ sharedState, sharedBuffer }) {
       }
 
       readPos = readPos >= size ? readPos - size : readPos
-    } while (readPos !== writePos)
+    }
 
     Atomics.store(state, READ_INDEX, readPos)
   }
