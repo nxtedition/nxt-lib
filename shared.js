@@ -25,7 +25,7 @@ function reader({ sharedState, sharedBuffer }) {
 
   let readPos = Atomics.load(state, READ_INDEX)
 
-  return function read(cb, arg1, arg2, arg3) {
+  return function read(cb, arg1, arg2) {
     const writePos = Atomics.load(state, WRITE_INDEX)
     if (readPos === writePos) {
       return
@@ -44,7 +44,7 @@ function reader({ sharedState, sharedBuffer }) {
       assert(dataLen + 4 <= size)
       assert(dataPos + dataLen <= size)
 
-      cb(buffer, dataPos, dataLen, arg1, arg2, arg3)
+      cb(buffer, dataPos, dataLen, arg1, arg2)
 
       readPos = readPos + dataLen + 4
       if (readPos & 0x7) {
@@ -78,7 +78,7 @@ function writer({ sharedState, sharedBuffer }) {
     }
   }
 
-  function tryWrite(len, fn, arg1, arg2, arg3) {
+  function tryWrite(len, fn, arg1, arg2) {
     // TODO (fix): +32 is a hack to ensure we dont cross buffer size or readPos.
     const required = len + 4 + 32
 
@@ -108,7 +108,7 @@ function writer({ sharedState, sharedBuffer }) {
     }
 
     const dataPos = writePos + 4
-    const dataLen = fn(dataPos, buffer, arg1, arg2, arg3) - dataPos
+    const dataLen = fn(dataPos, buffer, arg1, arg2) - dataPos
 
     assert(dataLen >= 0 && dataLen <= len + 4)
     assert(dataPos + dataLen <= size)
@@ -130,13 +130,13 @@ function writer({ sharedState, sharedBuffer }) {
     return true
   }
 
-  return function write(len, fn, arg1, arg2, arg3) {
+  return function write(len, fn, arg1, arg2) {
     const required = len + 4 + 8 + 8
 
     assert(required >= 0)
     assert(required <= size)
 
-    if (!queue.length && tryWrite(len, fn, arg1, arg2, arg3)) {
+    if (!queue.length && tryWrite(len, fn, arg1, arg2)) {
       return true
     }
 
@@ -150,7 +150,7 @@ function writer({ sharedState, sharedBuffer }) {
       poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
     }
 
-    const pos = fn(0, Buffer.from(poolBuffer, poolOffset, len), arg1, arg2, arg3)
+    const pos = fn(0, Buffer.from(poolBuffer, poolOffset, len), arg1, arg2)
     const buf = Buffer.from(poolBuffer, poolOffset, pos)
 
     poolOffset += pos
