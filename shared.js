@@ -25,7 +25,7 @@ function reader({ sharedState, sharedBuffer }) {
 
   let readPos = Atomics.load(state, READ_INDEX)
 
-  return function read(cb, arg1, arg2, arg3) {
+  return function read(cb, ...args) {
     const writePos = Atomics.load(state, WRITE_INDEX)
     if (readPos === writePos) {
       return 0
@@ -55,7 +55,7 @@ function reader({ sharedState, sharedBuffer }) {
 
       counter += 1
 
-      const ret = cb(buffer, dataPos, dataLen, arg1, arg2, arg3)
+      const ret = cb(buffer, dataPos, dataLen, ...args)
       if (ret === false) {
         break
       }
@@ -86,7 +86,7 @@ function writer({ sharedState, sharedBuffer }) {
     }
   }
 
-  function tryWrite(len, fn, arg1, arg2, arg3) {
+  function tryWrite(len, fn, ...args) {
     // TODO (fix): +32 is a hack to ensure we dont cross buffer size or readPos.
     const required = len + 4 + 32
 
@@ -116,7 +116,7 @@ function writer({ sharedState, sharedBuffer }) {
     }
 
     const dataPos = writePos + 4
-    const dataLen = fn(dataPos, buffer, arg1, arg2, arg3) - dataPos
+    const dataLen = fn(dataPos, buffer, ...args) - dataPos
 
     assert(dataLen >= 0 && dataLen <= len + 4)
     assert(dataPos + dataLen <= size)
