@@ -11,6 +11,7 @@ let caseIndex = 0
 const arrayBuffer = new ArrayBuffer(NUM_CASES * 4)
 const buffer = Buffer.from(arrayBuffer)
 const buffer32 = new Int32Array(arrayBuffer)
+const view = new DataView(arrayBuffer)
 
 const funcs = {
   Buffer: () => {
@@ -25,6 +26,14 @@ const funcs = {
     const c = cases[caseIndex]
     buffer32[caseIndex] = c
     assert(buffer32[caseIndex] === c)
+    if (++caseIndex === NUM_CASES) {
+      caseIndex = 0
+    }
+  },
+  DataView: () => {
+    const c = cases[caseIndex]
+    view.setInt32(caseIndex * 4, c, true)
+    assert(view.getInt32(caseIndex * 4, true) === c)
     if (++caseIndex === NUM_CASES) {
       caseIndex = 0
     }
