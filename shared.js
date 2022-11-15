@@ -28,7 +28,7 @@ function reader({ sharedState, sharedBuffer }) {
   return function read(cb, arg1, arg2, arg3) {
     const writePos = Atomics.load(state, WRITE_INDEX)
     if (readPos === writePos) {
-      return
+      return 0
     }
 
     let counter = 0
