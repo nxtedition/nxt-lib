@@ -223,9 +223,9 @@ module.exports = ({ ds } = {}) => {
       "use strict";
       {
         const _ = (...args) => pipe(...args);
-        const _.asset = (type, state, throws) => (id) => nxt.asset(id, type, state, throws);
-        const _.ds = (postfix, state, throws) => (id) => nxt.ds(id + postfix, state, throws);
-        const _.timer = (dueTime) => (dueValue) => nxt.timer(dueTime, dueValue);
+        _.asset = (type, state, throws) => (id) => nxt.asset(id, type, state, throws);
+        _.ds = (postfix, state, throws) => (id) => nxt.ds(id + postfix, state, throws);
+        _.timer = (dueTime) => (dueValue) => nxt.timer(dueTime, dueValue);
         ${expression}
       }
     `)
