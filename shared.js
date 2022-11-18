@@ -25,7 +25,7 @@ function reader({ sharedState, sharedBuffer }) {
 
   let readPos = Atomics.load(state, READ_INDEX)
 
-  return function read(cb, ...args) {
+  return function read(cb, arg1, arg2, arg3) {
     const writePos = Atomics.load(state, WRITE_INDEX)
     if (readPos === writePos) {
       return 0
@@ -55,7 +55,7 @@ function reader({ sharedState, sharedBuffer }) {
 
       counter += 1
 
-      const ret = cb(buffer, dataPos, dataLen, ...args)
+      const ret = cb(buffer, dataPos, dataLen, arg1, arg2, arg3)
       if (ret === false) {
         break
       }
@@ -72,7 +72,8 @@ function writer({ sharedState, sharedBuffer }) {
   const buffer32 = new Int32Array(sharedBuffer)
   const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
-  const queue = []
+
+  let queue = null
 
   let writePos = Atomics.load(state, WRITE_INDEX)
 
@@ -84,9 +85,10 @@ function writer({ sharedState, sharedBuffer }) {
         await tp.setTimeout(100)
       }
     }
+    queue = null
   }
 
-  function tryWrite(len, fn, ...args) {
+  function tryWrite(len, fn, arg1, arg2, arg3) {
     // TODO (fix): +32 is a hack to ensure we dont cross buffer size or readPos.
     const required = len + 4 + 32
 
@@ -116,7 +118,7 @@ function writer({ sharedState, sharedBuffer }) {
     }
 
     const dataPos = writePos + 4
-    const dataLen = fn(dataPos, buffer, ...args) - dataPos
+    const dataLen = fn(dataPos, buffer, arg1, arg2, arg3) - dataPos
 
     assert(dataLen >= 0 && dataLen <= len + 4)
     assert(dataPos + dataLen <= size)
@@ -144,7 +146,7 @@ function writer({ sharedState, sharedBuffer }) {
     assert(required >= 0)
     assert(required <= size)
 
-    if (!queue.length && tryWrite(len, fn, arg1, arg2, arg3)) {
+    if (queue == null && tryWrite(len, fn, arg1, arg2, arg3)) {
       return true
     }
 
@@ -167,6 +169,7 @@ function writer({ sharedState, sharedBuffer }) {
       poolOffset += 1
     }
 
+    queue ??= []
     queue.push(buf)
     if (queue.length === 1) {
       queueMicrotask(flush)
