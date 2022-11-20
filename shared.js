@@ -61,6 +61,8 @@ function reader({ sharedState, sharedBuffer }) {
       }
     }
 
+    cb(null)
+
     Atomics.store(state, READ_INDEX, readPos)
 
     return counter
