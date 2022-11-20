@@ -24,11 +24,16 @@ function reader({ sharedState, sharedBuffer }) {
   const buffer = Buffer.from(sharedBuffer, 0, size)
 
   let readPos = Atomics.load(state, READ_INDEX)
+  let flushing = false
+
+  function flush() {
+    flushing = false
+    Atomics.store(state, READ_INDEX, readPos)
+  }
 
   return function read(cb, arg1, arg2, arg3) {
     const writePos = Atomics.load(state, WRITE_INDEX)
     if (readPos === writePos) {
-      cb(null, 0, 0, arg1, arg2, arg3)
       return 0
     }
 
@@ -62,9 +67,10 @@ function reader({ sharedState, sharedBuffer }) {
       }
     }
 
-    cb(null, 0, 0, arg1, arg2, arg3)
-
-    Atomics.store(state, READ_INDEX, readPos)
+    if (!flushing) {
+      flushing = true
+      process.nextTick(flush)
+    }
 
     return counter
   }
