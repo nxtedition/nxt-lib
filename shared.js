@@ -61,7 +61,7 @@ function reader({ sharedState, sharedBuffer }) {
       }
     }
 
-    cb(null)
+    cb(null, 0, 0, arg1, arg2, arg3)
 
     Atomics.store(state, READ_INDEX, readPos)
 
