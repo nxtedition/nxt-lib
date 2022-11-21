@@ -97,6 +97,10 @@ module.exports = ({ ds } = {}) => {
       return this._getTimer(dueTime, dueValue)
     }
 
+    hash(value) {
+      return objectHash(value)
+    }
+
     _destroy() {
       this._destroyed = true
       for (const entry of this._entries.values()) {
