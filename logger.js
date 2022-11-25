@@ -7,7 +7,7 @@ module.exports.createLogger = function (
   {
     extreme = isProduction,
     level = isProduction ? 'info' : 'trace',
-    flushInterval = 2e3,
+    flushInterval = 1e3,
     stream,
     ...options
   } = {},
