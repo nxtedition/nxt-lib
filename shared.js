@@ -1,5 +1,4 @@
 const assert = require('node:assert')
-const tp = require('node:timers/promises')
 
 // Make sure write and read are in different
 // cache lines.
@@ -44,23 +43,25 @@ function reader({ sharedState, sharedBuffer }) {
 
       if (dataLen < 0) {
         readPos = 0
-        continue
+        break
       }
 
       assert(dataLen >= 0)
-      assert(dataLen + 4 <= size)
       assert(dataPos + dataLen <= size)
 
-      readPos = readPos + dataLen + 4
+      readPos = dataPos + dataLen
       if (readPos & 0x7) {
         readPos |= 0x7
         readPos += 1
       }
 
-      readPos = readPos >= size ? readPos - size : readPos
+      if (readPos + 4 >= size) {
+        readPos = 0
+      }
+
+      assert(readPos + 4 < size)
 
       counter += 1
-
       const ret = cb(buffer, dataPos, dataLen, arg1, arg2, arg3)
       if (ret === false) {
         break
@@ -84,14 +85,23 @@ function writer({ sharedState, sharedBuffer }) {
 
   let queue = null
 
+  let readPos = Atomics.load(state, READ_INDEX)
   let writePos = Atomics.load(state, WRITE_INDEX)
+  let flushing = false
 
-  async function flush() {
+  function flush() {
+    flushing = false
+    readPos = Atomics.load(state, READ_INDEX)
+    Atomics.store(state, WRITE_INDEX, writePos)
+  }
+
+  function flushQueue() {
     while (queue.length) {
       if (tryWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
-        await tp.setTimeout(100)
+        setTimeout(flushQueue, 100)
+        return
       }
     }
     queue = null
@@ -102,8 +112,6 @@ function writer({ sharedState, sharedBuffer }) {
     const required = len + 4 + 32
 
     assert(required <= size)
-
-    const readPos = Atomics.load(state, READ_INDEX)
 
     let available
     if (writePos >= readPos) {
@@ -129,22 +137,25 @@ function writer({ sharedState, sharedBuffer }) {
     const dataPos = writePos + 4
     const dataLen = fn(dataPos, buffer, arg1, arg2, arg3) - dataPos
 
-    assert(dataLen >= 0 && dataLen <= len + 4)
+    assert(dataLen <= len + 4)
+    assert(dataLen >= 0)
     assert(dataPos + dataLen <= size)
 
     buffer32[writePos >> 2] = dataLen
 
-    writePos = writePos + dataLen + 4
+    writePos = dataPos + dataLen
     if (writePos & 0x7) {
       writePos |= 0x7
       writePos += 1
     }
 
-    writePos = writePos >= size ? writePos - size : writePos
-
+    assert(writePos <= size)
     assert(writePos !== readPos)
 
-    Atomics.store(state, WRITE_INDEX, writePos)
+    if (!flushing) {
+      flushing = true
+      process.nextTick(flush)
+    }
 
     return true
   }
@@ -178,11 +189,11 @@ function writer({ sharedState, sharedBuffer }) {
       poolOffset += 1
     }
 
-    queue ??= []
-    queue.push(buf)
-    if (queue.length === 1) {
-      queueMicrotask(flush)
+    if (!queue) {
+      queue = []
+      queueMicrotask(flushQueue)
     }
+    queue.push(buf)
 
     return false
   }
