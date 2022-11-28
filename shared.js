@@ -12,65 +12,53 @@ function alloc(size) {
   }
 }
 
+function getSize(sharedBuffer) {
+  // -4 is required so that we can always write the -1 flag.
+  return sharedBuffer.byteLength - 4
+}
+
 let poolSize = 1024 * 1024
 let poolOffset = 0
 let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 
 function reader({ sharedState, sharedBuffer }) {
   const state = new Int32Array(sharedState)
-  const buffer32 = new Int32Array(sharedBuffer)
-  const size = sharedBuffer.byteLength
+  const size = getSize(sharedBuffer)
   const buffer = Buffer.from(sharedBuffer, 0, size)
 
   let readPos = Atomics.load(state, READ_INDEX)
-  let flushing = false
+  let notifying = false
 
-  function flush() {
-    flushing = false
+  function notify() {
+    notifying = false
     Atomics.store(state, READ_INDEX, readPos)
   }
 
   return function read(cb, arg1, arg2, arg3) {
-    const writePos = Atomics.load(state, WRITE_INDEX)
-    if (readPos === writePos) {
-      return 0
-    }
-
     let counter = 0
-    while (readPos !== writePos) {
-      const dataLen = buffer32[readPos >> 2]
+
+    const writePos = Atomics.load(state, WRITE_INDEX)
+    for (let n = 0; n < 1024 && readPos !== writePos; n++) {
       const dataPos = readPos + 4
+      const dataLen = buffer.readInt32LE(dataPos - 4) // TODO (perf): Int32Array
 
-      if (dataLen < 0) {
+      if (!notifying) {
+        notifying = true
+        process.nextTick(notify)
+      }
+
+      if (dataLen === -1) {
         readPos = 0
-        break
+      } else {
+        assert(dataLen >= 0)
+        assert(dataPos + dataLen <= size)
+
+        readPos += 4 + dataLen
+        counter += 1
+        if (cb(buffer, dataPos, dataLen, arg1, arg2, arg3) === false) {
+          break
+        }
       }
-
-      assert(dataLen >= 0)
-      assert(dataPos + dataLen <= size)
-
-      readPos = dataPos + dataLen
-      if (readPos & 0x7) {
-        readPos |= 0x7
-        readPos += 1
-      }
-
-      if (readPos + 4 >= size) {
-        readPos = 0
-      }
-
-      assert(readPos + 4 < size)
-
-      counter += 1
-      const ret = cb(buffer, dataPos, dataLen, arg1, arg2, arg3)
-      if (ret === false) {
-        break
-      }
-    }
-
-    if (!flushing) {
-      flushing = true
-      process.nextTick(flush)
     }
 
     return counter
@@ -79,58 +67,60 @@ function reader({ sharedState, sharedBuffer }) {
 
 function writer({ sharedState, sharedBuffer }) {
   const state = new Int32Array(sharedState)
-  const buffer32 = new Int32Array(sharedBuffer)
-  const size = sharedBuffer.byteLength
+  const size = getSize(sharedBuffer)
   const buffer = Buffer.from(sharedBuffer, 0, size)
 
   let queue = null
 
   let readPos = Atomics.load(state, READ_INDEX)
   let writePos = Atomics.load(state, WRITE_INDEX)
-  let flushing = false
+  let notifying = false
 
-  function flush() {
-    flushing = false
+  function notify() {
+    notifying = false
     readPos = Atomics.load(state, READ_INDEX)
     Atomics.store(state, WRITE_INDEX, writePos)
   }
 
-  function flushQueue() {
+  function flush() {
     while (queue.length) {
       if (tryWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
-        setTimeout(flushQueue, 100)
+        setTimeout(flush, 100)
         return
       }
     }
     queue = null
   }
 
-  function tryWrite(len, fn, arg1, arg2, arg3) {
-    // TODO (fix): +32 is a hack to ensure we dont cross buffer size or readPos.
-    const required = len + 4 + 32
+  function hasSpace(len) {
+    const required = len + 4
 
+    assert(required >= 0)
     assert(required <= size)
 
-    let available
     if (writePos >= readPos) {
       // 0----RxxxxxxW---S
 
       const sequential = size - writePos
-      if (sequential < required) {
-        buffer32[writePos >> 2] = -1
-        writePos = 0
-        available = readPos
-      } else {
-        available = readPos + (size - writePos)
+      if (sequential >= required) {
+        return true
       }
+
+      buffer.writeInt32LE(-1, writePos)
+      writePos = 0
+      Atomics.store(state, WRITE_INDEX, writePos)
     } else {
       // 0xxxxW------RxxxS
-      available = readPos - writePos
     }
 
-    if (available < required) {
+    const available = readPos - writePos
+    return available >= required
+  }
+
+  function tryWrite(len, fn, arg1, arg2, arg3) {
+    if (!hasSpace(len)) {
       return false
     }
 
@@ -141,27 +131,24 @@ function writer({ sharedState, sharedBuffer }) {
     assert(dataLen >= 0)
     assert(dataPos + dataLen <= size)
 
-    buffer32[writePos >> 2] = dataLen
-
-    writePos = dataPos + dataLen
-    if (writePos & 0x7) {
-      writePos |= 0x7
-      writePos += 1
-    }
+    buffer.writeInt32LE(dataLen, dataPos - 4) // TODO (perf): Int32Array
+    writePos += 4 + dataLen
 
     assert(writePos <= size)
     assert(writePos !== readPos)
 
-    if (!flushing) {
-      flushing = true
-      process.nextTick(flush)
+    // TODO (perf): Align writePos
+
+    if (!notifying) {
+      notifying = true
+      process.nextTick(notify)
     }
 
     return true
   }
 
   return function write(len, fn, arg1, arg2, arg3) {
-    const required = len + 4 + 8 + 8
+    const required = len + 4 + 32
 
     assert(required >= 0)
     assert(required <= size)
@@ -191,7 +178,7 @@ function writer({ sharedState, sharedBuffer }) {
 
     if (!queue) {
       queue = []
-      queueMicrotask(flushQueue)
+      queueMicrotask(flush)
     }
     queue.push(buf)
 
