@@ -91,7 +91,7 @@ function writer({ sharedState, sharedBuffer }) {
 
   async function flush() {
     while (queue.length) {
-      if (tryWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
+      if (syncWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
         await tp.setTimeout(100)
@@ -126,7 +126,7 @@ function writer({ sharedState, sharedBuffer }) {
     return readPos - writePos >= required
   }
 
-  function tryWrite(len, fn, arg1, arg2, arg3) {
+  function syncWrite(len, fn, arg1, arg2, arg3) {
     if (!hasSpace(len)) {
       return false
     }
@@ -157,16 +157,7 @@ function writer({ sharedState, sharedBuffer }) {
     return true
   }
 
-  function write(len, fn, arg1, arg2, arg3) {
-    const required = len + 4 + 32
-
-    assert(required >= 0)
-    assert(required <= size)
-
-    if (queue == null && tryWrite(len, fn, arg1, arg2, arg3)) {
-      return true
-    }
-
+  function asyncWrite(len, fn, arg1, arg2, arg3) {
     // len is usually significantly overprovisioned to account for "worst" case.
     // Therefore it is important that we use a pool as to not overallocate by
     // several orders of magnitude.
@@ -190,7 +181,22 @@ function writer({ sharedState, sharedBuffer }) {
       queue = []
       process.nextTick(flush)
     }
+
     queue.push(buf)
+  }
+
+  function write(len, fn, arg1, arg2, arg3) {
+    // len + {current packet header} + {next packet header} + 4 byte alignment
+    const required = len + 4 + 4 + 4
+
+    assert(required >= 0)
+    assert(required <= size)
+
+    if (queue == null && syncWrite(len, fn, arg1, arg2, arg3)) {
+      return true
+    }
+
+    asyncWrite(len, fn, arg1, arg2, arg3)
 
     return false
   }
