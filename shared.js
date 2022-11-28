@@ -192,13 +192,9 @@ function writer({ sharedState, sharedBuffer }) {
     assert(required >= 0)
     assert(required <= size)
 
-    if (queue == null && syncWrite(len, fn, arg1, arg2, arg3)) {
-      return true
+    if (queue != null || !syncWrite(len, fn, arg1, arg2, arg3)) {
+      asyncWrite(len, fn, arg1, arg2, arg3)
     }
-
-    asyncWrite(len, fn, arg1, arg2, arg3)
-
-    return false
   }
 
   return {
