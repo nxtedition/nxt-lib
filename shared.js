@@ -1,12 +1,12 @@
-import assert from 'node:assert'
-import tp from 'node:timers/promises'
+const assert = require('node:assert')
+const tp = require('node:timers/promises')
 
 // Make sure write and read are in different
 // cache lines.
 const WRITE_INDEX = 0
 const READ_INDEX = 16
 
-export function alloc(size) {
+function alloc(size) {
   return {
     sharedState: new SharedArrayBuffer(128),
     sharedBuffer: new SharedArrayBuffer(size),
@@ -17,7 +17,7 @@ let poolSize = 1024 * 1024
 let poolOffset = 0
 let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 
-export function reader({ sharedState, sharedBuffer }) {
+function reader({ sharedState, sharedBuffer }) {
   const state = new Int32Array(sharedState)
   const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
@@ -72,7 +72,7 @@ export function reader({ sharedState, sharedBuffer }) {
   }
 }
 
-export function writer({ sharedState, sharedBuffer }) {
+function writer({ sharedState, sharedBuffer }) {
   const state = new Int32Array(sharedState)
   const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
@@ -199,4 +199,10 @@ export function writer({ sharedState, sharedBuffer }) {
     write,
     notify,
   }
+}
+
+module.exports = {
+  alloc,
+  reader,
+  writer,
 }
