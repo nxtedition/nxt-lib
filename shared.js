@@ -38,6 +38,8 @@ function reader({ sharedState, sharedBuffer }) {
 
     const writePos = Atomics.load(state, WRITE_INDEX)
     for (let n = 0; n < 1024 && readPos !== writePos; n++) {
+      assert((readPos & 0x3) === 0)
+
       const dataPos = readPos + 4
       const dataLen = buffer32[readPos >> 2]
 
@@ -121,7 +123,10 @@ function writer({ sharedState, sharedBuffer }) {
         return false
       }
 
+      assert((writePos & 0x3) === 0)
+
       buffer32[writePos >> 2] = -1
+
       writePos = 0
       Atomics.store(state, WRITE_INDEX, writePos)
     }
@@ -134,6 +139,8 @@ function writer({ sharedState, sharedBuffer }) {
     if (!hasSpace(len)) {
       return false
     }
+
+    assert((writePos & 0x3) === 0)
 
     const dataPos = writePos + 4
     const dataLen = fn(dataPos, buffer, arg1, arg2, arg3) - dataPos
