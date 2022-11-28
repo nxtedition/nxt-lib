@@ -13,14 +13,17 @@ function alloc(size) {
   }
 }
 
-let poolSize = 1024 * 1024
+// TODO (fix): Try to avoid Buffer.
+
+let poolSize = 0
 let poolOffset = 0
-let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
+let poolBuffer = null
 
 function reader({ sharedState, sharedBuffer }) {
   const state = new Int32Array(sharedState)
   const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
+  const buffer32 = new Int32Array(sharedBuffer)
 
   let readPos = Atomics.load(state, READ_INDEX)
   let notifying = false
@@ -36,7 +39,7 @@ function reader({ sharedState, sharedBuffer }) {
     const writePos = Atomics.load(state, WRITE_INDEX)
     for (let n = 0; n < 1024 && readPos !== writePos; n++) {
       const dataPos = readPos + 4
-      const dataLen = buffer.readInt32LE(dataPos - 4) // TODO (perf): Int32Array
+      const dataLen = buffer32[readPos >> 2]
 
       if (!notifying) {
         notifying = true
@@ -76,6 +79,7 @@ function writer({ sharedState, sharedBuffer }) {
   const state = new Int32Array(sharedState)
   const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
+  const buffer32 = new Int32Array(sharedBuffer)
 
   let queue = null
 
@@ -91,6 +95,7 @@ function writer({ sharedState, sharedBuffer }) {
 
   async function flush() {
     while (queue.length) {
+      // TODO (fix): Try to avoid Buffer.copy.
       if (syncWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
@@ -103,7 +108,6 @@ function writer({ sharedState, sharedBuffer }) {
   function hasSpace(len) {
     // len + {current packet header} + {next packet header} + 4 byte alignment
     const required = len + 4 + 4 + 4
-
     assert(required >= 0)
     assert(required <= size)
 
@@ -117,7 +121,7 @@ function writer({ sharedState, sharedBuffer }) {
         return false
       }
 
-      buffer.writeInt32LE(-1, writePos)
+      buffer32[writePos >> 2] = -1
       writePos = 0
       Atomics.store(state, WRITE_INDEX, writePos)
     }
@@ -138,7 +142,7 @@ function writer({ sharedState, sharedBuffer }) {
     assert(dataLen >= 0)
     assert(dataPos + dataLen <= size)
 
-    buffer.writeInt32LE(dataLen, dataPos - 4) // TODO (perf): Int32Array
+    buffer32[writePos >> 2] = dataLen
 
     writePos += 4 + dataLen
     if (writePos & 0x3) {
@@ -165,6 +169,8 @@ function writer({ sharedState, sharedBuffer }) {
     if (len > poolSize - poolOffset) {
       poolSize = Math.max(poolSize, len)
       poolOffset = 0
+      // TODO (perf): new ArrayBuffer will zero initialize buffer while
+      // Node's allocUnsafeSlow will not.
       poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
     }
 
@@ -188,7 +194,6 @@ function writer({ sharedState, sharedBuffer }) {
   function write(len, fn, arg1, arg2, arg3) {
     // len + {current packet header} + {next packet header} + 4 byte alignment
     const required = len + 4 + 4 + 4
-
     assert(required >= 0)
     assert(required <= size)
 
