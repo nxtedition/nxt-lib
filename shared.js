@@ -1,29 +1,25 @@
-const assert = require('node:assert')
+import assert from 'node:assert'
+import tp from 'node:timers/promises'
 
 // Make sure write and read are in different
 // cache lines.
 const WRITE_INDEX = 0
 const READ_INDEX = 16
 
-function alloc(size) {
+export function alloc(size) {
   return {
     sharedState: new SharedArrayBuffer(128),
     sharedBuffer: new SharedArrayBuffer(size),
   }
 }
 
-function getSize(sharedBuffer) {
-  // -4 is required so that we can always write the -1 flag.
-  return sharedBuffer.byteLength - 4
-}
-
 let poolSize = 1024 * 1024
 let poolOffset = 0
 let poolBuffer = Buffer.allocUnsafeSlow(poolSize).buffer
 
-function reader({ sharedState, sharedBuffer }) {
+export function reader({ sharedState, sharedBuffer }) {
   const state = new Int32Array(sharedState)
-  const size = getSize(sharedBuffer)
+  const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
 
   let readPos = Atomics.load(state, READ_INDEX)
@@ -34,7 +30,7 @@ function reader({ sharedState, sharedBuffer }) {
     Atomics.store(state, READ_INDEX, readPos)
   }
 
-  return function read(cb, arg1, arg2, arg3) {
+  function read(cb, arg1, arg2, arg3) {
     let counter = 0
 
     const writePos = Atomics.load(state, WRITE_INDEX)
@@ -44,6 +40,8 @@ function reader({ sharedState, sharedBuffer }) {
 
       if (!notifying) {
         notifying = true
+        // Defer notify so that the returned buffers are valid for at least
+        // one tick.
         process.nextTick(notify)
       }
 
@@ -54,6 +52,11 @@ function reader({ sharedState, sharedBuffer }) {
         assert(dataPos + dataLen <= size)
 
         readPos += 4 + dataLen
+        if (readPos & 0x3) {
+          readPos |= 0x3
+          readPos += 1
+        }
+
         counter += 1
         if (cb(buffer, dataPos, dataLen, arg1, arg2, arg3) === false) {
           break
@@ -63,11 +66,15 @@ function reader({ sharedState, sharedBuffer }) {
 
     return counter
   }
+
+  return {
+    read,
+  }
 }
 
-function writer({ sharedState, sharedBuffer }) {
+export function writer({ sharedState, sharedBuffer }) {
   const state = new Int32Array(sharedState)
-  const size = getSize(sharedBuffer)
+  const size = sharedBuffer.byteLength
   const buffer = Buffer.from(sharedBuffer, 0, size)
 
   let queue = null
@@ -82,41 +89,41 @@ function writer({ sharedState, sharedBuffer }) {
     Atomics.store(state, WRITE_INDEX, writePos)
   }
 
-  function flush() {
+  async function flush() {
     while (queue.length) {
       if (tryWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
-        setTimeout(flush, 100)
-        return
+        await tp.setTimeout(100)
       }
     }
     queue = null
   }
 
   function hasSpace(len) {
-    const required = len + 4
+    // len + {current packet header} + {next packet header} + 4 byte alignment
+    const required = len + 4 + 4 + 4
 
     assert(required >= 0)
     assert(required <= size)
 
     if (writePos >= readPos) {
       // 0----RxxxxxxW---S
-
-      const sequential = size - writePos
-      if (sequential >= required) {
+      if (size - writePos >= required) {
         return true
+      }
+
+      if (readPos === 0) {
+        return false
       }
 
       buffer.writeInt32LE(-1, writePos)
       writePos = 0
       Atomics.store(state, WRITE_INDEX, writePos)
-    } else {
-      // 0xxxxW------RxxxS
     }
 
-    const available = readPos - writePos
-    return available >= required
+    // 0xxxxW------RxxxS
+    return readPos - writePos >= required
   }
 
   function tryWrite(len, fn, arg1, arg2, arg3) {
@@ -132,12 +139,15 @@ function writer({ sharedState, sharedBuffer }) {
     assert(dataPos + dataLen <= size)
 
     buffer.writeInt32LE(dataLen, dataPos - 4) // TODO (perf): Int32Array
+
     writePos += 4 + dataLen
+    if (writePos & 0x3) {
+      writePos |= 0x3
+      writePos += 1
+    }
 
-    assert(writePos <= size)
+    assert(writePos + 4 <= size) // must have room for next header also
     assert(writePos !== readPos)
-
-    // TODO (perf): Align writePos
 
     if (!notifying) {
       notifying = true
@@ -147,7 +157,7 @@ function writer({ sharedState, sharedBuffer }) {
     return true
   }
 
-  return function write(len, fn, arg1, arg2, arg3) {
+  function write(len, fn, arg1, arg2, arg3) {
     const required = len + 4 + 32
 
     assert(required >= 0)
@@ -178,16 +188,15 @@ function writer({ sharedState, sharedBuffer }) {
 
     if (!queue) {
       queue = []
-      queueMicrotask(flush)
+      process.nextTick(flush)
     }
     queue.push(buf)
 
     return false
   }
-}
 
-module.exports = {
-  alloc,
-  reader,
-  writer,
+  return {
+    write,
+    notify,
+  }
 }
