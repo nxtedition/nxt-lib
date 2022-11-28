@@ -42,7 +42,7 @@ function reader({ sharedState, sharedBuffer }) {
         notifying = true
         // Defer notify so that the returned buffers are valid for at least
         // one tick.
-        process.nextTick(notify)
+        queueMicrotask(notify)
       }
 
       if (dataLen === -1) {
@@ -151,7 +151,7 @@ function writer({ sharedState, sharedBuffer }) {
 
     if (!notifying) {
       notifying = true
-      process.nextTick(notify)
+      queueMicrotask(notify)
     }
 
     return true
@@ -179,7 +179,7 @@ function writer({ sharedState, sharedBuffer }) {
 
     if (!queue) {
       queue = []
-      process.nextTick(flush)
+      queueMicrotask(flush)
     }
 
     queue.push(buf)
