@@ -74,6 +74,7 @@ function reader({ sharedState, sharedBuffer }) {
 
   return {
     read,
+    notify,
   }
 }
 
@@ -95,10 +96,18 @@ function writer({ sharedState, sharedBuffer }) {
     Atomics.store(state, WRITE_INDEX, writePos)
   }
 
-  async function flush() {
+  function flush() {
+    if (queue.length) {
+      return _flush()
+    }
+  }
+
+  async function _flush() {
     while (queue.length) {
-      // TODO (fix): Try to avoid Buffer.copy.
-      if (syncWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])) {
+      // TODO (fix): Try to avoid Buffer.copy in favor of Uint8Array.set.
+      if (
+        _syncWrite(queue[0].byteLength, (pos, dst, data) => pos + data.copy(dst, pos), queue[0])
+      ) {
         queue.shift() // TODO (perf): Array.shift is slow for large arrays...
       } else {
         await tp.setTimeout(100)
@@ -107,7 +116,7 @@ function writer({ sharedState, sharedBuffer }) {
     queue = null
   }
 
-  function hasSpace(len) {
+  function _hasSpace(len) {
     // len + {current packet header} + {next packet header} + 4 byte alignment
     const required = len + 4 + 4 + 4
     assert(required >= 0)
@@ -135,8 +144,8 @@ function writer({ sharedState, sharedBuffer }) {
     return readPos - writePos >= required
   }
 
-  function syncWrite(len, fn, arg1, arg2, arg3) {
-    if (!hasSpace(len)) {
+  function _syncWrite(len, fn, arg1, arg2, arg3) {
+    if (!_hasSpace(len)) {
       return false
     }
 
@@ -168,7 +177,7 @@ function writer({ sharedState, sharedBuffer }) {
     return true
   }
 
-  function asyncWrite(len, fn, arg1, arg2, arg3) {
+  function _asyncWrite(len, fn, arg1, arg2, arg3) {
     // len is usually significantly overprovisioned to account for "worst" case.
     // Therefore it is important that we use a pool as to not overallocate by
     // several orders of magnitude.
@@ -204,13 +213,14 @@ function writer({ sharedState, sharedBuffer }) {
     assert(required >= 0)
     assert(required <= size)
 
-    if (queue != null || !syncWrite(len, fn, arg1, arg2, arg3)) {
-      asyncWrite(len, fn, arg1, arg2, arg3)
+    if (queue != null || !_syncWrite(len, fn, arg1, arg2, arg3)) {
+      _asyncWrite(len, fn, arg1, arg2, arg3)
     }
   }
 
   return {
     write,
+    flush,
     notify,
   }
 }
