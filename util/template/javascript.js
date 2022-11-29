@@ -63,10 +63,9 @@ const globals = {
 
 module.exports = ({ ds } = {}) => {
   class Expression {
-    constructor(context, script, expression, args, observer) {
+    constructor(context, script, expression, args$, observer) {
       this._context = context
       this._expression = expression
-      this._args = args
       this._observer = observer
       this._script = script
 
@@ -77,6 +76,22 @@ module.exports = ({ ds } = {}) => {
       this._counter = 0
       this._value = kEmpty
       this._destroyed = false
+
+      if (rxjs.isObservable(args$)) {
+        this._args = {}
+        this._subscription = args$.subscribe({
+          next: (args) => {
+            this._args = args
+            this._refresh()
+          },
+          error: (err) => {
+            this._observer.error(err)
+          },
+        })
+      } else {
+        this._args = args$
+        this._subscription = null
+      }
 
       this._refreshNT(this)
     }
@@ -107,6 +122,7 @@ module.exports = ({ ds } = {}) => {
         entry.dispose()
       }
       this._entries.clear()
+      this._subscription?.unsubscribe()
     }
 
     _refreshNT(self) {
