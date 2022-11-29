@@ -182,6 +182,14 @@ module.exports = ({ ds } = {}) => {
     }
 
     _getRecord(key, state, throws) {
+      if (typeof key !== 'string') {
+        throw new Error(`invalid argument: key (${key})`)
+      }
+
+      if (!key) {
+        return null
+      }
+
       if (state == null) {
         state = key.startsWith('{') || key.includes('?') ? ds.record.PROVIDER : ds.record.SERVER
       } else if (typeof state === 'string') {
@@ -250,7 +258,7 @@ module.exports = ({ ds } = {}) => {
       }
     `)
     } catch (err) {
-      throw new Error(`failed to parse expression ${expression}`, { cause: err })
+      throw Object.assign(new Error(`failed to parse expression ${expression}`), { cause: err })
     }
 
     const context = vm.createContext({ ...globals })
