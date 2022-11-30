@@ -173,7 +173,7 @@ module.exports = ({ ds, ...options }) => {
           self._observer.error(
             Object.assign(new Error('expression failed'), {
               cause: err,
-              data: { expression: self._expression, args: self._args },
+              data: { expression: self._expression },
             })
           )
         }
