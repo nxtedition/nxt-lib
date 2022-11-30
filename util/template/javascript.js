@@ -9,36 +9,57 @@ const kSuspend = Symbol('kSuspend')
 const kEmpty = Symbol('kEmpty')
 const maxInt = 2147483647
 
-function makeTimerEntry(key, refresh, delay) {
-  return {
-    key,
-    counter: null,
-    timer: setTimeout(refresh, delay),
-    dispose: disposeTimerEntry,
+class TimerEntry {
+  constructor(key, refresh, delay) {
+    this.key = key
+    this.counter = null
+    this.timer = setTimeout(refresh, delay)
+  }
+
+  dispose() {
+    clearTimeout(this.timer)
   }
 }
 
-function disposeTimerEntry() {
-  clearTimeout(this.timer)
-  this.timer = null
-}
-
-function makeRecordEntry(key, refresh, ds) {
-  const entry = {
-    key,
-    counter: null,
-    refresh,
-    record: ds.record.getRecord(key),
-    dispose: disposeRecordEntry,
+class RecordEntry {
+  constructor(key, refresh, ds) {
+    this.key = key
+    this.counter = null
+    this.refresh = refresh
+    this.record = ds.record.getRecord(key)
+    this.record.on('update', refresh)
   }
-  entry.record.on('update', refresh)
-  return entry
+
+  dispose() {
+    this.record.unref()
+    this.record.off('update', this.refresh)
+    this.record = null
+  }
 }
 
-function disposeRecordEntry() {
-  this.record.unref()
-  this.record.off('update', this.refresh)
-  this.record = null
+class ObservableEntry {
+  constructor(key, refresh, observable) {
+    this.key = key
+    this.counter = null
+    this.value = kEmpty
+    this.error = null
+    this.refresh = refresh
+    this.subscription = observable.subscribe({
+      next: (value) => {
+        this.value = value
+        this.refresh()
+      },
+      error: (err) => {
+        this.error = err
+        this.refresh()
+      },
+    })
+  }
+
+  dispose() {
+    this.subscription.unsubscribe()
+    this.subscription = null
+  }
 }
 
 function pipe(value, ...fns) {
@@ -61,9 +82,21 @@ const globals = {
   nxt: null,
 }
 
-module.exports = ({ ds } = {}) => {
+function proxyify(value, expression, handler) {
+  if (!value) {
+    return value
+  } else if (rxjs.isObservable(value)) {
+    return proxyify(expression.observe(value), expression, handler)
+  } else if (typeof value === 'object') {
+    return new Proxy(value, handler)
+  } else {
+    return value
+  }
+}
+
+module.exports = ({ ds, ...options }) => {
   class Expression {
-    constructor(context, script, expression, args$, observer) {
+    constructor(context, script, expression, args, observer) {
       this._context = context
       this._expression = expression
       this._observer = observer
@@ -77,27 +110,21 @@ module.exports = ({ ds } = {}) => {
       this._value = kEmpty
       this._destroyed = false
 
-      if (rxjs.isObservable(args$)) {
-        this._args = {}
-        this._subscription = args$.subscribe({
-          next: (args) => {
-            this._args = args
-            this._refresh()
-          },
-          error: (err) => {
-            this._observer.error(err)
-          },
-        })
-      } else {
-        this._args = args$
-        this._subscription = null
+      const handler = {
+        get: (target, prop) => proxyify(target[prop], this, handler),
       }
+
+      this._args = options.proxyify ? proxyify(args, this, handler) : args
 
       this._refreshNT(this)
     }
 
     suspend() {
       throw kSuspend
+    }
+
+    observe(observable) {
+      return this._getObservable(observable)
     }
 
     ds(key, state, throws) {
@@ -122,7 +149,6 @@ module.exports = ({ ds } = {}) => {
         entry.dispose()
       }
       this._entries.clear()
-      this._subscription?.unsubscribe()
     }
 
     _refreshNT(self) {
@@ -171,14 +197,30 @@ module.exports = ({ ds } = {}) => {
       }
     }
 
-    _getEntry(key, factory, opaque) {
+    _getEntry(key, Entry, opaque) {
       let entry = this._entries.get(key)
       if (!entry) {
-        entry = factory(key, this._refresh, opaque)
+        entry = new Entry(key, this._refresh, opaque)
         this._entries.set(key, entry)
       }
       entry.counter = this._counter
       return entry
+    }
+
+    _getObservable(observable) {
+      if (!rxjs.isObservable(observable)) {
+        throw new Error(`invalid argument: observable (${observable})`)
+      }
+
+      const entry = this._getEntry(observable, ObservableEntry, observable)
+
+      if (entry.error) {
+        throw entry.error
+      } else if (entry.value === kEmpty) {
+        throw kSuspend
+      }
+
+      return entry.value
     }
 
     _getRecord(key, state, throws) {
@@ -199,7 +241,7 @@ module.exports = ({ ds } = {}) => {
         }
       }
 
-      const entry = this._getEntry(key, makeRecordEntry, ds)
+      const entry = this._getEntry(key, RecordEntry, ds)
 
       if (entry.record.state < state) {
         if (throws ?? true) {
@@ -234,11 +276,7 @@ module.exports = ({ ds } = {}) => {
         return dueValue
       }
 
-      this._getEntry(
-        objectHash({ dueTime, dueValue, undueValue }),
-        makeTimerEntry,
-        dueTime - nowTime
-      )
+      this._getEntry(objectHash({ dueTime, dueValue, undueValue }), TimerEntry, dueTime - nowTime)
 
       return undueValue
     }

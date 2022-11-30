@@ -6,10 +6,10 @@ const getJavascriptCompiler = require('./javascript')
 const weakCache = require('../../weakCache')
 const JSON5 = require('json5')
 
-module.exports = ({ ds } = {}) => {
+module.exports = (options) => {
   const compilers = {
-    nxt: getNxtpressionsCompiler({ ds }),
-    js: getJavascriptCompiler({ ds }),
+    nxt: getNxtpressionsCompiler(options),
+    js: getJavascriptCompiler(options),
   }
 
   async function resolveObjectTemplate(...args) {
