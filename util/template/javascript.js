@@ -266,11 +266,11 @@ module.exports = ({ ds, ...options }) => {
     _getTimer(dueTime, dueValue = dueTime, undueValue = null) {
       dueTime = Number.isFinite(dueTime) ? dueTime : new Date(dueTime).valueOf()
 
-      const nowTime = Date.now()
-
       if (!Number.isFinite(dueTime)) {
         return undueValue
       }
+
+      const nowTime = Date.now()
 
       if (nowTime >= dueTime) {
         return dueValue
