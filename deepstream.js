@@ -43,8 +43,7 @@ function provide(ds, domain, callback, options) {
       const [id, options] = parseKey(key)
       return callback(id, options, key)
     },
-    options.recursive,
-    options.schema
+    { recursive: options.recursive, mode: options.mode }
   )
 }
 
