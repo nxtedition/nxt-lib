@@ -298,7 +298,7 @@ module.exports = function (appConfig, onTerminate) {
 
   if (appConfig.compiler) {
     const createTemplateCompiler = require('./util/template')
-    compiler = createTemplateCompiler({ ds })
+    compiler = createTemplateCompiler({ ds, ...appConfig.compiler })
   }
 
   const monitorProviders = {}
