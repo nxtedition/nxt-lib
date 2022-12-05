@@ -224,7 +224,8 @@ module.exports = ({ ds, ...options }) => {
       } catch (err) {
         if (err !== kSuspend) {
           self._observer.error(
-            Object.assign(err, {
+            Object.assign(new Error('expression failed'), {
+              cause: err,
               expression: self._expression,
             })
           )
