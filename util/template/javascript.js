@@ -143,12 +143,26 @@ module.exports = ({ ds, ...options }) => {
       this._value = kEmpty
       this._disposing = false
       this._destroyed = false
+      this._subscription = null
 
       const handler = {
         get: (target, prop) => proxyify(target[prop], this, handler),
       }
 
-      this._args = options.proxyify ? proxyify(args, this, handler) : args
+      if (rxjs.isObservable(args)) {
+        this._args = {}
+        this._subscription = args.subscribe({
+          next: (args) => {
+            this._args = options.proxyify ? proxyify(args, this, handler) : args
+            this._refresh()
+          },
+          error: (err) => {
+            observer.error(err)
+          },
+        })
+      } else {
+        this._args = options.proxyify ? proxyify(args, this, handler) : args
+      }
 
       this._refreshNT(this)
     }
@@ -183,6 +197,7 @@ module.exports = ({ ds, ...options }) => {
 
     _destroy() {
       this._destroyed = true
+      this._subscription?.unsubscribe()
       for (const entry of this._entries.values()) {
         entry.dispose()
       }
@@ -209,9 +224,8 @@ module.exports = ({ ds, ...options }) => {
       } catch (err) {
         if (err !== kSuspend) {
           self._observer.error(
-            Object.assign(new Error('expression failed'), {
-              cause: err,
-              data: { expression: self._expression },
+            Object.assign(err, {
+              expression: self._expression,
             })
           )
         }
