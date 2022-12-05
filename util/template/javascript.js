@@ -141,6 +141,7 @@ module.exports = ({ ds, ...options }) => {
       this._refreshing = false
       this._counter = 0
       this._value = kEmpty
+      this._disposing = false
       this._destroyed = false
 
       const handler = {
@@ -220,15 +221,17 @@ module.exports = ({ ds, ...options }) => {
       }
 
       for (const entry of self._entries.values()) {
+        self._disposing = true
         if (entry.counter !== self._counter) {
           entry.dispose()
           self._entries.delete(entry.key)
         }
+        self._disposing = false
       }
     }
 
     _refresh = () => {
-      if (!this._refreshing && !this._destroyed) {
+      if (!this._refreshing && !this._destroyed && !this._disposing) {
         this._refreshing = true
         process.nextTick(this._refreshNT, this)
       }
