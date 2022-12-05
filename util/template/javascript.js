@@ -144,13 +144,13 @@ module.exports = ({ ds, ...options }) => {
       this._disposing = false
       this._destroyed = false
       this._subscription = null
+      this._args = null
 
       const handler = {
         get: (target, prop) => proxyify(target[prop], this, handler),
       }
 
       if (rxjs.isObservable(args)) {
-        this._args = {}
         this._subscription = args.subscribe({
           next: (args) => {
             this._args = options.proxyify ? proxyify(args, this, handler) : args
@@ -164,7 +164,9 @@ module.exports = ({ ds, ...options }) => {
         this._args = options.proxyify ? proxyify(args, this, handler) : args
       }
 
-      this._refreshNT(this)
+      if (this._args) {
+        this._refreshNT(this)
+      }
     }
 
     suspend() {
@@ -205,12 +207,12 @@ module.exports = ({ ds, ...options }) => {
     }
 
     _refreshNT(self) {
-      if (self._destroyed) {
-        return
-      }
-
       self._refreshing = false
       self._counter = (self._counter + 1) & maxInt
+
+      if (self._destroyed || !self._args) {
+        return
+      }
 
       // TODO (fix): freeze?
       self._context.$ = self._args
