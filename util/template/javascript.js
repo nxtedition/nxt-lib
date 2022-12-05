@@ -4,6 +4,7 @@ const vm = require('node:vm')
 const objectHash = require('object-hash')
 const datefns = require('date-fns')
 const JSON5 = require('json5')
+const undici = require('undici')
 
 const kSuspend = Symbol('kSuspend')
 const kEmpty = Symbol('kEmpty')
@@ -18,6 +19,38 @@ class TimerEntry {
 
   dispose() {
     clearTimeout(this.timer)
+  }
+}
+
+class FetchEntry {
+  constructor(key, refresh, { url, headers }) {
+    this.key = key
+    this.counter = null
+    this.refresh = refresh
+    this.ac = new AbortController()
+    this.body = null
+    this.status = null
+    this.headers = headers
+    this.error = null
+
+    // TODO (fix): Cache...
+    // TODO (fix): Expire...
+    undici
+      .fetch(url, { headers, signal: this.ac.signal })
+      .then(async (res) => {
+        this.buffer = Buffer.from(await res.arrayBuffer())
+        this.status = res.status
+        this.headers = res.headers
+        this.refresh()
+      })
+      .catch((err) => {
+        this.error = err
+        this.refresh()
+      })
+  }
+
+  dispose() {
+    this.ac.abort()
   }
 }
 
@@ -123,8 +156,12 @@ module.exports = ({ ds, ...options }) => {
       throw kSuspend
     }
 
-    observe(observable) {
-      return this._getObservable(observable)
+    fetch(url, headers, throws) {
+      return this._getFetch(url, headers, throws)
+    }
+
+    observe(observable, throws) {
+      return this._getObservable(observable, throws)
     }
 
     ds(key, state, throws) {
@@ -207,7 +244,26 @@ module.exports = ({ ds, ...options }) => {
       return entry
     }
 
-    _getObservable(observable) {
+    _getFetch(url, headers, throws) {
+      const key = JSON.stringify({ url, headers })
+      const entry = this._getEntry(key, FetchEntry, { url, headers })
+
+      if (entry.error) {
+        throw entry.error
+      }
+
+      if (!entry.body) {
+        if (throws ?? true) {
+          throw kSuspend
+        } else {
+          return null
+        }
+      }
+
+      return { status: entry.status, headers: entry.headers, body: entry.body }
+    }
+
+    _getObservable(observable, throws) {
       if (!rxjs.isObservable(observable)) {
         throw new Error(`invalid argument: observable (${observable})`)
       }
@@ -216,8 +272,14 @@ module.exports = ({ ds, ...options }) => {
 
       if (entry.error) {
         throw entry.error
-      } else if (entry.value === kEmpty) {
-        throw kSuspend
+      }
+
+      if (entry.value === kEmpty) {
+        if (throws ?? true) {
+          throw kSuspend
+        } else {
+          return null
+        }
       }
 
       return entry.value
@@ -228,7 +290,7 @@ module.exports = ({ ds, ...options }) => {
         throw new Error(`invalid argument: key (${key})`)
       }
 
-      if (!key) {
+      if (!key || key === 'null' || key === 'undefined' || key === '[Object]') {
         return null
       }
 
@@ -255,6 +317,9 @@ module.exports = ({ ds, ...options }) => {
     }
 
     _getHasRawAssetType(id, type, state, throws) {
+      if (!type) {
+        return null
+      }
       const data = this._getRecord(
         id + ':asset.rawTypes?',
         state ?? ds.record.PROVIDER,
