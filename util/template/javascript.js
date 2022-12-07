@@ -145,6 +145,7 @@ module.exports = ({ ds, ...options }) => {
       this._destroyed = false
       this._subscription = null
       this._args = null
+      this._hasArgs = false
 
       const handler = {
         get: (target, prop) => proxyify(target[prop], this, handler),
@@ -154,6 +155,7 @@ module.exports = ({ ds, ...options }) => {
         this._subscription = args.subscribe({
           next: (args) => {
             this._args = options.proxyify ? proxyify(args, this, handler) : args
+            this._hasArgs = true
             this._refresh()
           },
           error: (err) => {
@@ -162,9 +164,10 @@ module.exports = ({ ds, ...options }) => {
         })
       } else {
         this._args = options.proxyify ? proxyify(args, this, handler) : args
+        this._hasArgs = true
       }
 
-      if (this._args) {
+      if (this._hasArgs) {
         this._refreshNT(this)
       }
     }
@@ -210,7 +213,7 @@ module.exports = ({ ds, ...options }) => {
       self._refreshing = false
       self._counter = (self._counter + 1) & maxInt
 
-      if (self._destroyed || !self._args) {
+      if (self._destroyed || !self._hasArgs) {
         return
       }
 
@@ -224,26 +227,28 @@ module.exports = ({ ds, ...options }) => {
           self._observer.next(value)
         }
       } catch (err) {
-        if (err !== kSuspend) {
-          self._observer.error(
-            Object.assign(new Error('expression failed'), {
-              cause: err,
-              expression: self._expression,
-            })
-          )
+        if (err === kSuspend) {
+          return
         }
+
+        self._observer.error(
+          Object.assign(new Error('expression failed'), {
+            cause: err,
+            expression: self._expression,
+          })
+        )
       } finally {
         self._context.$ = null
         self._context.nxt = null
-      }
 
-      for (const entry of self._entries.values()) {
-        self._disposing = true
-        if (entry.counter !== self._counter) {
-          entry.dispose()
-          self._entries.delete(entry.key)
+        for (const entry of self._entries.values()) {
+          self._disposing = true
+          if (entry.counter !== self._counter) {
+            entry.dispose()
+            self._entries.delete(entry.key)
+          }
+          self._disposing = false
         }
-        self._disposing = false
       }
     }
 
