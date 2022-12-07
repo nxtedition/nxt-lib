@@ -115,13 +115,13 @@ const globals = {
   nxt: null,
 }
 
-function proxyify(value, expression, handler) {
+function proxyify(value, expression) {
   if (!value) {
     return value
   } else if (rxjs.isObservable(value)) {
-    return proxyify(expression.observe(value), expression, handler)
+    return proxyify(expression.observe(value), expression)
   } else if (typeof value === 'object') {
-    return new Proxy(value, handler)
+    return new Proxy(value, expression._handler)
   } else {
     return value
   }
@@ -146,30 +146,28 @@ module.exports = ({ ds, ...options }) => {
       this._subscription = null
       this._args = null
       this._hasArgs = false
-
-      const handler = {
-        get: (target, prop) => proxyify(target[prop], this, handler),
+      this._handler = {
+        get: (target, prop) => proxyify(target[prop], this),
       }
+      this._proxify = Boolean(options.proxyify)
 
       if (rxjs.isObservable(args)) {
         this._subscription = args.subscribe({
           next: (args) => {
-            this._args = options.proxyify ? proxyify(args, this, handler) : args
+            this._args = this._proxify ? proxyify(args, this) : args
             this._hasArgs = true
             this._refresh()
           },
           error: (err) => {
-            observer.error(err)
+            this._observer.error(err)
           },
         })
       } else {
-        this._args = options.proxyify ? proxyify(args, this, handler) : args
+        this._args = this._proxify ? proxyify(args, this) : args
         this._hasArgs = true
       }
 
-      if (this._hasArgs) {
-        this._refreshNT(this)
-      }
+      this._refreshNT(this)
     }
 
     suspend() {
@@ -211,11 +209,12 @@ module.exports = ({ ds, ...options }) => {
 
     _refreshNT(self) {
       self._refreshing = false
-      self._counter = (self._counter + 1) & maxInt
 
-      if (self._destroyed || !self._hasArgs) {
+      if (self._destroyed || self._disposing || !self._hasArgs) {
         return
       }
+
+      self._counter = (self._counter + 1) & maxInt
 
       // TODO (fix): freeze?
       self._context.$ = self._args
@@ -253,10 +252,12 @@ module.exports = ({ ds, ...options }) => {
     }
 
     _refresh = () => {
-      if (!this._refreshing && !this._destroyed && !this._disposing) {
-        this._refreshing = true
-        process.nextTick(this._refreshNT, this)
+      if (this._refreshing || this._destroyed || this._disposing || !this._hasArgs) {
+        return
       }
+
+      this._refreshing = true
+      process.nextTick(this._refreshNT, this)
     }
 
     _getEntry(key, Entry, opaque) {
