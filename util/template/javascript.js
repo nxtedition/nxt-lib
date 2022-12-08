@@ -38,7 +38,7 @@ class FetchEntry {
     undici
       .fetch(url, { headers, signal: this.ac.signal })
       .then(async (res) => {
-        this.buffer = Buffer.from(await res.arrayBuffer())
+        this.body = Buffer.from(await res.arrayBuffer())
         this.status = res.status
         this.headers = res.headers
         this.refresh()
@@ -278,7 +278,7 @@ module.exports = ({ ds, ...options }) => {
         throw entry.error
       }
 
-      if (!entry.body) {
+      if (!entry.status) {
         if (throws ?? true) {
           throw kSuspend
         } else {
