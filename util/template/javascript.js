@@ -351,7 +351,7 @@ module.exports = ({ ds, ...options }) => {
         state ?? ds.record.PROVIDER,
         throws ?? true
       )
-      return data && data.value.includes(type) ? id : null
+      return data && Array.isArray(data.value) && data.value.includes(type) ? id : null
     }
 
     _getTimer(dueTime, dueValue = dueTime, undueValue = null) {
