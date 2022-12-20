@@ -23,21 +23,24 @@ class TimerEntry {
 }
 
 class FetchEntry {
-  constructor(key, refresh, { url, headers }) {
+  constructor(key, refresh, { resource, options }) {
     this.key = key
     this.counter = null
     this.refresh = refresh
     this.ac = new AbortController()
     this.body = null
     this.status = null
-    this.headers = headers
+    this.options = options
     this.error = null
 
-    // TODO (fix): Cache...
-    // TODO (fix): Expire...
+    // TODO (fix): options.signal
+    // TODO (fix): cache...
+    // TODO (fix): expire...
+
     undici
-      .fetch(url, { headers, signal: this.ac.signal })
+      .fetch(resource, { ...this.options, signal: this.ac.signal })
       .then(async (res) => {
+        // TODO (fix): max size...
         this.body = Buffer.from(await res.arrayBuffer())
         this.status = res.status
         this.headers = res.headers
@@ -174,8 +177,8 @@ module.exports = ({ ds, ...options }) => {
       throw kSuspend
     }
 
-    fetch(url, headers, throws) {
-      return this._getFetch(url, headers, throws)
+    fetch(url, init, throws) {
+      return this._getFetch(url, init, throws)
     }
 
     observe(observable, throws) {
@@ -270,9 +273,9 @@ module.exports = ({ ds, ...options }) => {
       return entry
     }
 
-    _getFetch(url, headers, throws) {
-      const key = JSON.stringify({ url, headers })
-      const entry = this._getEntry(key, FetchEntry, { url, headers })
+    _getFetch(resource, options, throws) {
+      const key = JSON.stringify({ resource, options })
+      const entry = this._getEntry(key, FetchEntry, { resource, options })
 
       if (entry.error) {
         throw entry.error
@@ -383,6 +386,7 @@ module.exports = ({ ds, ...options }) => {
         _.asset = (type, state, throws) => (id) => nxt.asset(id, type, state, throws);
         _.ds = (postfix, state, throws) => (id) => nxt.ds(id + postfix, state, throws);
         _.timer = (dueTime) => (dueValue) => nxt.timer(dueTime, dueValue);
+        _.fetch = (options, throws) => (resource) => nxt.fetch(resource, options, throws);
         ${expression}
       }
     `)
