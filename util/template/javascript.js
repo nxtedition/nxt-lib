@@ -243,14 +243,14 @@ module.exports = ({ ds, ...options }) => {
         self._context.$ = null
         self._context.nxt = null
 
+        self._disposing = true
         for (const entry of self._entries.values()) {
-          self._disposing = true
           if (entry.counter !== self._counter) {
             entry.dispose()
             self._entries.delete(entry.key)
           }
-          self._disposing = false
         }
+        self._disposing = false
       }
     }
 
