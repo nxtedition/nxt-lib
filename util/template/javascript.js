@@ -324,9 +324,12 @@ module.exports = ({ ds, ...options }) => {
       }
 
       if (state == null) {
-        state = key.startsWith('{') || key.includes('?') ? ds.record.PROVIDER : ds.record.SERVER
+        state =
+          key.startsWith('{') || key.includes('?')
+            ? ds.record.STATE.PROVIDER
+            : ds.record.STATE.SERVER
       } else if (typeof state === 'string') {
-        state = ds.CONSTANTS.RECORD_STATE[state.toUpperCase()]
+        state = ds.record.STATE[state.toUpperCase()]
         if (state == null) {
           throw new Error(`invalid argument: state (${state})`)
         }
