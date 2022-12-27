@@ -81,7 +81,6 @@
     "nconf": "^0.12.0",
     "nested-error-stacks": "^2.1.1",
     "object-hash": "^3.0.0",
-    "pino-std-serializers": "^6.0.0",
     "qs": "^6.11.0",
     "request-target": "^1.0.2",
     "split-string": "^6.0.0",
