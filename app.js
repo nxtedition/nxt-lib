@@ -173,8 +173,6 @@ module.exports = function (appConfig, onTerminate) {
 
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
-    const EE = require('events')
-    const LRUCache = require('lru-cache')
 
     let dsConfig = { ...appConfig.deepstream, ...config.deepstream }
 
@@ -188,56 +186,10 @@ module.exports = function (appConfig, onTerminate) {
       dsConfig.credentials.user ||
       serviceName
 
-    class Cache extends EE {
-      constructor({ max = 16 * 1024 }) {
-        super()
-        this._lru = new LRUCache({ max })
-      }
-
-      get(key, callback) {
-        callback(null, this._lru.get(key))
-      }
-
-      put(key, value) {
-        this._lru.set(key, value)
-      }
-
-      // Legacy compat.
-      set(key, ...args) {
-        let value
-
-        if (args.length === 1 && Array.isArray(args[0])) {
-          value = args[0]
-        } else {
-          value = args
-        }
-
-        if (value.length !== 2) {
-          throw new Error('invalid argument')
-        }
-
-        if (typeof value[0] !== 'string') {
-          throw new Error('invalid argument')
-        }
-
-        if (!value[1] || typeof value[1] !== 'object') {
-          throw new Error('invalid argument')
-        }
-
-        this._lru.set(key, value)
-      }
-    }
-
-    let dsCache
-    if (dsConfig.cache === undefined || typeof dsConfig.cache === 'object') {
-      dsCache = new Cache(dsConfig.cache || {})
-    }
-
     dsConfig = {
       url: 'ws://127.0.0.1:6020/deepstream',
       maxReconnectAttempts: Infinity,
       maxReconnectInterval: 10e3,
-      cache: dsCache,
       ...dsConfig,
       credentials: {
         username: userName,
@@ -251,7 +203,7 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     if (!url.port) {
-      url.port = 6020
+      url.port = '6020'
     }
 
     let prevConnectionState
