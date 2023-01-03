@@ -63,12 +63,21 @@ class RecordEntry {
     this.counter = null
     this.refresh = refresh
     this.record = ds.record.getRecord(key)
-    this.record.on('update', refresh)
+
+    if (this.record.subscribe) {
+      this.record.subscribe(this.refresh)
+    } else {
+      this.record.on('update', this.refresh)
+    }
   }
 
   dispose() {
     this.record.unref()
-    this.record.off('update', this.refresh)
+    if (this.record.unsubscribe) {
+      this.record.unsubscribe(this.refresh)
+    } else {
+      this.record.off('update', this.refresh)
+    }
     this.record = null
   }
 }
