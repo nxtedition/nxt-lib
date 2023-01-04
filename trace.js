@@ -1,8 +1,5 @@
 const { Pool } = require('undici')
 
-const BATCH = 128e3
-const LIMIT = 32e6
-
 function sleep(n) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n)
 }
@@ -11,6 +8,8 @@ module.exports = function ({
   url,
   stringify = JSON.stringify,
   index,
+  batch = 128e3,
+  limit = 32e6,
   destroyers,
   logger,
   serviceName,
@@ -22,7 +21,7 @@ module.exports = function ({
   const client = new Pool(Array.isArray(url) ? url[0] : url, {
     keepAliveTimeout: 10 * 60e3,
     pipelining: 4,
-    connections: 1,
+    connections: 4,
   })
 
   destroyers?.push(() => client.close())
@@ -36,11 +35,11 @@ module.exports = function ({
     const data = traceData
     traceData = ''
 
-    if (pending > LIMIT / 4) {
+    if (pending > limit / 4) {
       logger.warn('throttling')
-      if (pending > LIMIT) {
+      if (pending > limit) {
         sleep(1000)
-      } else if (pending > LIMIT / 2) {
+      } else if (pending > limit / 2) {
         sleep(100)
       } else {
         sleep(10)
@@ -85,7 +84,7 @@ module.exports = function ({
     const doc = (typeof obj === 'string' ? obj : stringify(obj)).slice(1, -1)
 
     traceData += prefix + `${op}", "@timestamp": ${Date.now()}, ${doc} }\n`
-    if (traceData.length > BATCH) {
+    if (traceData.length > batch) {
       flushTraces()
     }
   }
