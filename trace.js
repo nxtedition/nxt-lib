@@ -1,7 +1,11 @@
 const { Pool } = require('undici')
 
 const BATCH = 128e3
-const LIMIT = 8e6
+const LIMIT = 32e6
+
+function sleep(n) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n)
+}
 
 module.exports = function ({
   url,
@@ -13,8 +17,7 @@ module.exports = function ({
 }) {
   const HEADERS = ['content-type', 'application/x-ndjson']
 
-  let bytes = 0
-  let dropped = 0
+  let pending = 0
 
   const client = new Pool(Array.isArray(url) ? url[0] : url, {
     keepAliveTimeout: 10 * 60e3,
@@ -33,13 +36,19 @@ module.exports = function ({
     const data = traceData
     traceData = ''
 
-    if (bytes > LIMIT) {
-      dropped += 1
-      return
+    if (pending > LIMIT / 4) {
+      logger.warn('throttling')
+      if (pending > LIMIT) {
+        sleep(1000)
+      } else if (pending > LIMIT / 2) {
+        sleep(100)
+      } else {
+        sleep(10)
+      }
     }
 
     try {
-      bytes += data.length * 2
+      pending += data.length
       await client
         .request({
           throwOnError: true,
@@ -53,11 +62,7 @@ module.exports = function ({
     } catch (err) {
       logger.error({ err }, 'trace failed')
     } finally {
-      bytes -= data.length * 2
-      if (bytes < LIMIT && dropped) {
-        logger.error({ count: dropped }, 'trace dropped')
-        dropped = 0
-      }
+      pending -= data.length
     }
   }
 
