@@ -13,6 +13,7 @@
     "merge-ranges.js",
     "http.js",
     "deepstream.js",
+    "json-path.js",
     "logger.js",
     "mime.js",
     "trace.js",
