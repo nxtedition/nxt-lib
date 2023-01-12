@@ -50,11 +50,45 @@ function set(data, path, value, isPlainJSON = false) {
   data = data || EMPTY_OBJ
 
   if (!path) {
-    return patch(data, value, isPlainJSON)
+    return _patch(data, value, isPlainJSON)
   }
 
   const oldValue = get(data, path)
-  const newValue = patch(oldValue, value, isPlainJSON)
+  const newValue = _patch(oldValue, value, isPlainJSON)
+
+  if (newValue === oldValue) {
+    return data
+  }
+
+  const result = data ? shallowCopy(data) : {}
+
+  const tokens = tokenize(path)
+
+  let node = result
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]
+    if (i === tokens.length - 1) {
+      node[token] = newValue
+    } else if (node[token] != null && typeof node[token] === 'object') {
+      node = node[token] = shallowCopy(node[token])
+    } else if (tokens[i + 1] && !isNaN(tokens[i + 1])) {
+      node = node[token] = []
+    } else {
+      node = node[token] = {}
+    }
+  }
+  return result
+}
+
+function merge(data, path, value, isPlainJSON = false) {
+  data = data || EMPTY_OBJ
+
+  if (!path) {
+    return _merge(data, value, isPlainJSON)
+  }
+
+  const oldValue = get(data, path)
+  const newValue = _merge(oldValue, value, isPlainJSON)
 
   if (newValue === oldValue) {
     return data
@@ -94,7 +128,59 @@ function jsonClone(o) {
   return JSON.parse(JSON.stringify(o))
 }
 
-function patch(oldValue, newValue, isPlainJSON) {
+function _merge(oldValue, newValue, isPlainJSON) {
+  if (oldValue === newValue) {
+    return oldValue
+  } else if (oldValue === null || newValue === null) {
+    return isPlainJSON ? newValue : jsonClone(newValue)
+  } else if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+    if (newValue.length === 0) {
+      return oldValue
+    }
+
+    let arr
+    for (let i = 0; i < newValue.length; i++) {
+      const value = _merge(oldValue[i], newValue[i], isPlainJSON)
+
+      if (!arr) {
+        if (value === oldValue[i]) {
+          continue
+        }
+        arr = [...oldValue]
+      }
+      // JSON: compat, undefined in array is null
+      arr[i] = value === undefined ? null : value
+    }
+
+    return arr || oldValue
+  } else if (isPlainObject(oldValue, true) && isPlainObject(newValue, isPlainJSON)) {
+    const newKeys = Object.keys(newValue).filter((key) => newValue[key] !== undefined)
+
+    if (newKeys.length === 0) {
+      return oldValue
+    }
+
+    let obj
+    for (let i = 0; i < newKeys.length; ++i) {
+      const key = newKeys[i]
+      const val = _merge(oldValue[key], newValue[key], isPlainJSON)
+
+      if (!obj) {
+        if (val === oldValue[key]) {
+          continue
+        }
+        obj = { ...oldValue }
+      }
+      obj[key] = val
+    }
+
+    return obj || oldValue
+  } else {
+    return isPlainJSON ? newValue : jsonClone(newValue)
+  }
+}
+
+function _patch(oldValue, newValue, isPlainJSON) {
   if (oldValue === newValue) {
     return oldValue
   } else if (oldValue === null || newValue === null) {
@@ -106,7 +192,7 @@ function patch(oldValue, newValue, isPlainJSON) {
 
     let arr = newValue.length === oldValue.length ? null : []
     for (let i = 0; i < newValue.length; i++) {
-      const value = patch(oldValue[i], newValue[i], isPlainJSON)
+      const value = _patch(oldValue[i], newValue[i], isPlainJSON)
 
       if (!arr) {
         if (value === oldValue[i]) {
@@ -133,7 +219,7 @@ function patch(oldValue, newValue, isPlainJSON) {
     let obj = newKeys.length === oldKeys.length ? null : {}
     for (let i = 0; i < newKeys.length; ++i) {
       const key = newKeys[i]
-      const val = patch(oldValue[key], newValue[key], isPlainJSON)
+      const val = _patch(oldValue[key], newValue[key], isPlainJSON)
 
       if (!obj) {
         if (val === oldValue[key] && key === oldKeys[i]) {
@@ -196,5 +282,6 @@ module.exports = {
   stringify,
   get,
   set,
+  merge,
   jsonClone,
 }
