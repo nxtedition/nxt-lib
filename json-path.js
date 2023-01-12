@@ -1,3 +1,4 @@
+const assert = require('node:assert')
 const fp = require('lodash/fp')
 
 const PARTS_REG_EXP = /([^.[\]\s]+)/g
@@ -48,6 +49,7 @@ function stringify(value) {
 
 function set(data, path, value, isPlainJSON = false) {
   data = data || EMPTY_OBJ
+  assert(typeof data === 'object', 'data must be object or null')
 
   if (!path) {
     return _patch(data, value, isPlainJSON)
@@ -82,8 +84,12 @@ function set(data, path, value, isPlainJSON = false) {
 
 function merge(data, path, value, isPlainJSON = false) {
   data = data || EMPTY_OBJ
+  assert(typeof data === 'object', 'data must be object or null')
 
   if (!path) {
+    if (value == null || typeof value !== 'object') {
+      return data
+    }
     return _merge(data, value, isPlainJSON)
   }
 
