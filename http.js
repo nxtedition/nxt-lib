@@ -54,15 +54,10 @@ module.exports.request = async function request(ctx, next) {
     }
 
     await Promise.all([
-      new Promise((resolve, reject) =>
-        req
-          .on('close', resolve)
-          .on('error', reject)
-          .on('timeout', () => {
-            reject(new createError.RequestTimeout())
-          })
-      ),
-      new Promise((resolve, reject) =>
+      new Promise((resolve, reject) => {
+        req.on('error', reject).on('timeout', () => {
+          reject(new createError.RequestTimeout())
+        })
         res
           .on('close', function () {
             // Normalize OutgoingMessage.destroyed
@@ -71,14 +66,14 @@ module.exports.request = async function request(ctx, next) {
             if (!this.writableEnded) {
               reject(new AbortError())
             } else {
-              resolve()
+              resolve(null)
             }
           })
           .on('error', reject)
           .on('timeout', () => {
             reject(new createError.RequestTimeout())
           })
-      ),
+      }),
       next().catch((err) => {
         if (!res.headersSent) {
           reqLogger = reqLogger.child({ err })
@@ -93,6 +88,10 @@ module.exports.request = async function request(ctx, next) {
     assert(res.destroyed)
     assert(res.statusCode)
 
+    if (!req.readableEnded) {
+      reqLogger.warn('request body not consumed')
+    }
+
     const responseTime = Math.round(performance.now() - startTime)
 
     reqLogger = reqLogger.child({ res })
@@ -104,11 +103,15 @@ module.exports.request = async function request(ctx, next) {
     } else {
       log({ responseTime }, 'request completed')
     }
+
+    req.on('error', () => {}).destroy()
+    res.on('error', () => {}).destroy()
   } catch (err) {
     const statusCode = res.headersSent ? res.statusCode : err.statusCode || 500
 
     const responseTime = Math.round(performance.now() - startTime)
 
+    req.on('error', () => {}).destroy(err)
     res.on('error', () => {}).destroy(err)
 
     reqLogger = reqLogger.child({ res })
