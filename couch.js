@@ -293,7 +293,9 @@ module.exports = function (opts) {
             for (const line of lines) {
               if (line) {
                 const change = JSON.parse(line)
-                params.since = change.seq
+                if (change.seq) {
+                  params.since = change.seq
+                }
                 if (results) {
                   results.push(change)
                 } else {
@@ -369,7 +371,9 @@ module.exports = function (opts) {
 
         retryCount = 0
 
-        params.since = seq
+        if (seq) {
+          params.since = seq
+        }
         remaining -= results.length
 
         if (!live && results.length === 0) {
