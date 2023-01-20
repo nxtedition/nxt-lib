@@ -226,7 +226,7 @@ module.exports = {
       ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${
           ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]
         }${ureq.path || ''}`
-      : undefined
+      : ureq.path || ureq.pathname
 
     return {
       id: ureq.id || getHeader(ureq, 'request-id'),
