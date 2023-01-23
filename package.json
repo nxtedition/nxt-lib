@@ -24,6 +24,7 @@
     "worker.js",
     "shared.js",
     "proxy.js",
+    "timeline.js",
     "docker-secrets.js"
   ],
   "scripts": {
