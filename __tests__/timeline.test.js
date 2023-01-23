@@ -7,30 +7,31 @@ const evt = (start, end, source, prop, value = 1) => ({
   end,
   source,
   data: { [prop]: value },
+  layer: 123,
 })
 
 test('eventsToTimeline', async (t) => {
   await t.test('finite event', (t) => {
     assert.deepEqual(eventsToTimeline([evt(1, 2, 'a', 'x')]), [
-      { time: 1, source: 'a', data: { x: 1 } },
-      { time: 2, source: 'a' },
-      { time: 7 },
+      { layer: 123, time: 1, source: 'a', data: { x: 1 } },
+      { layer: 123, time: 2, source: 'a' },
+      { layer: 123, time: 7 },
     ])
   })
 
   await t.test('infinite end', (t) => {
     assert.deepEqual(eventsToTimeline([evt(0, Infinity, 'a', 'x')]), [
-      { time: 0, source: 'a', data: { x: 1 } },
-      { time: Infinity },
+      { layer: 123, time: 0, source: 'a', data: { x: 1 } },
+      { layer: 123, time: Infinity },
     ])
   })
 
   await t.test('revert to active', (t) => {
     assert.deepEqual(eventsToTimeline([evt(0, Infinity, 'a', 'x'), evt(1, 2, 'b', 'y')]), [
-      { time: 0, source: 'a', data: { x: 1 } },
-      { time: 1, source: 'b', data: { x: 1, y: 1 } },
-      { time: 2, source: 'a', data: { x: 1 } },
-      { time: Infinity },
+      { layer: 123, time: 0, source: 'a', data: { x: 1 } },
+      { layer: 123, time: 1, source: 'b', data: { x: 1, y: 1 } },
+      { layer: 123, time: 2, source: 'a', data: { x: 1 } },
+      { layer: 123, time: Infinity },
     ])
   })
 
@@ -38,10 +39,10 @@ test('eventsToTimeline', async (t) => {
     assert.deepEqual(
       eventsToTimeline([evt(0, 2, 'a', 'x'), evt(0, 1, 'b', 'y'), evt(0, 1, 'c', 'z')]),
       [
-        { time: 0, source: 'c', data: { x: 1, y: 1, z: 1 } },
-        { time: 1, source: 'a', data: { x: 1 } },
-        { time: 2, source: 'a' },
-        { time: 7 },
+        { layer: 123, time: 0, source: 'c', data: { x: 1, y: 1, z: 1 } },
+        { layer: 123, time: 1, source: 'a', data: { x: 1 } },
+        { layer: 123, time: 2, source: 'a' },
+        { layer: 123, time: 7 },
       ]
     )
   })
@@ -50,25 +51,25 @@ test('eventsToTimeline', async (t) => {
     assert.deepEqual(
       eventsToTimeline([evt(0, 5, 'a', 'x'), evt(1, 2, 'b', 'x'), evt(3, 4, 'a', 'y')]),
       [
-        { time: 0, source: 'a', data: { x: 1 } },
-        { time: 1, source: 'b', data: { x: 1 } },
-        { time: 2, source: 'a', data: { x: 1 } },
-        { time: 3, source: 'a', data: { x: 1, y: 1 } },
-        { time: 4, source: 'a', data: { x: 1 } },
-        { time: 5, source: 'a' },
-        { time: 10 },
+        { layer: 123, time: 0, source: 'a', data: { x: 1 } },
+        { layer: 123, time: 1, source: 'b', data: { x: 1 } },
+        { layer: 123, time: 2, source: 'a', data: { x: 1 } },
+        { layer: 123, time: 3, source: 'a', data: { x: 1, y: 1 } },
+        { layer: 123, time: 4, source: 'a', data: { x: 1 } },
+        { layer: 123, time: 5, source: 'a' },
+        { layer: 123, time: 10 },
       ]
     )
   })
 
   await t.test('partial preload', (t) => {
     assert.deepEqual(eventsToTimeline([evt(0, 1, 'a', 'x'), evt(8, 9, 'b', 'y')]), [
-      { time: 0, source: 'a', data: { x: 1 } },
-      { time: 1, source: 'a' },
-      { time: 6 },
-      { time: 8, source: 'b', data: { y: 1 } },
-      { time: 9, source: 'b' },
-      { time: 14 },
+      { layer: 123, time: 0, source: 'a', data: { x: 1 } },
+      { layer: 123, time: 1, source: 'a' },
+      { layer: 123, time: 6 },
+      { layer: 123, time: 8, source: 'b', data: { y: 1 } },
+      { layer: 123, time: 9, source: 'b' },
+      { layer: 123, time: 14 },
     ])
   })
 
@@ -76,13 +77,13 @@ test('eventsToTimeline', async (t) => {
     assert.deepEqual(
       eventsToTimeline([evt(0, 5, 'a', 'x'), evt(1, 3, 'b', 'x', 2), evt(2, 4, 'a', 'y')]),
       [
-        { time: 0, source: 'a', data: { x: 1 } },
-        { time: 1, source: 'b', data: { x: 2 } },
-        { time: 2, source: 'a', data: { x: 2, y: 1 } },
-        { time: 3, source: 'a', data: { x: 1, y: 1 } },
-        { time: 4, source: 'a', data: { x: 1 } },
-        { time: 5, source: 'a' },
-        { time: 10 },
+        { layer: 123, time: 0, source: 'a', data: { x: 1 } },
+        { layer: 123, time: 1, source: 'b', data: { x: 2 } },
+        { layer: 123, time: 2, source: 'a', data: { x: 2, y: 1 } },
+        { layer: 123, time: 3, source: 'a', data: { x: 1, y: 1 } },
+        { layer: 123, time: 4, source: 'a', data: { x: 1 } },
+        { layer: 123, time: 5, source: 'a' },
+        { layer: 123, time: 10 },
       ]
     )
   })
@@ -91,18 +92,18 @@ test('eventsToTimeline', async (t) => {
 test('timelineToCommands', async (t) => {
   await t.test('finite event', (t) => {
     assert.deepEqual(timelineToCommands(eventsToTimeline([evt(1, 2, 'a', 'x')])), [
-      { command: 'load', time: -4, source: 'a', data: { x: 1 } },
-      { command: 'play', time: 1 },
-      { command: 'stop', time: 2 },
-      { command: 'clear', time: 7 },
+      { layer: 123, command: 'load', time: -4, source: 'a', data: { x: 1 } },
+      { layer: 123, command: 'play', time: 1 },
+      { layer: 123, command: 'stop', time: 2 },
+      { layer: 123, command: 'clear', time: 7 },
     ])
   })
 
   await t.test('infinite end', (t) => {
     assert.deepEqual(timelineToCommands(eventsToTimeline([evt(0, Infinity, 'a', 'x')])), [
-      { command: 'load', time: -5, source: 'a', data: { x: 1 } },
-      { command: 'play', time: 0 },
-      { command: 'clear', time: Infinity },
+      { layer: 123, command: 'load', time: -5, source: 'a', data: { x: 1 } },
+      { layer: 123, command: 'play', time: 0 },
+      { layer: 123, command: 'clear', time: Infinity },
     ])
   })
 
@@ -110,11 +111,11 @@ test('timelineToCommands', async (t) => {
     assert.deepEqual(
       timelineToCommands(eventsToTimeline([evt(0, Infinity, 'a', 'x'), evt(1, 2, 'b', 'y')])),
       [
-        { command: 'load', time: -5, source: 'a', data: { x: 1 } },
-        { command: 'play', time: 0 },
-        { command: 'play', time: 1, source: 'b', data: { x: 1, y: 1 } },
-        { command: 'play', time: 2, source: 'a', data: { x: 1 } },
-        { command: 'clear', time: Infinity },
+        { layer: 123, command: 'load', time: -5, source: 'a', data: { x: 1 } },
+        { layer: 123, command: 'play', time: 0 },
+        { layer: 123, command: 'play', time: 1, source: 'b', data: { x: 1, y: 1 } },
+        { layer: 123, command: 'play', time: 2, source: 'a', data: { x: 1 } },
+        { layer: 123, command: 'clear', time: Infinity },
       ]
     )
   })
@@ -123,11 +124,11 @@ test('timelineToCommands', async (t) => {
     assert.deepEqual(
       timelineToCommands(eventsToTimeline([evt(0, Infinity, 'a', 'x'), evt(1, 2, 'a', 'y')])),
       [
-        { command: 'load', time: -5, source: 'a', data: { x: 1 } },
-        { command: 'play', time: 0 },
-        { command: 'update', time: 1, data: { x: 1, y: 1 } },
-        { command: 'update', time: 2, data: { x: 1 } },
-        { command: 'clear', time: Infinity },
+        { layer: 123, command: 'load', time: -5, source: 'a', data: { x: 1 } },
+        { layer: 123, command: 'play', time: 0 },
+        { layer: 123, command: 'update', time: 1, data: { x: 1, y: 1 } },
+        { layer: 123, command: 'update', time: 2, data: { x: 1 } },
+        { layer: 123, command: 'clear', time: Infinity },
       ]
     )
   })
@@ -136,12 +137,12 @@ test('timelineToCommands', async (t) => {
     assert.deepEqual(
       timelineToCommands(eventsToTimeline([evt(0, 1, 'a', 'x'), evt(3, 4, 'b', 'y')])),
       [
-        { command: 'load', time: -5, source: 'a', data: { x: 1 } },
-        { command: 'play', time: 0 },
-        { command: 'stop', time: 1 },
-        { command: 'play', time: 3, source: 'b', data: { y: 1 } },
-        { command: 'stop', time: 4 },
-        { command: 'clear', time: 9 },
+        { layer: 123, command: 'load', time: -5, source: 'a', data: { x: 1 } },
+        { layer: 123, command: 'play', time: 0 },
+        { layer: 123, command: 'stop', time: 1 },
+        { layer: 123, command: 'play', time: 3, source: 'b', data: { y: 1 } },
+        { layer: 123, command: 'stop', time: 4 },
+        { layer: 123, command: 'clear', time: 9 },
       ]
     )
   })
@@ -150,14 +151,14 @@ test('timelineToCommands', async (t) => {
     assert.deepEqual(
       timelineToCommands(eventsToTimeline([evt(0, 1, 'a', 'x'), evt(8, 9, 'b', 'y')])),
       [
-        { command: 'load', time: -5, source: 'a', data: { x: 1 } },
-        { command: 'play', time: 0 },
-        { command: 'stop', time: 1 },
-        { command: 'clear', time: 6 }, // we can get rid of this, should we?
-        { command: 'load', time: 6, source: 'b', data: { y: 1 } },
-        { command: 'play', time: 8 },
-        { command: 'stop', time: 9 },
-        { command: 'clear', time: 14 },
+        { layer: 123, command: 'load', time: -5, source: 'a', data: { x: 1 } },
+        { layer: 123, command: 'play', time: 0 },
+        { layer: 123, command: 'stop', time: 1 },
+        { layer: 123, command: 'clear', time: 6 }, // we can get rid of this, should we?
+        { layer: 123, command: 'load', time: 6, source: 'b', data: { y: 1 } },
+        { layer: 123, command: 'play', time: 8 },
+        { layer: 123, command: 'stop', time: 9 },
+        { layer: 123, command: 'clear', time: 14 },
       ]
     )
   })
@@ -166,14 +167,14 @@ test('timelineToCommands', async (t) => {
     assert.deepEqual(
       timelineToCommands(eventsToTimeline([evt(0, 1, 'a', 'x'), evt(20, 21, 'b', 'y')])),
       [
-        { command: 'load', time: -5, source: 'a', data: { x: 1 } },
-        { command: 'play', time: 0 },
-        { command: 'stop', time: 1 },
-        { command: 'clear', time: 6 },
-        { command: 'load', time: 15, source: 'b', data: { y: 1 } },
-        { command: 'play', time: 20 },
-        { command: 'stop', time: 21 },
-        { command: 'clear', time: 26 },
+        { layer: 123, command: 'load', time: -5, source: 'a', data: { x: 1 } },
+        { layer: 123, command: 'play', time: 0 },
+        { layer: 123, command: 'stop', time: 1 },
+        { layer: 123, command: 'clear', time: 6 },
+        { layer: 123, command: 'load', time: 15, source: 'b', data: { y: 1 } },
+        { layer: 123, command: 'play', time: 20 },
+        { layer: 123, command: 'stop', time: 21 },
+        { layer: 123, command: 'clear', time: 26 },
       ]
     )
   })
@@ -189,15 +190,15 @@ test('timelineToCommands', async (t) => {
         ])
       ),
       [
-        { command: 'load', time: -5, source: 'a', data: { x: 1 } },
-        { command: 'play', time: 0 },
-        { command: 'play', time: 1, source: 'b', data: { x: 1 } },
-        { command: 'play', time: 2, source: 'a', data: { x: 1, y: 1 } },
-        { command: 'update', time: 4, data: { x: 1 } },
-        { command: 'stop', time: 5 },
-        { command: 'play', time: 7, source: 'a', data: { y: 1 } },
-        { command: 'stop', time: 8 },
-        { command: 'clear', time: 13 },
+        { layer: 123, command: 'load', time: -5, source: 'a', data: { x: 1 } },
+        { layer: 123, command: 'play', time: 0 },
+        { layer: 123, command: 'play', time: 1, source: 'b', data: { x: 1 } },
+        { layer: 123, command: 'play', time: 2, source: 'a', data: { x: 1, y: 1 } },
+        { layer: 123, command: 'update', time: 4, data: { x: 1 } },
+        { layer: 123, command: 'stop', time: 5 },
+        { layer: 123, command: 'play', time: 7, source: 'a', data: { y: 1 } },
+        { layer: 123, command: 'stop', time: 8 },
+        { layer: 123, command: 'clear', time: 13 },
       ]
     )
   })
@@ -213,18 +214,18 @@ test('timelineToCommands', async (t) => {
         ])
       ),
       [
-        { command: 'load', time: -5, source: 'a', data: { x: 1 } },
-        { command: 'play', time: 0 },
-        { command: 'play', time: 10, source: 'b', data: { x: 2 } },
-        { command: 'play', time: 20, source: 'a', data: { x: 2, y: 1 } },
-        { command: 'update', time: 30, data: { x: 1, y: 1 } },
-        { command: 'update', time: 40, data: { x: 1 } },
-        { command: 'stop', time: 50 },
-        { command: 'clear', time: 55 },
-        { command: 'load', time: 65, source: 'a', data: { y: 1 } },
-        { command: 'play', time: 70 },
-        { command: 'stop', time: 80 },
-        { command: 'clear', time: 85 },
+        { layer: 123, command: 'load', time: -5, source: 'a', data: { x: 1 } },
+        { layer: 123, command: 'play', time: 0 },
+        { layer: 123, command: 'play', time: 10, source: 'b', data: { x: 2 } },
+        { layer: 123, command: 'play', time: 20, source: 'a', data: { x: 2, y: 1 } },
+        { layer: 123, command: 'update', time: 30, data: { x: 1, y: 1 } },
+        { layer: 123, command: 'update', time: 40, data: { x: 1 } },
+        { layer: 123, command: 'stop', time: 50 },
+        { layer: 123, command: 'clear', time: 55 },
+        { layer: 123, command: 'load', time: 65, source: 'a', data: { y: 1 } },
+        { layer: 123, command: 'play', time: 70 },
+        { layer: 123, command: 'stop', time: 80 },
+        { layer: 123, command: 'clear', time: 85 },
       ]
     )
   })

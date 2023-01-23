@@ -30,7 +30,7 @@ function eventsToTimeline(events) {
         // clear
         const clearTime = activeEnd + STOP_TIME
         if (!events.length || clearTime < events.at(0).start) {
-          timeline.push({ time: clearTime })
+          timeline.push({ ...fp.omit(['start', 'end', 'source', 'data'], prev), time: clearTime })
         }
       }
     } else {
