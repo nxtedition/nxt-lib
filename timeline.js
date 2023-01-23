@@ -111,7 +111,7 @@ function pickLayer(source, min = 11, max = 99999) {
 
   hash = hash < 0 ? -hash : hash
 
-  return (hash + min) % max
+  return min + (hash % (max - min + 1))
 }
 
 module.exports = {
