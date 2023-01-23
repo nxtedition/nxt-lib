@@ -1,3 +1,4 @@
+const { describe, test } = require('node:test')
 const subtractRanges = require('../subtract-ranges')
 const mergeRanges = require('../merge-ranges')
 const assert = require('assert')
