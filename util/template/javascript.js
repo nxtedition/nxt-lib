@@ -194,12 +194,28 @@ module.exports = ({ ds, ...options }) => {
       return this._getObservable(observable, throws)
     }
 
-    ds(key, state, throws) {
-      return this._getRecord(key, state, throws)
+    ds(id, state, throws) {
+      return this._getRecord(id, state, throws)
+    }
+
+    _ds(key, postfix, state, throws) {
+      return !key || typeof key !== 'string'
+        ? null
+        : this._getRecord(postfix ? key + postfix : key, state, throws)
     }
 
     asset(id, type, state, throws) {
       return this._getHasRawAssetType(id, type, state, throws)
+    }
+
+    _asset(id, type, state, throws) {
+      if (!type || typeof type !== 'string') {
+        throw new Error(`invalid argument: type (${type})`)
+      }
+
+      return !id || typeof id !== 'string'
+        ? null
+        : this._getHasRawAssetType(id, type, state, throws)
     }
 
     timer(dueTime, dueValue) {
@@ -324,12 +340,8 @@ module.exports = ({ ds, ...options }) => {
     }
 
     _getRecord(key, state, throws) {
-      if (typeof key !== 'string') {
+      if (!key || typeof key !== 'string') {
         throw new Error(`invalid argument: key (${key})`)
-      }
-
-      if (!key || key === 'null' || key === 'undefined' || key === '[Object]') {
-        return null
       }
 
       if (state == null) {
@@ -358,9 +370,14 @@ module.exports = ({ ds, ...options }) => {
     }
 
     _getHasRawAssetType(id, type, state, throws) {
-      if (!type) {
-        return null
+      if (!id || typeof id !== 'string') {
+        throw new Error(`invalid argument: id (${id})`)
       }
+
+      if (!type || typeof type !== 'string') {
+        throw new Error(`invalid argument: type (${type})`)
+      }
+
       const data = this._getRecord(
         id + ':asset.rawTypes?',
         state ?? ds.record.PROVIDER,
@@ -395,8 +412,8 @@ module.exports = ({ ds, ...options }) => {
       "use strict";
       {
         const _ = (...args) => pipe(...args);
-        _.asset = (type, state, throws) => (id) => nxt.asset(id, type, state, throws);
-        _.ds = (postfix, state, throws) => (id) => nxt.ds(id + postfix, state, throws);
+        _.asset = (type, state, throws) => (id) => nxt._asset(id, type, state, throws);
+        _.ds = (postfix, state, throws) => (id) => nxt._ds(id, postfix, state, throws);
         _.timer = (dueTime) => (dueValue) => nxt.timer(dueTime, dueValue);
         _.fetch = (options, throws) => (resource) => nxt.fetch(resource, options, throws);
         ${expression}
