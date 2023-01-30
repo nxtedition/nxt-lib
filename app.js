@@ -1,4 +1,5 @@
 const { getDockerSecretsSync } = require('./docker-secrets')
+const { getGlobalDispatcher } = require('undici')
 
 module.exports = function (appConfig, onTerminate) {
   let ds
@@ -74,8 +75,9 @@ module.exports = function (appConfig, onTerminate) {
     appConfig.userAgent ||
     (serviceName ? `${serviceName}/${serviceVersion || '*'} Node/${process.version}` : null)
 
-  const terminate = async (finalLogger, asd) => {
+  const terminate = async (finalLogger) => {
     finalLogger ??= logger
+
     try {
       if (onTerminate) {
         try {
@@ -84,6 +86,17 @@ module.exports = function (appConfig, onTerminate) {
           finalLogger.error({ err }, 'terminate error')
         }
       }
+
+      const dispatcher = getGlobalDispatcher()
+      if (dispatcher?.close) {
+        destroyers.push(() => {
+          setTimeout(() => {
+            dispatcher.destroy()
+          }, 10e3).unref()
+          return dispatcher.close()
+        })
+      }
+
       await Promise.all(destroyers.filter(Boolean).map((fn) => fn(finalLogger)))
     } catch (err) {
       finalLogger.error({ err }, 'shutdown error')
