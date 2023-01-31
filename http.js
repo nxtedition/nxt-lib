@@ -325,7 +325,7 @@ function defaultDelay(err, retryCount, { signal, logger }) {
 
 module.exports.retry = async function _retry(
   fn,
-  { maxRetries = 16, count = maxRetries, logger = null, delay = defaultDelay, signal }
+  { maxRetries = 16, count = maxRetries, logger = null, delay = defaultDelay, signal = null } = {}
 ) {
   for (let retryCount = 0; true; ++retryCount) {
     try {
