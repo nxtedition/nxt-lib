@@ -8,6 +8,7 @@ const { AbortError } = require('./errors')
 const compose = require('koa-compose')
 const http = require('http')
 const fp = require('lodash/fp')
+const tp = require('timers/promises')
 
 const ERR_HEADER_EXPR =
   /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
@@ -299,5 +300,46 @@ module.exports.upgrade = async function upgrade(ctx, next) {
     socket.destroy(err)
   } finally {
     queueMicrotask(() => ac.abort())
+  }
+}
+
+function defaultDelay(err, retryCount, { signal, logger }) {
+  if (
+    err.code === 'ENOTFOUND' ||
+    err.code === 'ECONNRESET' ||
+    err.code === 'ECONNREFUSED' ||
+    err.code === 'ETIMEDOUT' ||
+    err.statusCode === 420 ||
+    err.statusCode === 429 ||
+    err.statusCode === 502 ||
+    err.statusCode === 503 ||
+    err.statusCode === 504
+  ) {
+    const delay = parseInt(err.headers?.['Retry-After']) * 1e3 || Math.min(10e3, retryCount * 1e3)
+    logger?.warn({ err, retryCount, delay }, 'retrying')
+    return tp.setTimeout(delay, { signal })
+  } else {
+    throw err
+  }
+}
+
+module.exports.retry = async function _retry(
+  fn,
+  { maxRetries = 16, count = maxRetries, logger = null, delay = defaultDelay, signal }
+) {
+  for (let retryCount = 0; true; ++retryCount) {
+    try {
+      return await fn()
+    } catch (err) {
+      if (retryCount >= count) {
+        throw err
+      } else if (typeof delay === 'number') {
+        await tp.setTimeout(delay, { signal })
+      } else if (fp.isFunction(delay)) {
+        await delay(err, retryCount, { signal, logger })
+      } else {
+        throw err
+      }
+    }
   }
 }
