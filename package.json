@@ -14,6 +14,7 @@
     "http.js",
     "deepstream.js",
     "stream.js",
+    "lp-stream.js",
     "batched.js",
     "json-path.js",
     "logger.js",
