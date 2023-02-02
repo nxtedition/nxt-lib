@@ -29,7 +29,6 @@ module.exports.Decoder = class Decoder extends stream.Transform {
   constructor(opts) {
     super({ objectMode: true })
 
-    this._destroyed = false
     this._missing = 0
     this._message = null
     this._limit = (opts && opts.limit) || 0
@@ -101,7 +100,7 @@ module.exports.Decoder = class Decoder extends stream.Transform {
   _transform(data, enc, cb) {
     let offset = 0
 
-    while (!this._destroyed && offset < data.length) {
+    while (offset < data.length) {
       if (this._missing) {
         offset = this._parseMessage(data, offset)
       } else {
