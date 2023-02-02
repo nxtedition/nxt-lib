@@ -42,6 +42,7 @@ module.exports.batched = async function* batched(src) {
       }
     }
   } finally {
-    src.destroy(error).on('error', () => {})
+    src.on('error', () => {})
+    src.destroy(error)
   }
 }
