@@ -315,7 +315,8 @@ function defaultDelay(err, retryCount, { signal, logger }) {
     err.statusCode === 503 ||
     err.statusCode === 504
   ) {
-    const delay = parseInt(err.headers?.['Retry-After']) * 1e3 || Math.min(10e3, retryCount * 1e3)
+    const delay =
+      parseInt(err.headers?.['Retry-After']) * 1e3 || Math.min(10e3, retryCount * 1e3 + 1e3)
     logger?.warn({ err, retryCount, delay }, 'retrying')
     return tp.setTimeout(delay, { signal })
   } else {
