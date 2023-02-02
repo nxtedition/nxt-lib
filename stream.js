@@ -2,7 +2,7 @@ const stream = require('stream')
 
 function nop() {}
 
-module.exports = async function* batched(src) {
+module.exports.batched = async function* batched(src) {
   let callback = nop
 
   function next(resolve) {
