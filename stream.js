@@ -18,8 +18,7 @@ module.exports.batched = async function* batched(src) {
 
   let error
   stream.finished(src, { writable: false }, (err) => {
-    // error = err ? aggregateTwoErrors(error, err) : null;
-    error = err
+    error = err ?? null
     callback()
     callback = nop
   })
