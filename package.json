@@ -13,8 +13,6 @@
     "merge-ranges.js",
     "http.js",
     "deepstream.js",
-    "stream.js",
-    "lp-stream.js",
     "batched.js",
     "json-path.js",
     "logger.js",
@@ -25,7 +23,6 @@
     "app.js",
     "errors.js",
     "worker.js",
-    "shared.js",
     "proxy.js",
     "timeline.js",
     "docker-secrets.js"
