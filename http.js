@@ -172,41 +172,36 @@ function errorResponse(req, res, err) {
 class ServerResponse extends http.ServerResponse {
   constructor(req) {
     super(req)
-    this.err = null
-    this.bytesWritten = 0
     this.startTime = performance.now()
     this.stats = {
-      headers: null,
-      ttfb: null,
+      headers: -1,
+      ttfb: -1,
     }
   }
 
   flushHeaders() {
-    if (!this.stats.headers) {
+    if (this.stats.headers === -1) {
       this.stats.headers = performance.now() - this.startTime
     }
     return super.flushHeaders()
   }
 
   write(chunk, encoding, callback) {
-    if (!this.stats.headers) {
-      this.stats.headers = performance.now() - this.startTime
-    }
-    if (!this.stats.ttfb) {
+    if (this.stats.ttfb === -1) {
       this.stats.ttfb = performance.now() - this.startTime
     }
-    const ret = super.write(chunk, encoding, callback)
-    this.bytesWritten +=
-      typeof chunk === 'string' ? Buffer.byteLength(chunk, encoding) : chunk.length
-    return ret
+    if (this.stats.headers === -1) {
+      this.stats.headers = this.stats.ttfb
+    }
+    return super.write(chunk, encoding, callback)
   }
 
   end(chunk, encoding, callback) {
-    if (!this.stats.ttfb) {
+    if (this.stats.ttfb === -1) {
       this.stats.ttfb = performance.now() - this.startTime
     }
-    if (!this.stats.headers) {
-      this.stats.headers = performance.now() - this.startTime
+    if (this.stats.headers === -1) {
+      this.stats.headers = this.stats.ttfb
     }
     return super.end(chunk, encoding, callback)
   }
