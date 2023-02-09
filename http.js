@@ -118,7 +118,7 @@ module.exports.request = async function request(ctx, next) {
     reqLogger = reqLogger.child({ res })
 
     if (req.aborted || err.name === 'AbortError') {
-      reqLogger.info({ err, responseTime }, 'request aborted')
+      reqLogger.debug({ err, responseTime }, 'request aborted')
     } else if (statusCode < 500) {
       reqLogger.warn({ err, responseTime }, 'request failed')
     } else {
@@ -278,7 +278,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
     const statusCode = err.statusCode || 500
 
     if (aborted || err.name === 'AbortError') {
-      reqLogger.warn({ err, res }, 'stream aborted')
+      reqLogger.debug({ err, res }, 'stream aborted')
     } else if (statusCode < 500) {
       reqLogger.warn({ err, res }, 'stream failed')
     } else {
