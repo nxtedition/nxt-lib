@@ -123,16 +123,18 @@ module.exports = (options) => {
 
     return (...args) =>
       expr(...args).pipe(
-        rx.switchMap((body) => compileStringTemplate(`${pre}${stringify(body)}${post}`)(...args))
+        rx.switchMap((body) =>
+          compileStringTemplate(`${pre}${stringify(body, type !== 'js')}${post}`)(...args)
+        )
       )
   })
 
-  function stringify(value) {
+  function stringify(value, escape) {
     if (value == null) {
       return ''
     } else if (fp.isArray(value) || fp.isPlainObject(value)) {
       return JSON5.stringify(value)
-    } else if (fp.isString(value)) {
+    } else if (fp.isString(value) && escape) {
       return value.replace(/"/g, '\\"')
     }
     return value
