@@ -24,7 +24,15 @@ module.exports = function ({
     connections: 4,
   })
 
-  destroyers?.push(() => client.close())
+  const flushInterval = setInterval(flushTraces, 10e3)
+
+  destroyers?.push(async () => {
+    clearInterval(flushInterval)
+    while (traceData) {
+      await flushTraces()
+    }
+    await client.close()
+  })
 
   let traceData = ''
   async function flushTraces() {
@@ -64,8 +72,6 @@ module.exports = function ({
       pending -= data.length
     }
   }
-
-  setInterval(flushTraces, 10e3).unref()
 
   const prefix = `{ "create": { "_index": "trace-${index}" } }\n{ "serviceName": "${serviceName}", "op": "`
 
