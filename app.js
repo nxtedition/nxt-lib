@@ -89,11 +89,12 @@ module.exports = function (appConfig, onTerminate) {
 
       const dispatcher = getGlobalDispatcher()
       if (dispatcher?.close) {
-        destroyers.push(() => {
-          setTimeout(() => {
+        destroyers.push(async () => {
+          const timeout = setTimeout(() => {
             dispatcher.destroy()
-          }, 10e3).unref()
-          return dispatcher.close()
+          }, 4e3)
+          await dispatcher.close()
+          clearTimeout(timeout)
         })
       }
 
