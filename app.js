@@ -12,6 +12,8 @@ module.exports = function (appConfig, onTerminate) {
   let logger
   let trace
 
+  const ac = new AbortController()
+
   // Crash on unhandledRejection
   process.on('unhandledRejection', (reason) => {
     throw reason
@@ -86,6 +88,8 @@ module.exports = function (appConfig, onTerminate) {
           finalLogger.error({ err }, 'terminate error')
         }
       }
+
+      ac.abort()
 
       const dispatcher = getGlobalDispatcher()
       if (dispatcher?.close) {
@@ -677,5 +681,6 @@ module.exports = function (appConfig, onTerminate) {
     userAgent,
     serviceName,
     serviceVersion,
+    signal: ac.signal,
   }
 }
