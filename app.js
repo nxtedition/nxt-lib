@@ -80,6 +80,8 @@ module.exports = function (appConfig, onTerminate) {
   const terminate = async (finalLogger) => {
     finalLogger ??= logger
 
+    ac.abort()
+
     try {
       if (onTerminate) {
         try {
@@ -88,8 +90,6 @@ module.exports = function (appConfig, onTerminate) {
           finalLogger.error({ err }, 'terminate error')
         }
       }
-
-      ac.abort()
 
       const dispatcher = getGlobalDispatcher()
       if (dispatcher?.close) {
