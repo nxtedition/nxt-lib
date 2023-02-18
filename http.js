@@ -214,14 +214,28 @@ module.exports.createServer = function (options, ctx, middleware) {
   middleware = fp.values(middleware)
   middleware = middleware.flat().filter(Boolean)
   middleware = compose([module.exports.request, ...middleware])
+
   const factory = typeof ctx === 'function' ? ctx : () => ctx
-  const server = http.createServer({ ServerResponse, ...options }, (req, res) =>
-    middleware({ req, res, ...factory() })
+
+  const server = http.createServer(
+    {
+      ServerResponse,
+      keepAliveTimeout: 2 * 60e3,
+      headersTimeout: 2 * 60e3,
+      requestTimeout: 0,
+      ...options,
+    },
+    (req, res) => middleware({ req, res, ...factory() })
   )
+
   server.setTimeout(2 * 60e3)
-  server.keepAliveTimeout = 2 * 60e3
-  server.headersTimeout = 2 * 60e3
-  server.requestTimeout = 0
+
+  if (options?.signal?.aborted) {
+    server.close()
+  } else {
+    options?.signal?.addEventListener('abort', () => server.close())
+  }
+
   return server
 }
 
