@@ -231,7 +231,7 @@ module.exports.createServer = function (options, ctx, middleware) {
   server.setTimeout(2 * 60e3)
 
   if (options?.signal?.aborted) {
-    server.close()
+    queueMicrotask(() => server.close())
   } else {
     options?.signal?.addEventListener('abort', () => server.close())
   }
