@@ -313,16 +313,19 @@ module.exports.upgrade = async function upgrade(ctx, next) {
 }
 
 function defaultDelay(err, retryCount, { signal, logger }) {
+  // AWS compat.
+  const statusCode = err.statusCode ?? err.$metadata?.httpStatusCode
   if (
     err.code === 'ENOTFOUND' ||
     err.code === 'ECONNRESET' ||
     err.code === 'ECONNREFUSED' ||
     err.code === 'ETIMEDOUT' ||
-    err.statusCode === 420 ||
-    err.statusCode === 429 ||
-    err.statusCode === 502 ||
-    err.statusCode === 503 ||
-    err.statusCode === 504
+    statusCode === 404 ||
+    statusCode === 420 ||
+    statusCode === 429 ||
+    statusCode === 502 ||
+    statusCode === 503 ||
+    statusCode === 504
   ) {
     const delay =
       parseInt(err.headers?.['Retry-After']) * 1e3 || Math.min(10e3, retryCount * 1e3 + 1e3)
@@ -335,7 +338,7 @@ function defaultDelay(err, retryCount, { signal, logger }) {
 
 module.exports.retry = async function _retry(
   fn,
-  { maxRetries = 16, count = maxRetries, logger = null, delay = defaultDelay, signal = null } = {}
+  { maxRetries = 8, count = maxRetries, logger = null, delay = defaultDelay, signal = null } = {}
 ) {
   for (let retryCount = 0; true; ++retryCount) {
     try {
