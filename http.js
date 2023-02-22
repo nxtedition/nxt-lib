@@ -320,7 +320,6 @@ function defaultDelay(err, retryCount, { signal, logger }) {
     err.code === 'ECONNRESET' ||
     err.code === 'ECONNREFUSED' ||
     err.code === 'ETIMEDOUT' ||
-    statusCode === 404 ||
     statusCode === 420 ||
     statusCode === 429 ||
     statusCode === 502 ||
