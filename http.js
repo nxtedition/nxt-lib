@@ -318,7 +318,6 @@ function defaultDelay(err, retryCount, { signal, logger }) {
   if (
     err.code === 'ECONNRESET' ||
     err.code === 'ECONNREFUSED' ||
-    err.code === 'ETIMEDOUT' ||
     statusCode === 420 ||
     statusCode === 429 ||
     statusCode === 502 ||
@@ -328,7 +327,7 @@ function defaultDelay(err, retryCount, { signal, logger }) {
     const delay =
       parseInt(err.headers?.['Retry-After']) * 1e3 || Math.min(10e3, retryCount * 1e3 + 1e3)
     logger?.warn({ err, retryCount, delay }, 'retrying')
-    return tp.setTimeout(delay, { signal })
+    return tp.setTimeout(delay, undefined, { signal })
   } else {
     throw err
   }
@@ -336,7 +335,13 @@ function defaultDelay(err, retryCount, { signal, logger }) {
 
 module.exports.retry = async function _retry(
   fn,
-  { maxRetries = 8, count = maxRetries, logger = null, delay = defaultDelay, signal = null } = {}
+  {
+    maxRetries = 8,
+    count = maxRetries,
+    delay = defaultDelay,
+    logger = undefined,
+    signal = undefined,
+  } = {}
 ) {
   for (let retryCount = 0; true; ++retryCount) {
     try {
@@ -345,7 +350,7 @@ module.exports.retry = async function _retry(
       if (retryCount >= count) {
         throw err
       } else if (typeof delay === 'number') {
-        await tp.setTimeout(delay, { signal })
+        await tp.setTimeout(delay, undefined, { signal })
       } else if (fp.isFunction(delay)) {
         await delay(err, retryCount, { signal, logger })
       } else {
