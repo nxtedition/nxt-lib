@@ -3,7 +3,7 @@ const { performance } = require('perf_hooks')
 const requestTarget = require('request-target')
 const querystring = require('querystring')
 const assert = require('assert')
-const AbortController = require('abort-controller')
+const { AbortController } = require('abort-controller')
 const { AbortError } = require('./errors')
 const compose = require('koa-compose')
 const http = require('http')
@@ -32,6 +32,7 @@ module.exports.request = async function request(ctx, next) {
 
   const ac = new AbortController()
   const signal = ac.signal
+  const isHealthcheck = ctx.url?.pathname === '/healthcheck'
 
   ctx.id = req.id = req.headers['request-id'] || genReqId()
   ctx.logger = req.log = logger.child({ req })
@@ -43,12 +44,12 @@ module.exports.request = async function request(ctx, next) {
   res.setHeader('request-id', req.id)
 
   let reqLogger = ctx.logger
-  const log =
-    ctx.url?.pathname === '/healthcheck'
-      ? reqLogger.trace.bind(reqLogger)
-      : reqLogger.debug.bind(reqLogger)
   try {
-    log('request started')
+    if (!isHealthcheck) {
+      reqLogger.debug('request started')
+    } else {
+      reqLogger.trace('request started')
+    }
 
     if (!ctx.url) {
       throw new createError.BadRequest()
@@ -101,8 +102,10 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.error({ responseTime }, 'request error')
     } else if (res.statusCode >= 400) {
       reqLogger.warn({ responseTime }, 'request failed')
+    } else if (!isHealthcheck) {
+      reqLogger.debug({ responseTime }, 'request completed')
     } else {
-      log({ responseTime }, 'request completed')
+      reqLogger.trace({ responseTime }, 'request completed')
     }
 
     req.on('error', () => {}).destroy()
