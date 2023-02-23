@@ -316,7 +316,6 @@ function defaultDelay(err, retryCount, { signal, logger }) {
   // AWS compat.
   const statusCode = err.statusCode ?? err.$metadata?.httpStatusCode
   if (
-    err.code === 'ENOTFOUND' ||
     err.code === 'ECONNRESET' ||
     err.code === 'ECONNREFUSED' ||
     err.code === 'ETIMEDOUT' ||
