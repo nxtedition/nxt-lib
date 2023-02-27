@@ -1,5 +1,5 @@
-import Elasticsearch from '@elastic/elasticsearch'
-import { UndiciConnection } from '@elastic/transport'
+const Elasticsearch = require('@elastic/elasticsearch')
+const { UndiciConnection } = require('@elastic/transport')
 
 // https://github.com/elastic/elasticsearch-js/issues/1716#issuecomment-1167173492
 class Connection extends UndiciConnection {
@@ -19,7 +19,7 @@ class Connection extends UndiciConnection {
 // See, https://github.com/elastic/kibana/pull/134628
 const ConnectionPool = Elasticsearch.ClusterConnectionPool
 
-export function makeElasticsearchClient(config) {
+module.exports = function makeElasticsearchClient(config) {
   config = config.elasticsearch ?? config
   return new Elasticsearch.Client({
     node: config.url,
