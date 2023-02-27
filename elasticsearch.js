@@ -20,11 +20,11 @@ class Connection extends UndiciConnection {
 const ConnectionPool = Elasticsearch.ClusterConnectionPool
 
 module.exports = function makeElasticsearchClient(config) {
-  config = config.elasticsearch ?? config
+  config = config?.elasticsearch ?? config
   return new Elasticsearch.Client({
     node: config.url,
     Connection,
     ConnectionPool,
-    ...(config.elasticsearch ?? config),
+    ...config,
   })
 }
