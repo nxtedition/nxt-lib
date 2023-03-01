@@ -112,6 +112,7 @@ function combineMap(project, equals = (a, b) => a === b) {
           }
         }
 
+        // TODO (perf): start from index where prev[n] is not null.
         for (let n = 0; n < prevLen; n++) {
           prev[n]?.subscription.unsubscribe()
         }
