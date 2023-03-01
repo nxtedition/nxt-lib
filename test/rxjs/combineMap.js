@@ -172,3 +172,27 @@ test('combineMap no value', (t) => {
       },
     })
 })
+
+test('combineMap object keys removed', (t) => {
+  const a = {}
+  const b = {}
+  const c = {}
+
+  let i = 0
+  rxjs
+    .concat(rxjs.of([a, b, c]), rxjs.of([a, b]).pipe(rxjs.delay(10)))
+    .pipe(combineMap((x) => rxjs.of(x)))
+    .subscribe({
+      next: (value) => {
+        if (i === 0) {
+          t.same(value, [a, b, c])
+        } else if (i === 1) {
+          t.same(value, [a, b])
+        }
+        i++
+      },
+      complete: () => {
+        t.end()
+      },
+    })
+})

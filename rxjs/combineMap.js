@@ -42,21 +42,26 @@ function combineMap(project, equals = (a, b) => a === b) {
       next(keys) {
         // TODO (perf): Avoid array allocation & copy if nothing has updated.
 
-        const len = Array.isArray(keys) ? keys.length : 0
         const prev = curr
-        curr = new Array(len)
+        curr = new Array(Array.isArray(keys) ? keys.length : 0)
 
-        for (let n = 0; n < len; ++n) {
+        const prevLen = prev.length
+        const currLen = curr.length
+
+        if (currLen !== prevLen || prev === EMPTY) {
+          updated = true
+        }
+
+        for (let n = 0; n < currLen; ++n) {
           const key = keys[n]
 
-          if (n < prev.length && prev[n] && equals(prev[n].key, key)) {
+          if (n < prevLen && prev[n] && equals(prev[n].key, key)) {
             curr[n] = prev[n]
             prev[n] = null
             continue
           }
 
           updated = true
-          update()
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
@@ -107,13 +112,12 @@ function combineMap(project, equals = (a, b) => a === b) {
           }
         }
 
-        if (prev === EMPTY) {
-          updated = true
+        for (let n = 0; n < prevLen; n++) {
+          prev[n]?.subscription.unsubscribe()
+        }
+
+        if (updated) {
           update()
-        } else {
-          for (const context of prev) {
-            context?.subscription.unsubscribe()
-          }
         }
       },
       error: _error,
