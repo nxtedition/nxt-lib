@@ -294,7 +294,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
   } catch (err) {
     const statusCode = err.statusCode || 500
 
-    if (aborted || err.name === 'AbortError') {
+    if (aborted || err.name === 'AbortError' || err.code === 'ERR_STREAM_PREMATURE_CLOSE') {
       reqLogger.debug({ err, res }, 'stream aborted')
     } else if (statusCode < 500) {
       reqLogger.warn({ err, res }, 'stream failed')
