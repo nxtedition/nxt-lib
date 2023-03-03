@@ -32,7 +32,6 @@ module.exports.request = async function request(ctx, next) {
 
   const ac = new AbortController()
   const signal = ac.signal
-  const isHealthcheck = ctx.url?.pathname === '/healthcheck'
 
   ctx.id = req.id = req.headers['request-id'] || genReqId()
   ctx.logger = req.log = logger.child({ req })
@@ -42,6 +41,8 @@ module.exports.request = async function request(ctx, next) {
   ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : {}
 
   res.setHeader('request-id', req.id)
+
+  const isHealthcheck = ctx.url.pathname === '/healthcheck'
 
   let reqLogger = ctx.logger
   try {
