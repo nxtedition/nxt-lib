@@ -471,7 +471,13 @@ module.exports = function (opts) {
     let path = dbPathname
 
     if (url) {
-      path = urljoin(path, encodeURI(url))
+      path = urljoin(
+        path,
+        url
+          .split('/')
+          .map((part) => encodeURIComponent(part))
+          .join('/')
+      )
     }
 
     if (params) {
