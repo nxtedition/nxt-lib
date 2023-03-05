@@ -26,6 +26,8 @@ function genReqId() {
   return `req-${nextReqId.toString(36)}`
 }
 
+function noop() {}
+
 module.exports.request = async function request(ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
@@ -104,16 +106,10 @@ module.exports.request = async function request(ctx, next) {
     } else {
       reqLogger.trace({ responseTime }, 'request completed')
     }
-
-    req.on('error', () => {}).destroy()
-    res.on('error', () => {}).destroy()
   } catch (err) {
     const statusCode = res.headersSent ? res.statusCode : err.statusCode || 500
 
     const responseTime = Math.round(performance.now() - startTime)
-
-    req.on('error', () => {}).destroy(err)
-    res.on('error', () => {}).destroy(err)
 
     reqLogger = reqLogger.child({ res })
 
@@ -134,7 +130,11 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.warn({ err }, 'request error')
     })
   } finally {
-    queueMicrotask(() => ac.abort())
+    queueMicrotask(() => {
+      ac.abort()
+      req.on('error', noop).destroy()
+      res.on('error', noop).destroy()
+    })
   }
 }
 
