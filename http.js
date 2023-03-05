@@ -91,10 +91,6 @@ module.exports.request = async function request(ctx, next) {
     assert(res.destroyed)
     assert(res.statusCode)
 
-    if (!req.readableEnded) {
-      reqLogger.warn('request body not consumed')
-    }
-
     const responseTime = Math.round(performance.now() - startTime)
 
     reqLogger = reqLogger.child({ res })
