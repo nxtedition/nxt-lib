@@ -63,6 +63,7 @@ module.exports = function ({
           method: 'POST',
           idempotent: true,
           headers: HEADERS,
+          headersTimeout: 2 * 60e3,
           body: data,
         })
         .then(({ body }) => body.dump())
