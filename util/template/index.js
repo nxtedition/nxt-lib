@@ -47,20 +47,20 @@ module.exports = (options) => {
       throw new Error('invalid argument')
     }
 
-    const keys = Object.keys(obj)
+    const xs = Object.entries(obj).flat()
 
-    if (keys.length === 0) {
+    if (xs.length === 0) {
       return () => Observable.of({})
     }
 
-    const resolvers = Object.values(obj).map((template) => compileTemplate(template))
-
     return (...args) =>
-      Observable.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
-        rx.map((values) => {
+      Observable.combineLatest(
+        xs.map((template) => compileTemplate(template)).map((resolver) => resolver(...args))
+      ).pipe(
+        rx.map((ys) => {
           const ret = {}
-          for (let n = 0; n < values.length; ++n) {
-            ret[keys[n]] = values[n]
+          for (let n = 0; n < ys.length; n += 2) {
+            ret[ys[n + 0]] = ys[n + 1]
           }
           return ret
         })
