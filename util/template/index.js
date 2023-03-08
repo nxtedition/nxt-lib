@@ -27,7 +27,7 @@ module.exports = (options) => {
   }
 
   // TODO (perf): Optimize...
-  function compileArrayTemplate(arr) {
+  const compileArrayTemplate = weakCache(function compileArrayTemplate(arr) {
     if (!fp.isArray(arr)) {
       throw new Error('invalid argument')
     }
@@ -39,10 +39,10 @@ module.exports = (options) => {
     const resolvers = arr.map((template) => compileTemplate(template))
 
     return (...args) => Observable.combineLatest(resolvers.map((resolver) => resolver(...args)))
-  }
+  })
 
   // TODO (perf): Optimize...
-  function compileObjectTemplate(obj) {
+  const compileObjectTemplate = weakCache(function compileObjectTemplate(obj) {
     if (!fp.isPlainObject(obj)) {
       throw new Error('invalid argument')
     }
@@ -65,7 +65,7 @@ module.exports = (options) => {
           return ret
         })
       )
-  }
+  })
 
   function inner(str) {
     const templateStart = str.lastIndexOf('{{')
@@ -97,7 +97,7 @@ module.exports = (options) => {
     }
   }
 
-  const compileStringTemplate = weakCache((str) => {
+  const compileStringTemplate = weakCache(function compileStringTemplate(str) {
     if (!fp.isString(str)) {
       throw new Error('invalid argument')
     }
