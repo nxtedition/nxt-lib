@@ -47,7 +47,10 @@ module.exports = (options) => {
       throw new Error('invalid argument')
     }
 
-    const xs = Object.entries(obj).flat()
+    const xs = []
+    for (const key of Object.keys(obj)) {
+      xs.push(key, obj[key])
+    }
 
     if (xs.length === 0) {
       return () => Observable.of({})
