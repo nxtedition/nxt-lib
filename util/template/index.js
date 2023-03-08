@@ -53,10 +53,10 @@ module.exports = (options) => {
       return () => Observable.of({})
     }
 
+    const resolvers = xs.map((template) => compileTemplate(template))
+
     return (...args) =>
-      Observable.combineLatest(
-        xs.map((template) => compileTemplate(template)).map((resolver) => resolver(...args))
-      ).pipe(
+      Observable.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
         rx.map((ys) => {
           const ret = {}
           for (let n = 0; n < ys.length; n += 2) {
