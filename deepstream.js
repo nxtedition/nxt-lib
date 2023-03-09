@@ -68,8 +68,14 @@ function observe(ds, name, ...args) {
     query = query ? JSON.parse(JSON.stringify(query)) : null
   }
 
+  name = `${name}`
+
   return ds.record.observe(
-    `${name}${query && Object.keys(query).length > 0 ? `?${qs.stringify(query)}` : ''}`,
+    `${name}${
+      query && Object.keys(query).length > 0
+        ? `${name.endsWith('?') ? '' : '?'}${qs.stringify(query, { skipNulls: true })}`
+        : ''
+    }`,
     ...args
   )
 }
@@ -82,8 +88,14 @@ function observe2(ds, name, ...args) {
     query = query ? JSON.parse(JSON.stringify(query)) : null
   }
 
+  name = `${name}`
+
   return ds.record.observe2(
-    `${name}${query && Object.keys(query).length > 0 ? `?${qs.stringify(query)}` : ''}`,
+    `${name}${
+      query && Object.keys(query).length > 0
+        ? `${name.endsWith('?') ? '' : '?'}${qs.stringify(query, { skipNulls: true })}`
+        : ''
+    }`,
     ...args
   )
 }
