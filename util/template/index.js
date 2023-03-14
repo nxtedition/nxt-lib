@@ -86,10 +86,8 @@ module.exports = (options) => {
 
     let type = 'nxt'
     if (str[bodyStart] === '#') {
-      const typeStart = bodyStart + 1
-      const typeEnd = str.indexOf(' ', bodyStart + 1)
-      type = str.slice(typeStart, typeEnd)
-      bodyStart = typeEnd + 1
+      type = str.slice(bodyStart + 1).match(/^([a-z]*)/)[1]
+      bodyStart += type.length + 1
     }
 
     return {
