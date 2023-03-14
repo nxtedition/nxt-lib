@@ -449,10 +449,14 @@ module.exports = function (appConfig, onTerminate) {
       .pipe(rx.pluck('messages'), rx.startWith([]), rx.pairwise())
       .subscribe(([prev, next]) => {
         for (const { level, msg, ...message } of fp.differenceBy('id', next, prev)) {
-          logger.info(message, `status added: ${msg}`)
+          if (level >= 40) {
+            logger.info(message, `status added: ${msg}`)
+          }
         }
         for (const { level, msg, ...message } of fp.differenceBy('id', prev, next)) {
-          logger.info(message, `status removed: ${msg}`)
+          if (level >= 40) {
+            logger.info(message, `status removed: ${msg}`)
+          }
         }
       })
 
