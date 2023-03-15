@@ -40,10 +40,13 @@ function combineMap(project, equals = (a, b) => a === b) {
     active += 1
     const subscription = self.subscribe({
       next(keys) {
+        if (!Array.isArray(keys)) {
+          keys = EMPTY
+        }
         // TODO (perf): Avoid array allocation & copy if nothing has updated.
 
         const prev = curr
-        curr = new Array(Array.isArray(keys) ? keys.length : 0)
+        curr = new Array(keys.length)
 
         const prevLen = prev.length
         const currLen = curr.length
