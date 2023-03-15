@@ -31,7 +31,7 @@ function combineMap(project, equals = (a, b) => a === b) {
     }
 
     function update() {
-      if (!scheduled && !empty) {
+      if (!scheduled) {
         scheduled = true
         queueMicrotask(_update)
       }
@@ -48,8 +48,9 @@ function combineMap(project, equals = (a, b) => a === b) {
         const prevLen = prev.length
         const currLen = curr.length
 
-        if (currLen !== prevLen || prev === EMPTY) {
+        if (currLen < prevLen || prev === EMPTY) {
           updated = true
+          update()
         }
 
         for (let n = 0; n < currLen; ++n) {
@@ -62,6 +63,7 @@ function combineMap(project, equals = (a, b) => a === b) {
           }
 
           updated = true
+          update()
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
@@ -112,13 +114,9 @@ function combineMap(project, equals = (a, b) => a === b) {
           }
         }
 
-        if (updated) {
-          // TODO (perf): start from index where prev[n] is not null.
-          for (let n = 0; n < prevLen; n++) {
-            prev[n]?.subscription.unsubscribe()
-          }
-
-          update()
+        // TODO (perf): start from index where prev[n] is not null.
+        for (let n = 0; n < prevLen; n++) {
+          prev[n]?.subscription.unsubscribe()
         }
       },
       error: _error,
