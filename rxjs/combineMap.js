@@ -7,7 +7,7 @@ function combineMap(project, equals = (a, b) => a === b) {
   return new rxjs.Observable((o) => {
     let curr = EMPTY
     let scheduled = false
-    let updated = false
+    let dirty = false
     let active = 0
     let empty = 0
 
@@ -20,8 +20,8 @@ function combineMap(project, equals = (a, b) => a === b) {
         return
       }
 
-      if (updated) {
-        updated = false
+      if (dirty) {
+        dirty = false
         o.next(curr.map((context) => context.value))
       }
 
@@ -51,8 +51,8 @@ function combineMap(project, equals = (a, b) => a === b) {
         const prevLen = prev.length
         const currLen = curr.length
 
-        if (currLen < prevLen || prev === EMPTY) {
-          updated = true
+        if (currLen !== prevLen || prev === EMPTY) {
+          dirty = true
           update()
         }
 
@@ -65,18 +65,18 @@ function combineMap(project, equals = (a, b) => a === b) {
             continue
           }
 
-          updated = true
+          dirty = true
           update()
 
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
-          const i = prev.findIndex((context) => context && equals(context.key, key))
+          const i = prev.findIndex((entry) => entry && equals(entry.key, key))
 
           if (i !== -1) {
             curr[n] = prev[i]
             prev[i] = null
           } else {
-            const context = (curr[n] = {
+            const entry = (curr[n] = {
               key,
               value: EMPTY,
               subscription: null,
@@ -91,27 +91,27 @@ function combineMap(project, equals = (a, b) => a === b) {
 
             empty += 1
             active += 1
-            context.subscription = observable.subscribe({
+            entry.subscription = observable.subscribe({
               next(value) {
-                if (context.value === EMPTY) {
+                if (entry.value === EMPTY) {
                   empty -= 1
                 }
 
-                context.value = value
+                entry.value = value
 
-                updated = true
+                dirty = true
                 update()
               },
               error: _error,
             })
-            context.subscription.add(() => {
-              if (context.value === EMPTY) {
+            entry.subscription.add(() => {
+              if (entry.value === EMPTY) {
                 empty -= 1
               }
 
               active -= 1
 
-              updated = true
+              dirty = true
               update()
             })
           }
@@ -132,8 +132,8 @@ function combineMap(project, equals = (a, b) => a === b) {
     })
 
     return () => {
-      for (const context of curr) {
-        context?.subscription.unsubscribe()
+      for (const entry of curr) {
+        entry?.subscription.unsubscribe()
       }
       subscription.unsubscribe()
     }
