@@ -318,6 +318,11 @@ function defaultDelay(err, retryCount, { signal, logger }) {
   if (
     err.code === 'ECONNRESET' ||
     err.code === 'ECONNREFUSED' ||
+    err.code === 'ENOTFOUND' ||
+    err.code === 'ENETDOWN' ||
+    err.code === 'ENETUNREACH' ||
+    err.code === 'EHOSTDOWN' ||
+    err.code === 'EHOSTUNREACH' ||
     statusCode === 420 ||
     statusCode === 429 ||
     statusCode === 502 ||
