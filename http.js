@@ -323,6 +323,7 @@ function defaultDelay(err, retryCount, { signal, logger }) {
     err.code === 'ENETUNREACH' ||
     err.code === 'EHOSTDOWN' ||
     err.code === 'EHOSTUNREACH' ||
+    err.message === 'other side closed' ||
     statusCode === 420 ||
     statusCode === 429 ||
     statusCode === 502 ||
