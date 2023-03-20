@@ -312,10 +312,10 @@ module.exports.upgrade = async function upgrade(ctx, next) {
   }
 }
 
-function defaultDelay(err, retryCount, { signal, logger }) {
+function isConnectionError(err) {
   // AWS compat.
   const statusCode = err.statusCode ?? err.$metadata?.httpStatusCode
-  if (
+  return (
     err.code === 'ECONNRESET' ||
     err.code === 'ECONNREFUSED' ||
     err.code === 'ENOTFOUND' ||
@@ -329,7 +329,11 @@ function defaultDelay(err, retryCount, { signal, logger }) {
     statusCode === 502 ||
     statusCode === 503 ||
     statusCode === 504
-  ) {
+  )
+}
+
+function defaultDelay(err, retryCount, { signal, logger }) {
+  if (isConnectionError(err)) {
     const delay =
       parseInt(err.headers?.['Retry-After']) * 1e3 || Math.min(10e3, retryCount * 1e3 + 1e3)
     logger?.warn({ err, retryCount, delay }, 'retrying')
@@ -338,6 +342,9 @@ function defaultDelay(err, retryCount, { signal, logger }) {
     throw err
   }
 }
+
+module.exports.delay = defaultDelay
+module.exports.isConnectionError = isConnectionError
 
 module.exports.retry = async function _retry(
   fn,
