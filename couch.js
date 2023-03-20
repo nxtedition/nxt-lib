@@ -2,6 +2,7 @@ const createError = require('http-errors')
 const makeWeak = require('./weakCache')
 const tp = require('timers/promises')
 const AbortController = require('abort-controller')
+const { delay } = require('./http')
 
 // https://github.com/fastify/fastify/blob/main/lib/reqIdGenFactory.js
 // 2,147,483,647 (2^31 − 1) stands for max SMI value (an internal optimization of V8).
@@ -400,12 +401,14 @@ module.exports = function (opts) {
           }
           return
         } catch (err) {
-          if (retry && err.name !== 'AbortError' && err.code !== 'UND_ERR_ABORTED') {
+          if (err.name === 'AbortError') {
+            throw err
+          } else if (typeof retry === 'function') {
             const retryState = { since: params.since }
             Object.assign(retryState, await retry(err, retryCount++, retryState))
             params.since = retryState.since ?? 0
           } else {
-            throw err
+            await delay(err)
           }
         }
       }
