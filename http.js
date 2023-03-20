@@ -314,22 +314,22 @@ module.exports.upgrade = async function upgrade(ctx, next) {
 
 function isConnectionError(err) {
   // AWS compat.
-  const statusCode = err.statusCode ?? err.$metadata?.httpStatusCode
-  return (
-    err.code === 'ECONNRESET' ||
-    err.code === 'ECONNREFUSED' ||
-    err.code === 'ENOTFOUND' ||
-    err.code === 'ENETDOWN' ||
-    err.code === 'ENETUNREACH' ||
-    err.code === 'EHOSTDOWN' ||
-    err.code === 'EHOSTUNREACH' ||
-    err.message === 'other side closed' ||
-    statusCode === 420 ||
-    statusCode === 429 ||
-    statusCode === 502 ||
-    statusCode === 503 ||
-    statusCode === 504
-  )
+  const statusCode = err?.statusCode ?? err?.$metadata?.httpStatusCode
+  return err
+    ? err.code === 'ECONNRESET' ||
+        err.code === 'ECONNREFUSED' ||
+        err.code === 'ENOTFOUND' ||
+        err.code === 'ENETDOWN' ||
+        err.code === 'ENETUNREACH' ||
+        err.code === 'EHOSTDOWN' ||
+        err.code === 'EHOSTUNREACH' ||
+        err.message === 'other side closed' ||
+        statusCode === 420 ||
+        statusCode === 429 ||
+        statusCode === 502 ||
+        statusCode === 503 ||
+        statusCode === 504
+    : false
 }
 
 function defaultDelay(err, retryCount, { signal, logger }) {
