@@ -1,7 +1,6 @@
 const createError = require('http-errors')
 const makeWeak = require('./weakCache')
 const tp = require('timers/promises')
-const AbortController = require('abort-controller')
 const { delay } = require('./http')
 
 // https://github.com/fastify/fastify/blob/main/lib/reqIdGenFactory.js
