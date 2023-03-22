@@ -177,9 +177,16 @@ module.exports = function (appConfig, onTerminate) {
     }
   }
 
+  const onLag = []
+
   if (appConfig.toobusy) {
     toobusy = require('toobusy-js')
     toobusy.onLag((currentLag) => {
+      for (const fn of onLag) {
+        fn(currentLag)
+      }
+    })
+    onLag.push((currentLag) => {
       if (currentLag > 1e3) {
         logger.error({ currentLag }, 'lag')
       } else {
@@ -550,14 +557,21 @@ module.exports = function (appConfig, onTerminate) {
     monitorProviders.stats$ = stats$
 
     let elu1 = eventLoopUtilization?.()
+
+    let maxLag = toobusy?.lag()
+    onLag?.push((currentLag) => {
+      maxLag = Math.max(currentLag, maxLag)
+    })
+
     const subscription = stats$.pipe(rx.auditTime(10e3)).subscribe((stats) => {
       if (process.env.NODE_ENV === 'production') {
         const elu2 = eventLoopUtilization?.()
+        const lag = toobusy?.lag()
         logger.debug(
           {
             ds: ds?.stats,
             couch: couch?.stats,
-            lag: toobusy?.lag(),
+            lag: Math.max(lag, maxLag),
             memory: process.memoryUsage(),
             utilization: eventLoopUtilization?.(elu2, elu1),
             heap: v8.getHeapStatistics(),
@@ -565,6 +579,7 @@ module.exports = function (appConfig, onTerminate) {
           },
           'STATS'
         )
+        maxLag = lag
         elu1 = elu2
       }
     })
