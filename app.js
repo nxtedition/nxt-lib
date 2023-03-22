@@ -1,6 +1,7 @@
 const { getDockerSecretsSync } = require('./docker-secrets')
 const { getGlobalDispatcher } = require('undici')
-
+const stream = require('node:stream')
+const { Buffer } = require('node:buffer')
 module.exports = function (appConfig, onTerminate) {
   let ds
   let nxt
@@ -11,6 +12,14 @@ module.exports = function (appConfig, onTerminate) {
   let config
   let logger
   let trace
+
+  // Optimize some Node global defaults.
+
+  Buffer.poolSize = 128 * 1024
+
+  if (stream.setDefaultHighWaterMark) {
+    stream.setDefaultHighWaterMark(false, 64 * 1024)
+  }
 
   const ac = new AbortController()
 
