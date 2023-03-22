@@ -21,6 +21,9 @@ const ConnectionPool = Elasticsearch.ClusterConnectionPool
 
 module.exports = function makeElasticsearchClient(config) {
   config = config?.elasticsearch ?? config
+  if (typeof config === 'string') {
+    config = { url: config }
+  }
   return new Elasticsearch.Client({
     node: config.url,
     Connection,
