@@ -2,6 +2,8 @@ const { getDockerSecretsSync } = require('./docker-secrets')
 const { getGlobalDispatcher } = require('undici')
 const stream = require('node:stream')
 const { Buffer } = require('node:buffer')
+const fp = require('lodash/fp')
+
 module.exports = function (appConfig, onTerminate) {
   let ds
   let nxt
@@ -21,6 +23,7 @@ module.exports = function (appConfig, onTerminate) {
     stream.setDefaultHighWaterMark(false, 64 * 1024)
   }
 
+  const isProduction = process.env.NODE_ENV === 'production'
   const ac = new AbortController()
 
   // Crash on unhandledRejection
@@ -55,7 +58,7 @@ module.exports = function (appConfig, onTerminate) {
         parseValues: true,
       })
       .defaults({
-        isProduction: process.env.NODE_ENV === 'production',
+        isProduction,
         ...cleanAppConfig(appConfig),
         ...appConfig.config,
         ...(appConfig.secrets !== false ? getDockerSecretsSync() : {}), // TODO: deep merge?
@@ -186,25 +189,54 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.couchdb || appConfig.couch) {
-    const couchConfig = {
-      userAgent,
-      ...(appConfig.couchdb ?? appConfig.couch),
-      ...(config.couchdb ?? config.couch),
-    }
+    const couchConfig = fp.mergeAll(
+      [
+        { userAgent, url: isProduction ? null : 'ws://127.0.0.1:5984/nxt' },
+        appConfig.couchdb,
+        appConfig.couch,
+        config.couchdb,
+        config.couch,
+      ].map((x) => {
+        if (fp.isPlainObject(x)) {
+          return x
+        } else if (fp.isString(x)) {
+          return { url: x }
+        } else {
+          return {}
+        }
+      })
+    )
+
     if (couchConfig.url) {
       const makeCouch = require('./couch')
       couch = makeCouch(couchConfig)
       destroyers.push(() => couch.close())
+    } else {
+      throw new Error('invalid couch config')
     }
   }
 
   if (appConfig.deepstream) {
     const deepstream = require('@nxtedition/deepstream.io-client-js')
 
-    let dsConfig = { ...appConfig.deepstream, ...config.deepstream }
+    let dsConfig = fp.mergeAll(
+      [
+        { userAgent, url: isProduction ? null : 'ws://127.0.0.1:6020/deepstream' },
+        appConfig.deepstream,
+        config.deepstream,
+      ].map((x) => {
+        if (fp.isPlainObject(x)) {
+          return x
+        } else if (fp.isString(x)) {
+          return { url: x }
+        } else {
+          return {}
+        }
+      })
+    )
 
-    if (!dsConfig.credentials) {
-      throw new Error('missing deepstream credentials')
+    if (!dsConfig.credentials || !dsConfig.url) {
+      throw new Error('invalid deepstream config')
     }
 
     const userName =
@@ -214,7 +246,6 @@ module.exports = function (appConfig, onTerminate) {
       serviceName
 
     dsConfig = {
-      url: 'ws://127.0.0.1:6020/deepstream',
       maxReconnectAttempts: Infinity,
       maxReconnectInterval: 10e3,
       ...dsConfig,
