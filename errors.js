@@ -10,12 +10,8 @@ module.exports.AbortError = class AbortError extends Error {
 }
 
 module.exports.parseError = function parseError(error) {
-  if (fp.isEmpty(error)) {
-    return null
-  }
-
   if (typeof error === 'string') {
-    throw new Error(error || 'unknown error')
+    error = { message: error }
   }
 
   if (Array.isArray(error)) {
@@ -23,6 +19,10 @@ module.exports.parseError = function parseError(error) {
     if (error.length === 1) {
       error = error.length === 1 ? error[0] : { errors: error }
     }
+  }
+
+  if (fp.isEmpty(error)) {
+    return null
   }
 
   const { msg, message = msg, errors, cause, data, ...properties } = error
