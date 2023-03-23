@@ -41,6 +41,10 @@ module.exports.serializeError = function serializeError(error) {
     return { message: error || 'unknown error' }
   }
 
+  if (Array.isArray(error)) {
+    return error.map(serializeError)
+  }
+
   let {
     msg,
     message = msg,
