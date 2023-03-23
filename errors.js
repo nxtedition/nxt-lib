@@ -19,7 +19,10 @@ module.exports.parseError = function parseError(error) {
   }
 
   if (Array.isArray(error)) {
-    return new AggregateError(error.map(parseError))
+    error = error.map(parseError).filter(Boolean)
+    if (error.length === 1) {
+      error = error.length === 1 ? error[0] : { errors: error }
+    }
   }
 
   const { msg, message = msg, errors, cause, data, ...properties } = error
