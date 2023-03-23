@@ -76,12 +76,6 @@ function combineMap(project, equals = (a, b) => a === b) {
             curr[n] = prev[i]
             prev[i] = null
           } else {
-            const entry = (curr[n] = {
-              key,
-              value: EMPTY,
-              subscription: null,
-            })
-
             let observable
             try {
               observable = rxjs.from(project(keys[n]))
@@ -89,8 +83,15 @@ function combineMap(project, equals = (a, b) => a === b) {
               observable = rxjs.throwError(() => err)
             }
 
+            const entry = {
+              key,
+              value: EMPTY,
+              subscription: null,
+            }
+
             empty += 1
             active += 1
+
             entry.subscription = observable.subscribe({
               next(value) {
                 if (entry.value === EMPTY) {
@@ -104,6 +105,7 @@ function combineMap(project, equals = (a, b) => a === b) {
               },
               error: _error,
             })
+
             entry.subscription.add(() => {
               if (entry.value === EMPTY) {
                 empty -= 1
@@ -114,12 +116,14 @@ function combineMap(project, equals = (a, b) => a === b) {
               dirty = true
               update()
             })
+
+            curr[n] = entry
           }
         }
 
         // TODO (perf): start from index where prev[n] is not null.
         for (let n = 0; n < prevLen; n++) {
-          prev[n]?.subscription.unsubscribe()
+          prev[n]?.subscription?.unsubscribe()
         }
       },
       error: _error,
@@ -133,7 +137,7 @@ function combineMap(project, equals = (a, b) => a === b) {
 
     return () => {
       for (const entry of curr) {
-        entry?.subscription.unsubscribe()
+        entry?.subscription?.unsubscribe()
       }
       subscription.unsubscribe()
     }
