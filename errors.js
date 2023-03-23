@@ -39,19 +39,17 @@ module.exports.parseError = function parseError(error) {
 }
 
 module.exports.serializeError = function serializeError(error) {
+  if (fp.isEmpty(error)) {
+    return null
+  }
+
   if (typeof error === 'string') {
-    error = { message: error }
+    return serializeError({ message: error })
   }
 
   if (Array.isArray(error)) {
-    error = error.map(serializeError).filter(Boolean)
-    if (error.length === 1) {
-      error = error.length === 1 ? error[0] : { errors: error }
-    }
-  }
-
-  if (fp.isEmpty(error)) {
-    return null
+    const errors = error.map(serializeError).filter(Boolean)
+    return errors.length === 0 ? null : errors.length === 1 ? errors[0] : errors
   }
 
   let {
