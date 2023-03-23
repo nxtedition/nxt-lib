@@ -1,3 +1,6 @@
+const objectHash = require('object-hash')
+const fp = require('lodash/fp.js')
+
 module.exports.AbortError = class AbortError extends Error {
   constructor() {
     super('The operation was aborted')
@@ -80,4 +83,50 @@ module.exports.serializeError = function serializeError(error) {
       errors,
     })
   )
+}
+
+module.exports.makeMessages = function makeMessages(error, options) {
+  if (Array.isArray(error)) {
+    return error.flatMap((error) => makeMessages(error, options))
+  } else if (error) {
+    let err
+    if (typeof error === 'string' && error) {
+      err = { msg: error, id: options?.id, level: options?.level || 40, code: options?.code }
+    } else if (typeof error === 'object') {
+      const level = parseInt(error.level) || options?.level || 40
+      const code = [error?.code].find((x) => typeof x === 'string' && x.length > 0) || null
+      const msg =
+        [error.msg, error.message, code?.toLowerCase().replace('_', ' ')].find(
+          (x) => typeof x === 'string' && x.length > 0
+        ) || 'unknown error'
+
+      err = {
+        msg,
+        title: error.title ?? error.name,
+        id: error.id ?? options?.id ?? objectHash({ msg, level, code, data: error.data }),
+        level,
+        code: code ?? options?.codes?.[code],
+        data: error.data,
+        index: {
+          ...(typeof error.index === 'object' ? error.index : null),
+          message: msg ?? code?.toLowerCase().replace('_', ' '),
+        },
+      }
+    }
+
+    return fp.pipe(
+      fp.flattenDeep,
+      fp.filter(Boolean),
+      fp.uniqBy('id')
+    )([
+      err,
+      ...makeMessages(error.cause, { ...options, level: err.level, id: null }),
+      ...makeMessages(error.error, { ...options, level: err.level, id: null }),
+      ...makeMessages(error.errors, { ...options, level: err.level, id: null }),
+      ...makeMessages(error.messages, { ...options, level: err.level, id: null }),
+      ...makeMessages(error.status?.messages, { ...options, level: err.level, id: null }),
+    ])
+  } else {
+    return []
+  }
 }
