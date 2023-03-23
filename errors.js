@@ -10,7 +10,7 @@ module.exports.AbortError = class AbortError extends Error {
 }
 
 module.exports.parseError = function parseError(error) {
-  if (!error) {
+  if (fp.isEmpty(error)) {
     return null
   }
 
@@ -36,7 +36,7 @@ module.exports.parseError = function parseError(error) {
 }
 
 module.exports.serializeError = function serializeError(error) {
-  if (!error) {
+  if (fp.isEmpty(error)) {
     return null
   }
 
