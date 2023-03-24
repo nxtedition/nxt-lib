@@ -7,6 +7,7 @@ function combineMap(project, equals = (a, b) => a === b) {
   return new rxjs.Observable((o) => {
     let curr = EMPTY
     let scheduled = false
+    let disposed = false
     let dirty = false
     let active = 0
     let empty = 0
@@ -31,7 +32,7 @@ function combineMap(project, equals = (a, b) => a === b) {
     }
 
     function update() {
-      if (!scheduled) {
+      if (!scheduled && !disposed) {
         scheduled = true
         queueMicrotask(_update)
       }
@@ -117,7 +118,11 @@ function combineMap(project, equals = (a, b) => a === b) {
               update()
             })
 
-            curr[n] = entry
+            if (disposed) {
+              entry.subscription.unsubscribe()
+            } else {
+              curr[n] = entry
+            }
           }
         }
 
@@ -136,6 +141,8 @@ function combineMap(project, equals = (a, b) => a === b) {
     })
 
     return () => {
+      disposed = true
+
       for (const entry of curr) {
         entry?.subscription?.unsubscribe()
       }
