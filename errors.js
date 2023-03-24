@@ -93,9 +93,9 @@ module.exports.makeMessages = function makeMessages(error, options) {
   if (!error) {
     return []
   } else if (Array.isArray(error)) {
-    return error.flatMap((error) => makeMessages(error, options))
+    return fp.pipe(fp.flattenDeep, fp.filter(Boolean), makeMessages, fp.uniqBy('id'))(error)
   } else if (Array.isArray(error.messages)) {
-    return error.messages.map((error) => makeMessages(error, options))
+    return makeMessages(error.messages)
   } else if (error) {
     let err
     if (typeof error === 'string' && error) {
@@ -129,17 +129,13 @@ module.exports.makeMessages = function makeMessages(error, options) {
       }
     }
 
-    return fp.pipe(
-      fp.flattenDeep,
-      fp.filter(Boolean),
-      fp.uniqBy('id')
-    )([
+    return makeMessages([
       err,
-      ...makeMessages(error.cause),
-      ...makeMessages(error.error),
-      ...makeMessages(error.errors),
-      ...makeMessages(error.messages),
-      ...makeMessages(error.status?.messages),
+      error.cause,
+      error.error,
+      error.errors,
+      error.messages,
+      error.status?.messages,
     ])
   } else {
     return []
