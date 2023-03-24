@@ -1,7 +1,7 @@
 {
   "name": "@nxtedition/lib",
   "version": "11.15.8",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "Robert Nagy <robert.nagy@boffins.se>",
   "files": [
     "hash.js",
