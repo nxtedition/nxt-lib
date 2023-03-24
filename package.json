@@ -14,7 +14,6 @@
     "merge-ranges.js",
     "http.js",
     "deepstream.js",
-    "batched.js",
     "json-path.js",
     "logger.js",
     "mime.js",
