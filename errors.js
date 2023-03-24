@@ -89,13 +89,20 @@ module.exports.serializeError = function serializeError(error) {
   )
 }
 
+// TODO (fix): Recursion guard?
 module.exports.makeMessages = function makeMessages(error, options) {
   if (!error) {
     return []
-  } else if (Array.isArray(error)) {
-    return fp.pipe(fp.flattenDeep, fp.filter(Boolean), makeMessages, fp.uniqBy('id'))(error)
+  }
+
+  if (Array.isArray(error)) {
+    return fp.pipe(
+      fp.flattenDeep,
+      fp.flatMap((x) => makeMessages(x, null)),
+      fp.uniqBy('id')
+    )(error)
   } else if (Array.isArray(error.messages)) {
-    return makeMessages(error.messages)
+    return makeMessages(error.messages, null)
   } else if (error) {
     let err
     if (typeof error === 'string' && error) {
@@ -129,14 +136,16 @@ module.exports.makeMessages = function makeMessages(error, options) {
       }
     }
 
-    return makeMessages([
+    return [
       err,
-      error.cause,
-      error.error,
-      error.errors,
-      error.messages,
-      error.status?.messages,
-    ])
+      ...makeMessages([
+        error.cause,
+        error.error,
+        error.errors,
+        error.messages,
+        error.status?.messages,
+      ]),
+    ]
   } else {
     return []
   }
