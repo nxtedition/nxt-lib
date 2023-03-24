@@ -17,16 +17,16 @@ function combineMap(project, equals = (a, b) => a === b) {
     function _update() {
       scheduled = false
 
-      if (empty) {
+      if (empty > 0) {
         return
       }
 
       if (dirty) {
         dirty = false
-        o.next(curr.map((context) => context.value))
+        o.next(curr.map(({ value }) => value))
       }
 
-      if (!active) {
+      if (active === 0) {
         o.complete()
       }
     }
@@ -38,14 +38,30 @@ function combineMap(project, equals = (a, b) => a === b) {
       }
     }
 
-    active += 1
-    const subscription = self.subscribe({
-      next(keys) {
-        if (!Array.isArray(keys)) {
-          keys = EMPTY
-        }
-        // TODO (perf): Avoid array allocation & copy if nothing has updated.
+    function invalidate() {
+      dirty = true
+      if (empty === 0) {
+        update()
+      }
+    }
 
+    function subscribe(observable, observer) {
+      active += 1
+      const subscription = observable.subscribe(observer)
+      subscription.add(() => {
+        active -= 1
+        if (active === 0) {
+          update()
+        }
+      })
+      return subscription
+    }
+
+    const subscription = subscribe(self, {
+      next(keys) {
+        keys = Array.isArray(keys) ? keys : EMPTY
+
+        // TODO (perf): Avoid array allocation & copy if nothing has updated.
         const prev = curr
         curr = new Array(keys.length)
 
@@ -53,8 +69,7 @@ function combineMap(project, equals = (a, b) => a === b) {
         const currLen = curr.length
 
         if (currLen !== prevLen || prev === EMPTY) {
-          dirty = true
-          update()
+          invalidate()
         }
 
         for (let n = 0; n < currLen; ++n) {
@@ -66,9 +81,6 @@ function combineMap(project, equals = (a, b) => a === b) {
             continue
           }
 
-          dirty = true
-          update()
-
           // TODO (perf): Guess start index based on n, e.g. n - 1 and n + 1 to check if
           // a key has simply been added or removed.
           const i = prev.findIndex((entry) => entry && equals(entry.key, key))
@@ -76,6 +88,7 @@ function combineMap(project, equals = (a, b) => a === b) {
           if (i !== -1) {
             curr[n] = prev[i]
             prev[i] = null
+            invalidate()
           } else {
             let observable
             try {
@@ -91,37 +104,31 @@ function combineMap(project, equals = (a, b) => a === b) {
             }
 
             empty += 1
-            active += 1
 
-            entry.subscription = observable.subscribe({
+            entry.subscription = subscribe(observable, {
               next(value) {
                 if (entry.value === EMPTY) {
                   empty -= 1
+                  invalidate()
                 }
 
                 entry.value = value
-
-                dirty = true
-                update()
+                invalidate()
+              },
+              complete() {
+                if (entry.value === EMPTY) {
+                  empty -= 1
+                  invalidate()
+                }
               },
               error: _error,
-            })
-
-            entry.subscription.add(() => {
-              if (entry.value === EMPTY) {
-                empty -= 1
-              }
-
-              active -= 1
-
-              dirty = true
-              update()
             })
 
             if (disposed) {
               entry.subscription.unsubscribe()
             } else {
               curr[n] = entry
+              invalidate()
             }
           }
         }
@@ -132,12 +139,6 @@ function combineMap(project, equals = (a, b) => a === b) {
         }
       },
       error: _error,
-      complete() {
-        active -= 1
-        if (!active) {
-          update()
-        }
-      },
     })
 
     return () => {
@@ -146,6 +147,7 @@ function combineMap(project, equals = (a, b) => a === b) {
       for (const entry of curr) {
         entry?.subscription?.unsubscribe()
       }
+
       subscription.unsubscribe()
     }
   })
