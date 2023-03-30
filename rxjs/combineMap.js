@@ -38,17 +38,8 @@ function combineMap(project, equals = (a, b) => a === b) {
       }
     }
 
-    function subscribe(observable, observer) {
-      active += 1
-      const subscription = observable.subscribe(observer)
-      subscription.add(() => {
-        active -= 1
-        update()
-      })
-      return subscription
-    }
-
-    const subscription = subscribe(self, {
+    active += 1
+    const subscription = self.subscribe({
       next(keys) {
         keys = Array.isArray(keys) ? keys : EMPTY
 
@@ -96,8 +87,7 @@ function combineMap(project, equals = (a, b) => a === b) {
             }
 
             empty += 1
-
-            entry.subscription = subscribe(observable, {
+            entry.subscription = observable.subscribe({
               next(value) {
                 if (entry.value === EMPTY) {
                   empty -= 1
@@ -111,7 +101,10 @@ function combineMap(project, equals = (a, b) => a === b) {
               error: _error,
             })
 
+            active += 1
             entry.subscription.add(() => {
+              active -= 1
+
               if (entry.value === EMPTY) {
                 empty -= 1
               }
@@ -132,6 +125,10 @@ function combineMap(project, equals = (a, b) => a === b) {
           prev[n]?.subscription?.unsubscribe()
         }
 
+        update()
+      },
+      complete: () => {
+        active -= 1
         update()
       },
       error: _error,
