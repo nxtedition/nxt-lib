@@ -108,14 +108,15 @@ function combineMap(project, equals = (a, b) => a === b) {
 
                 update()
               },
-              complete() {
-                if (entry.value === EMPTY) {
-                  empty -= 1
-                }
-
-                update()
-              },
               error: _error,
+            })
+
+            entry.subscription.add(() => {
+              if (entry.value === EMPTY) {
+                empty -= 1
+              }
+
+              update()
             })
 
             if (disposed) {
