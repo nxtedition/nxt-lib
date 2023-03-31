@@ -10,6 +10,10 @@ module.exports.AbortError = class AbortError extends Error {
 }
 
 module.exports.parseError = function parseError(error) {
+  if (!error) {
+    return null
+  }
+
   if (typeof error === 'string') {
     error = { message: error }
   }
@@ -19,10 +23,6 @@ module.exports.parseError = function parseError(error) {
     if (error.length === 1) {
       error = error.length === 1 ? error[0] : { errors: error }
     }
-  }
-
-  if (fp.isEmpty(error)) {
-    return null
   }
 
   const { msg, message = msg, errors, cause, data, ...properties } = error
@@ -39,7 +39,7 @@ module.exports.parseError = function parseError(error) {
 }
 
 module.exports.serializeError = function serializeError(error) {
-  if (fp.isEmpty(error)) {
+  if (!error) {
     return null
   }
 
