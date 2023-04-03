@@ -331,7 +331,7 @@ function isConnectionError(err) {
     : false
 }
 
-function defaultDelay(err, retryCount, { signal, logger }) {
+function defaultDelay(err, retryCount, { signal, logger = null }) {
   if (isConnectionError(err)) {
     const delay =
       parseInt(err.headers?.['Retry-After']) * 1e3 || Math.min(10e3, retryCount * 1e3 + 1e3)

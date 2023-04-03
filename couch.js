@@ -404,10 +404,10 @@ module.exports = function (opts) {
             throw err
           } else if (typeof retry === 'function') {
             const retryState = { since: params.since }
-            Object.assign(retryState, await retry(err, retryCount++, retryState))
+            Object.assign(retryState, await retry(err, retryCount++, retryState, { signal }))
             params.since = retryState.since ?? 0
           } else {
-            await delay(err)
+            await delay(err, retryCount, { signal })
           }
         }
       }
