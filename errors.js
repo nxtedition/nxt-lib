@@ -132,7 +132,16 @@ module.exports.makeMessages = function makeMessages(error, options) {
         level,
         code,
         data,
-        index: typeof error.index === 'object' ? error.index : null,
+        index:
+          error.index === null || error.index === false
+            ? null
+            : typeof error.index === 'object'
+            ? error.index
+            : error.index === undefined || error.index === true
+            ? options.index === true
+              ? { message: msg }
+              : null
+            : null,
       }
     }
 
