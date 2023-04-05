@@ -27,8 +27,12 @@ module.exports = function (appConfig, onTerminate) {
   const ac = new AbortController()
 
   // Crash on unhandledRejection
-  process.on('unhandledRejection', (reason) => {
-    throw reason
+  process.on('unhandledRejection', (err) => {
+    throw err
+  })
+
+  process.on('warning', (err) => {
+    logger?.warning({ err }, 'warning')
   })
 
   const { createLogger } = require('./logger')
