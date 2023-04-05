@@ -32,7 +32,7 @@ module.exports = function (appConfig, onTerminate) {
   })
 
   process.on('warning', (err) => {
-    logger?.warning({ err }, 'warning')
+    logger?.warn({ err }, 'warning')
   })
 
   const { createLogger } = require('./logger')
