@@ -138,7 +138,7 @@ module.exports.makeMessages = function makeMessages(error, options) {
             : typeof error.index === 'object'
             ? error.index
             : error.index === undefined || error.index === true
-            ? options.index === true
+            ? options?.index === true
               ? { message: msg }
               : null
             : null,
