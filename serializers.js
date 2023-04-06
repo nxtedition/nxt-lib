@@ -6,7 +6,9 @@ function getHeaders(obj) {
   if (Array.isArray(obj)) {
     const headers = {}
     for (let n = 0; n < obj.length; n += 2) {
-      headers[obj[n + 0]] = obj[n + 1]
+      const key = obj[n].toString().toLowerCase()
+      const val = obj[n + 1].toString()
+      headers[key] = headers[key] ? `${headers[key]},${val}` : val
     }
   }
   return (
