@@ -70,6 +70,7 @@
   ],
   "dependencies": {
     "date-fns": "^2.29.3",
+    "fast-querystring": "^1.1.1",
     "hasha": "^5.2.2",
     "http-errors": "^2.0.0",
     "json5": "^2.2.3",

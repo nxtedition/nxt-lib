@@ -1,7 +1,7 @@
 const createError = require('http-errors')
 const { performance } = require('perf_hooks')
 const requestTarget = require('request-target')
-const querystring = require('querystring')
+const querystring = require('fast-querystring')
 const assert = require('assert')
 const { AbortError } = require('./errors')
 const compose = require('koa-compose')
