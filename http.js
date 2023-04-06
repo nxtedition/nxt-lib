@@ -59,9 +59,11 @@ module.exports.request = async function request(ctx, next) {
 
     await Promise.all([
       new Promise((resolve, reject) => {
-        req.on('error', reject).on('timeout', () => {
+        const onTimeout = () => {
           reject(new createError.RequestTimeout())
-        })
+        }
+
+        req.on('error', reject).on('timeout', onTimeout)
         res
           .on('close', function () {
             // Normalize OutgoingMessage.destroyed
@@ -74,9 +76,7 @@ module.exports.request = async function request(ctx, next) {
             }
           })
           .on('error', reject)
-          .on('timeout', () => {
-            reject(new createError.RequestTimeout())
-          })
+          .on('timeout', onTimeout)
       }),
       next().catch((err) => {
         if (!res.headersSent) {
