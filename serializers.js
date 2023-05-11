@@ -3,22 +3,26 @@ function getHeader(obj, key) {
 }
 
 function getHeaders(obj) {
-  let headers =
+  if (!obj) {
+    return undefined
+  }
+
+  if (Array.isArray(obj.headers)) {
+    const src = obj.headers
+    const dst = {}
+    for (let n = 0; n < src.length; n += 2) {
+      const key = src[n].toString().toLowerCase()
+      const val = src[n + 1].toString()
+      dst[key] = dst[key] ? `${dst[key]},${val}` : val
+    }
+    return dst
+  }
+
+  return (
     (obj.headers?.entries && Object.fromEntries(obj.headers.entries())) ||
     obj.headers ||
     obj.getHeaders?.()
-
-  if (Array.isArray(headers)) {
-    const obj = headers
-    headers = {}
-    for (let n = 0; n < obj.length; n += 2) {
-      const key = obj[n].toString().toLowerCase()
-      const val = obj[n + 1].toString()
-      headers[key] = headers[key] ? `${headers[key]},${val}` : val
-    }
-  }
-
-  return headers
+  )
 }
 
 const isErrorLike = (err) => {
