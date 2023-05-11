@@ -3,19 +3,22 @@ function getHeader(obj, key) {
 }
 
 function getHeaders(obj) {
-  if (Array.isArray(obj)) {
-    const headers = {}
+  let headers =
+    (obj.headers?.entries && Object.fromEntries(obj.headers.entries())) ||
+    obj.headers ||
+    obj.getHeaders?.()
+
+  if (Array.isArray(headers)) {
+    const obj = headers
+    headers = {}
     for (let n = 0; n < obj.length; n += 2) {
       const key = obj[n].toString().toLowerCase()
       const val = obj[n + 1].toString()
       headers[key] = headers[key] ? `${headers[key]},${val}` : val
     }
   }
-  return (
-    (obj.headers?.entries && Object.fromEntries(obj.headers.entries())) ||
-    obj.headers ||
-    obj.getHeaders?.()
-  )
+
+  return headers
 }
 
 const isErrorLike = (err) => {
@@ -201,7 +204,7 @@ module.exports = {
       id: req.id || getHeader(req, 'request-id'),
       method: req.method,
       url: req.url,
-      headers: req.headers,
+      headers: getHeaders(req),
       bytesRead: req.bytesRead,
       remoteAddress: req.socket?.remoteAddress,
       remotePort: req.socket?.remotePort,
@@ -235,7 +238,7 @@ module.exports = {
       method: ureq.method,
       url,
       bytesWritten: ureq.bytesWritten,
-      headers: ureq.headers,
+      headers: getHeaders(ureq),
       query: ureq.query,
     }
   },
