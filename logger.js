@@ -8,7 +8,7 @@ module.exports.createLogger = function (
     extreme = isProduction,
     level = isProduction ? 'info' : 'trace',
     flushInterval = 1e3,
-    stream,
+    stream = null,
     ...options
   } = {},
   onTerminate
@@ -23,9 +23,9 @@ module.exports.createLogger = function (
   if (stream) {
     // Do nothing...
   } else if (!extreme) {
-    stream = pino.destination({ fd: process.stdout.fd, sync: true })
+    stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: true })
   } else {
-    stream = pino.destination({ fd: process.stdout.fd, sync: false, minLength: 4096 })
+    stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: false, minLength: 4096 })
     setInterval(() => {
       logger.flush()
     }, flushInterval).unref()
