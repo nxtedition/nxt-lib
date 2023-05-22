@@ -345,16 +345,9 @@ function defaultDelay(err, retryCount, { signal, logger = null }) {
 module.exports.delay = defaultDelay
 module.exports.isConnectionError = isConnectionError
 
-module.exports.retry = async function _retry(
-  fn,
-  {
-    maxRetries = 8,
-    count = maxRetries,
-    delay = defaultDelay,
-    logger = undefined,
-    signal = undefined,
-  } = {}
-) {
+module.exports.retry = async function _retry(fn, options) {
+  const { maxRetries = 8, count = maxRetries, delay = defaultDelay } = options ?? {}
+
   for (let retryCount = 0; true; ++retryCount) {
     try {
       return await fn()
@@ -362,9 +355,9 @@ module.exports.retry = async function _retry(
       if (retryCount >= count) {
         throw err
       } else if (typeof delay === 'number') {
-        await tp.setTimeout(delay, undefined, { signal })
+        await tp.setTimeout(delay, undefined, options)
       } else if (fp.isFunction(delay)) {
-        await delay(err, retryCount, { signal, logger })
+        await delay(err, retryCount, options)
       } else {
         throw err
       }
