@@ -148,6 +148,15 @@ module.exports = function (appConfig, onTerminate) {
     }
   }
 
+  if (appConfig.niceIncrement) {
+    try {
+      if (appConfig.niceIncrement !== 0 && process.platform === 'linux') {
+        const nice = require('nice-napi')
+        nice(appConfig.niceIncrement)
+      }
+    } catch {}
+  }
+
   if (appConfig.perf && process.platform === 'linux') {
     const os = require('os')
 
