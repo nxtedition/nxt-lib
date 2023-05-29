@@ -142,16 +142,14 @@ Object.defineProperty(pinoErrProto, rawSymbol, {
 })
 
 function errSerializer(err) {
-  if (typeof err === 'string') {
+  if (!err) {
+    return undefined
+  } else if (typeof err === 'string') {
     err = new Error(err)
   } else if (Array.isArray(err)) {
     err = new AggregateError(err)
-  } else if (typeof err !== 'object') {
+  } else if (!isErrorLike(err)) {
     err = Object.assign(new Error('invalid error object'), { data: JSON.stringify(err) })
-  }
-
-  if (!isErrorLike(err)) {
-    return err
   }
 
   err[seen] = undefined // tag to prevent re-looking at this
