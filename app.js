@@ -342,8 +342,10 @@ module.exports = function (appConfig, onTerminate) {
           const ret = appConfig.status({ ds, couch, logger })
           return ret?.then || ret?.subscribe ? ret : rxjs.of(ret)
         })
-        .catch((err) => rxjs.of({ warnings: [err.message] }))
-        .repeatWhen(() => rxjs.timer(10e3))
+        .pipe(
+          rx.catchError((err) => rxjs.of({ warnings: [err.message] })),
+          rx.repeatWhen(() => rxjs.timer(10e3))
+        )
     } else if (appConfig.status && typeof appConfig.status === 'object') {
       status$ = rxjs.timer(0, 10e3).pipe(rx.exhaustMap(() => appConfig.status))
     } else {
