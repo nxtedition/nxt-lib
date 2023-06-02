@@ -7,7 +7,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 module.exports.createLogger = function (
   {
     extreme = isProduction,
-    level = isProduction ? 'info' : 'trace',
+    level = isProduction ? 'debug' : 'trace',
     flushInterval = 1e3,
     stream = null,
     ...options
