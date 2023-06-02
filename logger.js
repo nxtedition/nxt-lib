@@ -15,10 +15,13 @@ module.exports.createLogger = function (
   onTerminate
 ) {
   if (!stream) {
-    if (process.stdout.write !== process.stdout.constructor.prototype.write || !process.stdout.fd) {
-      stream = process.stdout
-    } else if (!isMainThread) {
+    if (!isMainThread) {
       stream = pino.destination({ fd: 1, sync: true })
+    } else if (
+      process.stdout.write !== process.stdout.constructor.prototype.write ||
+      !process.stdout.fd
+    ) {
+      stream = process.stdout
     }
   }
 
