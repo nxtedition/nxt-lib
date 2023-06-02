@@ -17,7 +17,7 @@ module.exports.createLogger = function (
   if (!stream) {
     if (process.stdout.write !== process.stdout.constructor.prototype.write || !process.stdout.fd) {
       stream = process.stdout
-    } else if (isMainThread) {
+    } else if (!isMainThread) {
       stream = pino.destination({ fd: 1, sync: true })
     }
   }
