@@ -322,6 +322,7 @@ function isConnectionError(err) {
         err.code === 'ENETUNREACH' ||
         err.code === 'EHOSTDOWN' ||
         err.code === 'EHOSTUNREACH' ||
+        err.code === 'EPIPE' ||
         err.message === 'other side closed' ||
         statusCode === 420 ||
         statusCode === 429 ||
