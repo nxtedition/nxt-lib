@@ -2,7 +2,8 @@ const { getDockerSecretsSync } = require('./docker-secrets')
 const { getGlobalDispatcher } = require('undici')
 const stream = require('node:stream')
 const { Buffer } = require('node:buffer')
-const fp = require('lodash/fp')
+const net = require('net')
+const fp = require('lodash/fp.js')
 
 module.exports = function (appConfig, onTerminate) {
   let ds
@@ -14,6 +15,10 @@ module.exports = function (appConfig, onTerminate) {
   let config
   let logger
   let trace
+
+  if (net.setDefaultAutoSelectFamily) {
+    net.setDefaultAutoSelectFamily(false)
+  }
 
   // Optimize some Node global defaults.
 
