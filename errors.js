@@ -159,3 +159,19 @@ module.exports.makeMessages = function makeMessages(error, options) {
     return []
   }
 }
+
+module.exports.makeErrorString = function makeErrorString(err) {
+  err = module.exports.parseError(err)
+
+  let msg = err?.message || 'error'
+
+  if (err?.cause) {
+    msg += `caused by: ${module.exports.makeErrorString(err.cause)}`
+  }
+
+  if (Array.isArray(err?.errors)) {
+    msg += ': ' + err.errors.map((err) => module.exports.makeErrorString(err)).join(', ')
+  }
+
+  return msg
+}
