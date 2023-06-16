@@ -31,6 +31,11 @@ module.exports.request = async function request(ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
 
+  ctx.url = requestTarget(req)
+  if (!ctx.url) {
+    throw new createError.BadRequest('invalid url')
+  }
+
   const ac = new AbortController()
   const signal = ac.signal
 
@@ -38,7 +43,6 @@ module.exports.request = async function request(ctx, next) {
   ctx.logger = req.log = logger.child({ req })
   ctx.signal = signal
   ctx.method = req.method
-  ctx.url = requestTarget(req)
   ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : {}
 
   res.setHeader('request-id', req.id)
