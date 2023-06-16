@@ -42,7 +42,7 @@ module.exports.request = async function request(ctx, next) {
     }
 
     ctx.id = req.id = req.headers['request-id'] || genReqId()
-    ctx.logger = req.log = logger.child({ req })
+    ctx.logger = req.log = logger.child({ req: { id: req.id, url: req.url } })
     ctx.signal = signal
     ctx.method = req.method
     ctx.query = ctx.url.search ? querystring.parse(ctx.url.search.slice(1)) : {}
@@ -53,9 +53,9 @@ module.exports.request = async function request(ctx, next) {
 
     reqLogger = ctx.logger
     if (!isHealthcheck) {
-      reqLogger.debug('request started')
+      reqLogger.debug({ req }, 'request started')
     } else {
-      reqLogger.trace('request started')
+      reqLogger.trace({ req }, 'request started')
     }
 
     if (!ctx.url) {
@@ -83,14 +83,7 @@ module.exports.request = async function request(ctx, next) {
           .on('error', reject)
           .on('timeout', onTimeout)
       }),
-      next().catch((err) => {
-        if (!res.headersSent) {
-          reqLogger = reqLogger.child({ err })
-          errorResponse(req, res, err)
-        } else {
-          throw err
-        }
-      }),
+      next(),
     ])
 
     assert(res.writableEnded)
@@ -99,40 +92,74 @@ module.exports.request = async function request(ctx, next) {
 
     const responseTime = Math.round(performance.now() - startTime)
 
-    reqLogger = reqLogger.child({ res })
+    reqLogger = reqLogger.child({ res, responseTime })
 
     if (res.statusCode >= 500) {
-      reqLogger.error({ responseTime }, 'request error')
+      reqLogger.error('request error')
     } else if (res.statusCode >= 400) {
-      reqLogger.warn({ responseTime }, 'request failed')
+      reqLogger.warn('request failed')
     } else if (!isHealthcheck) {
-      reqLogger.debug({ responseTime }, 'request completed')
+      reqLogger.debug('request completed')
     } else {
-      reqLogger.trace({ responseTime }, 'request completed')
+      reqLogger.trace('request completed')
     }
   } catch (err) {
-    const statusCode = res.headersSent ? res.statusCode : err.statusCode || 500
-
     const responseTime = Math.round(performance.now() - startTime)
 
-    reqLogger = reqLogger.child({ res })
-
-    if (req.aborted || err.name === 'AbortError') {
-      reqLogger.debug({ err, responseTime }, 'request aborted')
-    } else if (statusCode < 500) {
-      reqLogger.warn({ err, responseTime }, 'request failed')
-    } else {
-      reqLogger.error({ err, responseTime }, 'request error')
-    }
+    reqLogger = reqLogger.child({ req, res, err, responseTime })
 
     req.on('error', (err) => {
-      if (statusCode > 500 || err.code !== 'ECONNRESET') {
+      if (res.statusCode > 500 || err.code !== 'ECONNRESET') {
         reqLogger.warn({ err }, 'request error')
       }
     })
+
     res.on('error', (err) => {
       reqLogger.warn({ err }, 'request error')
     })
+
+    if (!res.headersSent) {
+      let reqId = req?.id || err.id
+      for (const name of res.getHeaderNames()) {
+        if (!reqId && name === 'request-id') {
+          reqId = res.getHeader(name)
+        }
+        res.removeHeader(name)
+      }
+
+      if (reqId) {
+        res.setHeader('request-id', reqId)
+      }
+
+      if (fp.isPlainObject(err.headers)) {
+        for (const [key, val] of Object.entries(err.headers)) {
+          if (!ERR_HEADER_EXPR.test(key)) {
+            res.setHeader(key, val)
+          }
+        }
+      }
+
+      if (fp.isPlainObject(err.body)) {
+        res.setHeader('content-type', 'application/json')
+        res.write(JSON.stringify(err.body))
+      }
+
+      res.end()
+
+      if (res.statusCode >= 500) {
+        reqLogger.error('request error')
+      } else if (res.statusCode >= 400) {
+        reqLogger.warn('request failed')
+      }
+    } else {
+      if (req.aborted || err.name === 'AbortError') {
+        reqLogger.debug('request aborted')
+      } else if (err.statusCode < 500) {
+        reqLogger.warn('request failed')
+      } else {
+        reqLogger.error('request error')
+      }
+    }
   } finally {
     queueMicrotask(() => {
       ac.abort()
@@ -140,37 +167,6 @@ module.exports.request = async function request(ctx, next) {
       res.on('error', noop).destroy()
     })
   }
-}
-
-function errorResponse(req, res, err) {
-  res.statusCode = err.statusCode || err.status || 500
-
-  let reqId = req?.id || err.id
-  for (const name of res.getHeaderNames()) {
-    if (!reqId && name === 'request-id') {
-      reqId = res.getHeader(name)
-    }
-    res.removeHeader(name)
-  }
-
-  if (reqId) {
-    res.setHeader('request-id', reqId)
-  }
-
-  if (fp.isPlainObject(err.headers)) {
-    for (const [key, val] of Object.entries(err.headers)) {
-      if (!ERR_HEADER_EXPR.test(key)) {
-        res.setHeader(key, val)
-      }
-    }
-  }
-
-  if (fp.isPlainObject(err.body)) {
-    res.setHeader('content-type', 'application/json')
-    res.write(JSON.stringify(err.body))
-  }
-
-  res.end()
 }
 
 class ServerResponse extends http.ServerResponse {
