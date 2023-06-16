@@ -241,13 +241,17 @@ module.exports.createServer = function (options, ctx, middleware) {
 module.exports.upgrade = async function upgrade(ctx, next) {
   const { req, res, socket = res, logger } = ctx
 
+  ctx.url = requestTarget(req)
+  if (!ctx.url) {
+    throw new createError.BadRequest('invalid url')
+  }
+
   const ac = new AbortController()
   const signal = ac.signal
 
   ctx.id = req.id = req.headers['request-id'] || genReqId()
   ctx.logger = req.log = logger.child({ req: { id: req.id, method: req.method, url: req.url } })
   ctx.signal = signal
-  ctx.url = requestTarget(req)
   ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : {}
 
   let aborted = false
