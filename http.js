@@ -31,26 +31,27 @@ module.exports.request = async function request(ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
 
-  ctx.url = requestTarget(req)
-  if (!ctx.url) {
-    throw new createError.BadRequest('invalid url')
-  }
-
   const ac = new AbortController()
   const signal = ac.signal
 
-  ctx.id = req.id = req.headers['request-id'] || genReqId()
-  ctx.logger = req.log = logger.child({ req })
-  ctx.signal = signal
-  ctx.method = req.method
-  ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : {}
-
-  res.setHeader('request-id', req.id)
-
-  const isHealthcheck = ctx.url.pathname === '/healthcheck'
-
-  let reqLogger = ctx.logger
+  let reqLogger = logger
   try {
+    ctx.url = requestTarget(req)
+    if (!ctx.url) {
+      throw new createError.BadRequest('invalid url')
+    }
+
+    ctx.id = req.id = req.headers['request-id'] || genReqId()
+    ctx.logger = req.log = logger.child({ req })
+    ctx.signal = signal
+    ctx.method = req.method
+    ctx.query = ctx.url.search ? querystring.parse(ctx.url.search.slice(1)) : {}
+
+    res.setHeader('request-id', req.id)
+
+    const isHealthcheck = ctx.url.pathname === '/healthcheck'
+
+    reqLogger = ctx.logger
     if (!isHealthcheck) {
       reqLogger.debug('request started')
     } else {
@@ -245,27 +246,24 @@ module.exports.createServer = function (options, ctx, middleware) {
 module.exports.upgrade = async function upgrade(ctx, next) {
   const { req, res, socket = res, logger } = ctx
 
-  ctx.url = requestTarget(req)
-  if (!ctx.url) {
-    throw new createError.BadRequest('invalid url')
-  }
-
   const ac = new AbortController()
   const signal = ac.signal
 
-  ctx.id = req.id = req.headers['request-id'] || genReqId()
-  ctx.logger = req.log = logger.child({ req: { id: req.id, method: req.method, url: req.url } })
-  ctx.signal = signal
-  ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : {}
-
   let aborted = false
-  const reqLogger = logger.child({ req })
+  let reqLogger = logger
   try {
-    reqLogger.debug('stream started')
-
+    ctx.url = requestTarget(req)
     if (!ctx.url) {
-      throw new createError.BadRequest()
+      throw new createError.BadRequest('invalid url')
     }
+
+    ctx.id = req.id = req.headers['request-id'] || genReqId()
+    ctx.logger = req.log = logger.child({ req: { id: req.id, method: req.method, url: req.url } })
+    ctx.signal = signal
+    ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : {}
+
+    reqLogger = logger.child({ req })
+    reqLogger.debug('stream started')
 
     socket.on('error', (err) => {
       // NOTE: Special case where the client becomes unreachable.
