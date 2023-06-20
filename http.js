@@ -120,7 +120,7 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.warn({ err }, 'request error')
     })
 
-    if (!res.headersSent) {
+    if (!res.headersSent && !res.destroyed) {
       let reqId = req?.id || err.id
       for (const name of res.getHeaderNames()) {
         if (!reqId && name === 'request-id') {
