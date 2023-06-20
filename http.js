@@ -3,7 +3,6 @@ const { performance } = require('perf_hooks')
 const requestTarget = require('request-target')
 const querystring = require('fast-querystring')
 const assert = require('assert')
-const { AbortError } = require('./errors')
 const compose = require('koa-compose')
 const http = require('http')
 const fp = require('lodash/fp')
@@ -24,8 +23,6 @@ function genReqId() {
   nextReqId = (nextReqId + 1) & maxInt
   return `req-${nextReqId.toString(36)}`
 }
-
-function noop() {}
 
 module.exports.request = async function request(ctx, next) {
   const { req, res, logger } = ctx
@@ -62,32 +59,17 @@ module.exports.request = async function request(ctx, next) {
       throw new createError.BadRequest()
     }
 
-    await Promise.all([
-      new Promise((resolve, reject) => {
-        const onTimeout = () => {
-          reject(new createError.RequestTimeout())
-        }
+    const onClose = () => ac.abort()
+    const onTimeout = () => ac.abort(new createError.RequestTimeout())
+    const onError = (err) => ac.abort(err)
 
-        req.on('error', reject).on('timeout', onTimeout)
-        res
-          .on('close', function () {
-            // Normalize OutgoingMessage.destroyed
-            this.destroyed = true
+    res.on('close', onClose).on('timeout', onTimeout).on('error', onError)
 
-            if (!this.writableEnded) {
-              reject(new AbortError())
-            } else {
-              resolve(null)
-            }
-          })
-          .on('error', reject)
-          .on('timeout', onTimeout)
-      }),
-      next(),
-    ])
+    req.on('close', onClose).on('timeout', onTimeout).on('error', onError)
+
+    await next()
 
     assert(res.writableEnded)
-    assert(res.destroyed)
     assert(res.statusCode)
 
     const responseTime = Math.round(performance.now() - startTime)
@@ -146,13 +128,13 @@ module.exports.request = async function request(ctx, next) {
         res.write(JSON.stringify(err.body))
       }
 
-      res.end()
-
       if (res.statusCode >= 500) {
         reqLogger.error('request error')
       } else if (res.statusCode >= 400) {
         reqLogger.warn('request failed')
       }
+
+      res.end()
     } else {
       if (req.aborted || err.name === 'AbortError') {
         reqLogger.debug('request aborted')
@@ -161,17 +143,9 @@ module.exports.request = async function request(ctx, next) {
       } else {
         reqLogger.error('request error')
       }
+
+      res.destroy()
     }
-  } finally {
-    queueMicrotask(() => {
-      if (!req.destroyed) {
-        req.on('error', noop).destroy()
-      }
-      if (!res.destroyed) {
-        res.on('error', noop).destroy()
-      }
-      ac.abort()
-    })
   }
 }
 
