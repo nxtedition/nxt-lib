@@ -164,8 +164,12 @@ module.exports.request = async function request(ctx, next) {
     }
   } finally {
     queueMicrotask(() => {
-      req.on('error', noop).destroy()
-      res.on('error', noop).destroy()
+      if (!req.destroyed) {
+        req.on('error', noop).destroy()
+      }
+      if (!res.destroyed) {
+        res.on('error', noop).destroy()
+      }
       ac.abort()
     })
   }
