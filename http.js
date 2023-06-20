@@ -60,7 +60,7 @@ module.exports.request = async function request(ctx, next) {
     }
 
     const onClose = () => ac.abort()
-    const onTimeout = () => ac.abort(new createError.RequestTimeout())
+    const onTimeout = () => res.destroy(new createError.RequestTimeout())
     const onError = (err) => ac.abort(err)
 
     res.on('close', onClose).on('timeout', onTimeout).on('error', onError)
