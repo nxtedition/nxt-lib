@@ -164,9 +164,9 @@ module.exports.request = async function request(ctx, next) {
     }
   } finally {
     queueMicrotask(() => {
-      ac.abort()
       req.on('error', noop).destroy()
       res.on('error', noop).destroy()
+      ac.abort()
     })
   }
 }
