@@ -65,7 +65,7 @@ module.exports.request = async function request(ctx, next) {
 
     res.on('close', onClose).on('timeout', onTimeout).on('error', onError)
 
-    req.on('close', onClose).on('timeout', onTimeout).on('error', onError)
+    req.on('timeout', onTimeout).on('error', onError)
 
     await next()
 
