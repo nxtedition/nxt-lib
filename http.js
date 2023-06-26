@@ -7,6 +7,7 @@ const compose = require('koa-compose')
 const http = require('http')
 const fp = require('lodash/fp')
 const tp = require('timers/promises')
+const { AbortError } = require('./errors')
 
 const ERR_HEADER_EXPR =
   /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
@@ -68,6 +69,10 @@ module.exports.request = async function request(ctx, next) {
     req.on('timeout', onTimeout).on('error', onError)
 
     await next()
+
+    if (!res.writableEnded && res.destroyed) {
+      throw new AbortError()
+    }
 
     assert(res.writableEnded)
     assert(res.statusCode)
