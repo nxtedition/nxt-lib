@@ -56,10 +56,6 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.trace({ req }, 'request started')
     }
 
-    if (!ctx.url) {
-      throw new createError.BadRequest()
-    }
-
     const onClose = () => ac.abort()
     const onTimeout = () => res.destroy(new createError.RequestTimeout())
     const onError = (err) => ac.abort(err)
