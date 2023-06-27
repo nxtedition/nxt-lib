@@ -63,9 +63,8 @@ function parseKey(key) {
 function observe(ds, name, ...args) {
   let query = null
 
-  if (args.length && (args[0] == null || typeof args[0] === 'object')) {
+  if (args.length > 0 && (args[0] == null || typeof args[0] === 'object')) {
     query = args.shift()
-    query = query ? JSON.parse(JSON.stringify(query)) : null
   }
 
   name = `${name}`
@@ -83,9 +82,8 @@ function observe(ds, name, ...args) {
 function observe2(ds, name, ...args) {
   let query = null
 
-  if (args.length && (args[0] == null || typeof args[0] === 'object')) {
+  if (args.length > 0 && (args[0] == null || typeof args[0] === 'object')) {
     query = args.shift()
-    query = query ? JSON.parse(JSON.stringify(query)) : null
   }
 
   name = `${name}`
@@ -101,14 +99,20 @@ function observe2(ds, name, ...args) {
 }
 
 function get(ds, name, ...args) {
-  let options = null
+  let query = null
 
-  if (args[0] && typeof args[0] === 'object') {
-    options = JSON.parse(JSON.stringify(args.shift()))
+  if (args.length > 0 && (args[0] == null || typeof args[0] === 'object')) {
+    query = args.shift()
   }
 
+  name = `${name}`
+
   return ds.record.get(
-    `${name}${options && Object.keys(options).length > 0 ? `?${qs.stringify(options)}` : ''}`,
+    `${name}${
+      query && Object.keys(query).length > 0
+        ? `${name.endsWith('?') ? '' : '?'}${qs.stringify(query, { skipNulls: true })}`
+        : ''
+    }`,
     ...args
   )
 }
