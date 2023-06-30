@@ -56,7 +56,7 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.trace({ req }, 'request started')
     }
 
-    const onClose = () => ac.abort()
+    const onClose = () => queueMicrotask(() => ac.abort())
     const onTimeout = () => res.destroy(new createError.RequestTimeout())
     const onError = (err) => ac.abort(err)
 
