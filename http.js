@@ -89,8 +89,6 @@ module.exports.request = async function request(ctx, next) {
   } catch (err) {
     const responseTime = Math.round(performance.now() - startTime)
 
-    res.statusCode = err.statusCode || 500
-
     reqLogger = reqLogger.child({ req, res, err, responseTime })
 
     req.on('error', (err) => {
@@ -104,6 +102,8 @@ module.exports.request = async function request(ctx, next) {
     })
 
     if (!res.headersSent && !res.destroyed) {
+      res.statusCode = err.statusCode || 500
+
       let reqId = req?.id || err.id
       for (const name of res.getHeaderNames()) {
         if (!reqId && name === 'request-id') {
