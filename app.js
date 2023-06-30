@@ -550,15 +550,12 @@ module.exports = function (appConfig, onTerminate) {
     }
 
     stats$ = stats$.pipe(
-      rx.auditTime(1e3),
-      rx.filter(Boolean),
       rx.map((x) => ({
         ...x,
-        ds: ds?.stats,
-        couch: couch?.stats,
-        lag: toobusy?.lag(),
         timestamp: Date.now(),
       })),
+      rx.auditTime(1e3),
+      rx.filter(Boolean),
       rx.retryWhen((err$) =>
         err$.pipe(
           rx.tap((err) => logger.error({ err }, 'monitor.stats')),
@@ -578,6 +575,9 @@ module.exports = function (appConfig, onTerminate) {
         const elu2 = eventLoopUtilization?.()
         logger.debug(
           {
+            ds: ds?.stats,
+            couch: couch?.stats,
+            lag: toobusy?.lag(),
             memory: process.memoryUsage(),
             utilization: eventLoopUtilization?.(elu2, elu1),
             heap: v8.getHeapStatistics(),
