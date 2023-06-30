@@ -164,7 +164,9 @@ function errSerializer(err) {
   }
 
   for (const key in err) {
-    if (_err[key] === undefined) {
+    if (/^[A-Z_]+$/.test(key)) {
+      // Ignore constants.
+    } else if (_err[key] === undefined) {
       const val = err[key]
       if (isErrorLike(val)) {
         // We append cause messages and stacks to _err, therefore skipping causes here
