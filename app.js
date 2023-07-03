@@ -331,209 +331,13 @@ module.exports = function (appConfig, onTerminate) {
 
   const monitorProviders = {}
 
-  if (appConfig.status) {
-    const rxjs = require('rxjs')
-    const rx = require('rxjs/operators')
-    const undici = require('undici')
-    const fp = require('lodash/fp')
-    const hashString = require('./hash')
-
-    let status$
-    if (appConfig.status.subscribe) {
-      status$ = appConfig.status
-    } else if (typeof appConfig.status === 'function') {
-      status$ = rxjs
-        .defer(() => {
-          const ret = appConfig.status({ ds, couch, logger })
-          return ret?.then || ret?.subscribe ? ret : rxjs.of(ret)
-        })
-        .pipe(
-          rx.catchError((err) => rxjs.of({ warnings: [err.message] })),
-          rx.repeatWhen(() => rxjs.timer(10e3))
-        )
-    } else if (appConfig.status && typeof appConfig.status === 'object') {
-      status$ = rxjs.timer(0, 10e3).pipe(rx.exhaustMap(() => appConfig.status))
-    } else {
-      status$ = rxjs.of({})
-    }
-
-    status$ = rxjs
-      .combineLatest([
-        status$.pipe(
-          rx.filter(Boolean),
-          rx.catchError((err) => {
-            logger.error({ err }, 'monitor.status')
-            return rxjs.of([
-              {
-                id: 'app:user_monitor_status',
-                level: 50,
-                code: err.code,
-                msg: err.message,
-              },
-            ])
-          }),
-          rx.startWith([]),
-          rx.distinctUntilChanged(fp.isEqual),
-          rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
-        ),
-        toobusy
-          ? rxjs.timer(0, 1e3).pipe(
-              rx.map(() =>
-                toobusy.lag() > 1e3
-                  ? [
-                      {
-                        id: 'app:toobusy_lag',
-                        level: 40,
-                        code: 'NXT_LAG',
-                        msg: `lag: ${toobusy.lag()}`,
-                      },
-                    ]
-                  : []
-              ),
-              rx.startWith([]),
-              rx.distinctUntilChanged(fp.isEqual)
-            )
-          : rxjs.of({}),
-        couch
-          ? rxjs.timer(0, 10e3).pipe(
-              rx.exhaustMap(async () => {
-                try {
-                  await couch.info()
-                } catch (err) {
-                  return [
-                    {
-                      id: 'app:couch',
-                      level: 40,
-                      code: err.code,
-                      msg: 'couch: ' + err.message,
-                    },
-                  ]
-                }
-              }),
-              rx.startWith([]),
-              rx.distinctUntilChanged(fp.isEqual)
-            )
-          : rxjs.of({}),
-        ds
-          ? new rxjs.Observable((o) => {
-              const client = new undici.Client(`http://${new URL(ds._url || ds.url).host}`, {
-                keepAliveTimeout: 30e3,
-              })
-
-              const subscription = rxjs
-                .timer(0, 10e3)
-                .pipe(
-                  rx.exhaustMap(async () => {
-                    try {
-                      const { body } = await client.request({ method: 'GET', path: '/healthcheck' })
-                      await body.dump()
-                    } catch {
-                      try {
-                        const { body } = await client.request({
-                          method: 'GET',
-                          path: '/healthcheck',
-                        })
-                        await body.dump()
-                      } catch (err) {
-                        return {
-                          id: 'app:ds_http_connection',
-                          level: 40,
-                          code: err.code,
-                          msg: 'ds: ' + err.message,
-                        }
-                      }
-                    }
-                  })
-                )
-                .subscribe(o)
-
-              return () => {
-                client.destroy()
-                subscription.unsubscribe()
-              }
-            }).pipe(rx.startWith([]), rx.distinctUntilChanged(fp.isEqual))
-          : rxjs.of({}),
-        rxjs.timer(0, 10e3),
-      ])
-      .pipe(
-        rx.auditTime(1e3),
-        rx.map(([status, lag, couch, ds]) => {
-          const messages = [
-            lag,
-            couch,
-            ds,
-            [
-              status?.messages,
-              fp.map((x) => (fp.isString(x) ? { msg: x, level: 40 } : x), status?.warnings),
-              status,
-            ].find((x) => fp.isArray(x) && !fp.isEmpty(x)) ?? [],
-          ]
-            .flat()
-            .filter((x) => fp.isPlainObject(x) && !fp.isEmpty(x))
-            .map((message) =>
-              message.msg || !message.message
-                ? message
-                : {
-                    ...message,
-                    message: undefined,
-                    msg: message.message,
-                  }
-            )
-            .map((message) =>
-              message.id
-                ? message
-                : {
-                    ...message,
-                    id: hashString(
-                      [message.msg, message].find(fp.isString) ?? JSON.stringify(message)
-                    ),
-                  }
-            )
-
-          return { ...status, messages, timestamp: Date.now() }
-        }),
-        rx.catchError((err) => {
-          logger.error({ err }, 'monitor.status')
-          return rxjs.of({
-            messages: [{ id: 'app:monitor_status', level: 50, code: err.code, msg: err.message }],
-          })
-        }),
-        rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
-        rx.startWith({}),
-        rx.distinctUntilChanged(fp.isEqual),
-        rx.publishReplay(1),
-        rx.refCount()
-      )
-
-    const loggerSubscription = status$
-      .pipe(rx.pluck('messages'), rx.startWith([]), rx.pairwise())
-      .subscribe(([prev, next]) => {
-        for (const { level, msg, ...message } of fp.differenceBy('id', next, prev)) {
-          if (level >= 40) {
-            logger.info(message, `status added: ${msg}`)
-          }
-        }
-        for (const { level, msg, ...message } of fp.differenceBy('id', prev, next)) {
-          if (level >= 40) {
-            logger.info(message, `status removed: ${msg}`)
-          }
-        }
-      })
-
-    monitorProviders.status$ = status$
-
-    destroyers.push(() => {
-      loggerSubscription.unsubscribe()
-    })
-  }
-
+  let stats$
   if (appConfig.stats) {
     const v8 = require('v8')
     const rxjs = require('rxjs')
     const rx = require('rxjs/operators')
     const { eventLoopUtilization } = require('perf_hooks').performance
 
-    let stats$
     if (typeof appConfig.stats.subscribe === 'function') {
       stats$ = appConfig.stats
     } else if (typeof appConfig.stats === 'function') {
@@ -591,6 +395,252 @@ module.exports = function (appConfig, onTerminate) {
 
     destroyers.push(() => {
       subscription.unsubscribe()
+    })
+  }
+
+  let status$
+  if (appConfig.status) {
+    const rxjs = require('rxjs')
+    const rx = require('rxjs/operators')
+    const undici = require('undici')
+    const fp = require('lodash/fp')
+    const hashString = require('./hash')
+
+    if (appConfig.status.subscribe) {
+      status$ = appConfig.status
+    } else if (typeof appConfig.status === 'function') {
+      status$ = rxjs
+        .defer(() => {
+          const ret = appConfig.status({ ds, couch, logger })
+          return ret?.then || ret?.subscribe ? ret : rxjs.of(ret)
+        })
+        .pipe(
+          rx.catchError((err) => rxjs.of({ warnings: [err.message] })),
+          rx.repeatWhen(() => rxjs.timer(10e3))
+        )
+    } else if (appConfig.status && typeof appConfig.status === 'object') {
+      status$ = rxjs.timer(0, 10e3).pipe(rx.exhaustMap(() => appConfig.status))
+    } else {
+      status$ = rxjs.of({})
+    }
+
+    status$ = rxjs
+      .combineLatest(
+        [
+          status$.pipe(
+            rx.filter(Boolean),
+            rx.catchError((err) => {
+              logger.error({ err }, 'monitor.status')
+              return rxjs.of([
+                {
+                  id: 'app:user_monitor_status',
+                  level: 50,
+                  code: err.code,
+                  msg: err.message,
+                },
+              ])
+            }),
+            rx.startWith([]),
+            rx.distinctUntilChanged(fp.isEqual),
+            rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
+          ),
+          toobusy
+            ? rxjs.timer(0, 1e3).pipe(
+                rx.map(() =>
+                  toobusy.lag() > 1e3
+                    ? [
+                        {
+                          id: 'app:toobusy_lag',
+                          level: 40,
+                          code: 'NXT_LAG',
+                          msg: `lag: ${toobusy.lag()}`,
+                        },
+                      ]
+                    : []
+                ),
+                rx.startWith([]),
+                rx.distinctUntilChanged(fp.isEqual)
+              )
+            : rxjs.of({}),
+          couch
+            ? rxjs.timer(0, 10e3).pipe(
+                rx.exhaustMap(async () => {
+                  try {
+                    await couch.info()
+                  } catch (err) {
+                    return [
+                      {
+                        id: 'app:couch',
+                        level: 40,
+                        code: err.code,
+                        msg: 'couch: ' + err.message,
+                      },
+                    ]
+                  }
+                }),
+                rx.startWith([]),
+                rx.distinctUntilChanged(fp.isEqual)
+              )
+            : rxjs.of({}),
+          ds
+            ? new rxjs.Observable((o) => {
+                const client = new undici.Client(`http://${new URL(ds._url || ds.url).host}`, {
+                  keepAliveTimeout: 30e3,
+                })
+
+                const subscription = rxjs
+                  .timer(0, 10e3)
+                  .pipe(
+                    rx.exhaustMap(async () => {
+                      try {
+                        const { body } = await client.request({
+                          method: 'GET',
+                          path: '/healthcheck',
+                        })
+                        await body.dump()
+                      } catch {
+                        try {
+                          const { body } = await client.request({
+                            method: 'GET',
+                            path: '/healthcheck',
+                          })
+                          await body.dump()
+                        } catch (err) {
+                          return {
+                            id: 'app:ds_http_connection',
+                            level: 40,
+                            code: err.code,
+                            msg: 'ds: ' + err.message,
+                          }
+                        }
+                      }
+                    })
+                  )
+                  .subscribe(o)
+
+                return () => {
+                  client.destroy()
+                  subscription.unsubscribe()
+                }
+              }).pipe(rx.startWith([]), rx.distinctUntilChanged(fp.isEqual))
+            : rxjs.of({}),
+          rxjs.timer(0, 10e3),
+        ].filter(Boolean)
+      )
+      .pipe(
+        rx.auditTime(1e3),
+        rx.map(([status, lag, couch, ds]) => {
+          const messages = [
+            lag,
+            couch,
+            ds,
+            [
+              status?.messages,
+              fp.map((x) => (fp.isString(x) ? { msg: x, level: 40 } : x), status?.warnings),
+              status,
+            ].find((x) => fp.isArray(x) && !fp.isEmpty(x)) ?? [],
+          ]
+            .flat()
+            .filter((x) => fp.isPlainObject(x) && !fp.isEmpty(x))
+            .map((message) =>
+              message.msg || !message.message
+                ? message
+                : {
+                    ...message,
+                    message: undefined,
+                    msg: message.message,
+                  }
+            )
+            .map((message) =>
+              message.id
+                ? message
+                : {
+                    ...message,
+                    id: hashString(
+                      [message.msg, message].find(fp.isString) ?? JSON.stringify(message)
+                    ),
+                  }
+            )
+
+          if (ds && ds.stats.record.records > 100e3) {
+            messages.push({
+              id: 'app:ds',
+              level: 40,
+              code: 'NXT_DS_RECORDS',
+              msg: 'ds: ' + ds.stats.record.records + ' records',
+            })
+          }
+
+          if (ds && ds.stats.record.pruning > 100e3) {
+            messages.push({
+              id: 'app:ds',
+              level: 40,
+              code: 'NXT_DS_PRUNING',
+              msg: 'ds: ' + ds.stats.record.pruning + ' pruning',
+            })
+          }
+
+          if (ds && ds.stats.record.pending > 10e3) {
+            messages.push({
+              id: 'app:ds',
+              level: 40,
+              code: 'NXT_DS_PENDING',
+              msg: 'ds: ' + ds.stats.record.pending + ' pending',
+            })
+          }
+
+          if (ds && ds.stats.record.updating > 10e3) {
+            messages.push({
+              id: 'app:ds',
+              level: 40,
+              code: 'NXT_DS_UPDATING',
+              msg: 'ds: ' + ds.stats.record.updating + ' updating',
+            })
+          }
+
+          if (ds && ds.stats.record.patching > 10e3) {
+            messages.push({
+              id: 'app:ds',
+              level: 40,
+              code: 'NXT_DS_PATCHING',
+              msg: 'ds: ' + ds.stats.record.patching + ' patching',
+            })
+          }
+
+          return { ...status, messages, timestamp: Date.now() }
+        }),
+        rx.catchError((err) => {
+          logger.error({ err }, 'monitor.status')
+          return rxjs.of({
+            messages: [{ id: 'app:monitor_status', level: 50, code: err.code, msg: err.message }],
+          })
+        }),
+        rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
+        rx.startWith({}),
+        rx.distinctUntilChanged(fp.isEqual),
+        rx.publishReplay(1),
+        rx.refCount()
+      )
+
+    const loggerSubscription = status$
+      .pipe(rx.pluck('messages'), rx.startWith([]), rx.pairwise())
+      .subscribe(([prev, next]) => {
+        for (const { level, msg, ...message } of fp.differenceBy('id', next, prev)) {
+          if (level >= 40) {
+            logger.info(message, `status added: ${msg}`)
+          }
+        }
+        for (const { level, msg, ...message } of fp.differenceBy('id', prev, next)) {
+          if (level >= 40) {
+            logger.info(message, `status removed: ${msg}`)
+          }
+        }
+      })
+
+    monitorProviders.status$ = status$
+
+    destroyers.push(() => {
+      loggerSubscription.unsubscribe()
     })
   }
 
