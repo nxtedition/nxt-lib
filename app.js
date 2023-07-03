@@ -492,6 +492,53 @@ module.exports = function (appConfig, onTerminate) {
                   .timer(0, 10e3)
                   .pipe(
                     rx.exhaustMap(async () => {
+                      const messages = []
+
+                      if (ds.stats.record.records > 100e3) {
+                        messages.push({
+                          id: 'app:ds_record_records',
+                          level: 40,
+                          code: 'NXT_DEEPSTREAM_RECORDS_RECORDS',
+                          msg: 'ds: ' + ds.stats.record.records + ' records',
+                        })
+                      }
+
+                      if (ds.stats.record.pruning > 100e3) {
+                        messages.push({
+                          id: 'app:ds_record_pruning',
+                          level: 40,
+                          code: 'NXT_DEEPSTREAM_RECORDS_PRUNING',
+                          msg: 'ds: ' + ds.stats.record.pruning + ' pruning',
+                        })
+                      }
+
+                      if (ds.stats.record.pending > 10e3) {
+                        messages.push({
+                          id: 'app:ds_record_pending',
+                          level: 40,
+                          code: 'NXT_DEEPSTREAM_RECORDS_PENDING',
+                          msg: 'ds: ' + ds.stats.record.pending + ' pending',
+                        })
+                      }
+
+                      if (ds.stats.record.updating > 10e3) {
+                        messages.push({
+                          id: 'app:ds_record_updating',
+                          level: 40,
+                          code: 'NXT_DEEPSTREAM_RECORDS_UPDATING',
+                          msg: 'ds: ' + ds.stats.record.updating + ' updating',
+                        })
+                      }
+
+                      if (ds.stats.record.patching > 10e3) {
+                        messages.push({
+                          id: 'app:ds_record_patching',
+                          level: 40,
+                          code: 'NXT_DEEPSTREAM_RECORDS_PATCHING',
+                          msg: 'ds: ' + ds.stats.record.patching + ' patching',
+                        })
+                      }
+
                       try {
                         const { body } = await client.request({
                           method: 'GET',
@@ -506,14 +553,16 @@ module.exports = function (appConfig, onTerminate) {
                           })
                           await body.dump()
                         } catch (err) {
-                          return {
+                          messages.push({
                             id: 'app:ds_http_connection',
                             level: 40,
                             code: err.code,
                             msg: 'ds: ' + err.message,
-                          }
+                          })
                         }
                       }
+
+                      return messages
                     })
                   )
                   .subscribe(o)
@@ -561,51 +610,6 @@ module.exports = function (appConfig, onTerminate) {
                     ),
                   }
             )
-
-          if (ds && ds.stats.record.records > 100e3) {
-            messages.push({
-              id: 'app:ds',
-              level: 40,
-              code: 'NXT_DS_RECORDS',
-              msg: 'ds: ' + ds.stats.record.records + ' records',
-            })
-          }
-
-          if (ds && ds.stats.record.pruning > 100e3) {
-            messages.push({
-              id: 'app:ds',
-              level: 40,
-              code: 'NXT_DS_PRUNING',
-              msg: 'ds: ' + ds.stats.record.pruning + ' pruning',
-            })
-          }
-
-          if (ds && ds.stats.record.pending > 10e3) {
-            messages.push({
-              id: 'app:ds',
-              level: 40,
-              code: 'NXT_DS_PENDING',
-              msg: 'ds: ' + ds.stats.record.pending + ' pending',
-            })
-          }
-
-          if (ds && ds.stats.record.updating > 10e3) {
-            messages.push({
-              id: 'app:ds',
-              level: 40,
-              code: 'NXT_DS_UPDATING',
-              msg: 'ds: ' + ds.stats.record.updating + ' updating',
-            })
-          }
-
-          if (ds && ds.stats.record.patching > 10e3) {
-            messages.push({
-              id: 'app:ds',
-              level: 40,
-              code: 'NXT_DS_PATCHING',
-              msg: 'ds: ' + ds.stats.record.patching + ' patching',
-            })
-          }
 
           return { ...status, messages, timestamp: Date.now() }
         }),
