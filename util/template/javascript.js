@@ -119,6 +119,7 @@ function pipe(value, ...fns) {
 
 const globals = {
   fp: require('lodash/fp'),
+  _: require('lodash'),
   moment: require('moment-timezone'),
   Timecode: require('smpte-timecode'),
   datefns,
