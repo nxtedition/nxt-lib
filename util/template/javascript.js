@@ -120,6 +120,7 @@ function pipe(value, ...fns) {
 const globals = {
   fp: require('lodash/fp'),
   moment: require('moment-timezone'),
+  Timecode: require('smpte-timecode'),
   datefns,
   JSON5,
   pipe,
