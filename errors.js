@@ -143,6 +143,15 @@ module.exports.makeMessages = function makeMessages(error, options) {
               : null
             : null,
       }
+    } else {
+      err = {
+        msg: 'Unknown Error',
+        titlte: 'UnknownError',
+        id: 'unknown_error',
+        level: 50,
+        code: 'NXT_UNKNOWN_ERROR',
+        data: error,
+      }
     }
 
     return [
