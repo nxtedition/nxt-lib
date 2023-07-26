@@ -218,6 +218,7 @@ module.exports = {
       id: ures.id || getHeader(ures, 'request-id') || getHeader(ures.req, 'request-id'),
       statusCode: ures.statusCode ?? ures.status,
       bytesRead: ures.bytesRead,
+      body: typeof ures.body === 'string' ? ures.body : null,
       headers: getHeaders(ures),
     },
   ureq: (ureq) => {
@@ -241,6 +242,7 @@ module.exports = {
       id: ureq.id || getHeader(ureq, 'request-id'),
       method: ureq.method,
       url,
+      body: typeof ureq.body === 'string' ? ureq.body : null,
       bytesWritten: ureq.bytesWritten,
       headers: getHeaders(ureq),
       query: ureq.query,
