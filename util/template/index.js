@@ -1,5 +1,5 @@
 const rx = require('rxjs/operators')
-const Observable = require('rxjs')
+const rxjs = require('rxjs')
 const fp = require('lodash/fp')
 const getNxtpressionsCompiler = require('./nextpressions')
 const getJavascriptCompiler = require('./javascript')
@@ -22,53 +22,95 @@ module.exports = (options) => {
     try {
       return compileObjectTemplate(obj)(...args)
     } catch (err) {
-      return Observable.throwError(err)
+      return rxjs.throwError(err)
     }
   }
 
-  // TODO (perf): Optimize...
-  const compileArrayTemplate = weakCache(function compileArrayTemplate(arr) {
+  const compileArrayTemplateLazy = weakCache(function compileArrayTemplateLazy(arr) {
     if (!fp.isArray(arr)) {
       throw new Error('invalid argument')
     }
 
     if (arr.length === 0) {
-      return () => Observable.of([])
+      return null
     }
 
-    const resolvers = arr.map((template) => compileTemplate(template))
+    let resolvers
+    let indices
 
-    return (...args) => Observable.combineLatest(resolvers.map((resolver) => resolver(...args)))
-  })
-
-  // TODO (perf): Optimize...
-  const compileObjectTemplate = weakCache(function compileObjectTemplate(obj) {
-    if (!fp.isPlainObject(obj)) {
-      throw new Error('invalid argument')
+    for (let i = 0; i < arr.length; i++) {
+      const val = arr[i]
+      const resolver = compileTemplateLazy(val)
+      if (resolver !== val) {
+        resolvers ??= []
+        resolvers.push(resolver)
+        indices ??= []
+        indices.push(i)
+      }
     }
 
-    const xs = []
-    for (const key of Object.keys(obj)) {
-      xs.push(key, obj[key])
+    if (!resolvers) {
+      return arr
     }
-
-    if (xs.length === 0) {
-      return () => Observable.of({})
-    }
-
-    const resolvers = xs.map((template) => compileTemplate(template))
 
     return (...args) =>
-      Observable.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
-        rx.map((ys) => {
-          const ret = {}
-          for (let n = 0; n < ys.length; n += 2) {
-            ret[ys[n + 0]] = ys[n + 1]
+      rxjs.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
+        rx.map((values) => {
+          const ret = [...arr]
+          for (let n = 0; n < values.length; n++) {
+            ret[indices[n]] = values[n]
           }
           return ret
         })
       )
   })
+
+  function compileArrayTemplate(arr) {
+    const ret = compileArrayTemplateLazy(arr)
+    return ret !== arr ? ret : () => rxjs.of(arr)
+  }
+
+  const compileObjectTemplateLazy = weakCache(function compileObjectTemplateLazy(obj) {
+    if (!fp.isPlainObject(obj)) {
+      throw new Error('invalid argument')
+    }
+
+    let resolvers
+    let indices
+
+    const keys = Object.keys(obj)
+
+    for (let i = 0; i < keys.length; i++) {
+      const val = obj[keys[i]]
+      const resolver = compileTemplateLazy(val)
+      if (resolver !== val) {
+        resolvers ??= []
+        resolvers.push(resolver)
+        indices ??= []
+        indices.push(keys[i])
+      }
+    }
+
+    if (!resolvers) {
+      return obj
+    }
+
+    return (...args) =>
+      rxjs.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
+        rx.map((values) => {
+          const ret = { ...obj }
+          for (let n = 0; n < values.length; n++) {
+            ret[indices[n]] = values[n]
+          }
+          return ret
+        })
+      )
+  })
+
+  function compileObjectTemplate(obj) {
+    const ret = compileObjectTemplateLazy(obj)
+    return ret !== obj ? ret : () => rxjs.of(obj)
+  }
 
   function inner(str) {
     const templateStart = str.lastIndexOf('{{')
@@ -98,7 +140,7 @@ module.exports = (options) => {
     }
   }
 
-  const compileStringTemplate = weakCache(function compileStringTemplate(str) {
+  const compileStringTemplateLazy = weakCache(function compileStringTemplatLazy(str) {
     if (!fp.isString(str)) {
       throw new Error('invalid argument')
     }
@@ -106,7 +148,7 @@ module.exports = (options) => {
     const match = inner(str)
 
     if (!match) {
-      return () => Observable.of(str)
+      return str
     }
 
     const { pre, type, body, post } = match
@@ -130,6 +172,11 @@ module.exports = (options) => {
       )
   })
 
+  const compileStringTemplate = function compileStringTemplate(str) {
+    const ret = compileStringTemplateLazy(str)
+    return ret !== str ? ret : () => rxjs.of(str)
+  }
+
   function stringify(value, escape) {
     if (value == null) {
       return ''
@@ -145,6 +192,18 @@ module.exports = (options) => {
     return typeof val === 'string' && val.indexOf('{{') !== -1
   }
 
+  function compileTemplateLazy(template) {
+    if (fp.isPlainObject(template)) {
+      return compileObjectTemplateLazy(template)
+    } else if (fp.isArray(template)) {
+      return compileArrayTemplateLazy(template)
+    } else if (fp.isString(template)) {
+      return compileStringTemplateLazy(template)
+    } else {
+      return null
+    }
+  }
+
   function compileTemplate(template) {
     if (fp.isPlainObject(template)) {
       return compileObjectTemplate(template)
@@ -153,7 +212,7 @@ module.exports = (options) => {
     } else if (fp.isString(template)) {
       return compileStringTemplate(template)
     } else {
-      return () => Observable.of(template)
+      return () => rxjs.of(template)
     }
   }
 
@@ -165,13 +224,13 @@ module.exports = (options) => {
 
   function onResolveTemplate(str, ...args) {
     if (fp.isString(str) && str.lastIndexOf('{{') === -1) {
-      return Observable.of(str)
+      return rxjs.of(str)
     }
 
     try {
       return compileTemplate(str)(...args)
     } catch (err) {
-      return Observable.throwError(err)
+      return rxjs.throwError(err)
     }
   }
 

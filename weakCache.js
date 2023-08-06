@@ -18,8 +18,10 @@ module.exports = function weakCache(valueSelector, keySelector) {
       }
     }
     const value = valueSelector(...args)
-    cache.set(key, new WeakRef(value))
-    finalizationRegistry.register(value, key)
+    if (value != null) {
+      cache.set(key, new WeakRef(value))
+      finalizationRegistry.register(value, key)
+    }
     return value
   }
 }
