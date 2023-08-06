@@ -22,7 +22,7 @@ module.exports = (options) => {
     try {
       return compileObjectTemplate(obj)(...args)
     } catch (err) {
-      return rxjs.throwError(err)
+      return rxjs.throwError(() => err)
     }
   }
 
@@ -224,7 +224,7 @@ module.exports = (options) => {
     try {
       return compileTemplate(str)(...args)
     } catch (err) {
-      return rxjs.throwError(err)
+      return rxjs.throwError(() => err)
     }
   }
 
