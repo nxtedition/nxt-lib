@@ -26,22 +26,17 @@ module.exports = (options) => {
     }
   }
 
-  const compileArrayTemplateLazy = weakCache(function compileArrayTemplateLazy(arr) {
+  const compileArrayTemplateLazy = (arr) => {
     if (!fp.isArray(arr)) {
       throw new Error('invalid argument')
-    }
-
-    if (arr.length === 0) {
-      return null
     }
 
     let resolvers
     let indices
 
     for (let i = 0; i < arr.length; i++) {
-      const val = arr[i]
-      const resolver = compileTemplateLazy(val)
-      if (resolver !== val) {
+      const resolver = compileTemplateLazy(arr[i])
+      if (resolver) {
         resolvers ??= []
         resolvers.push(resolver)
         indices ??= []
@@ -50,7 +45,7 @@ module.exports = (options) => {
     }
 
     if (!resolvers) {
-      return arr
+      return null
     }
 
     return (...args) =>
@@ -63,14 +58,13 @@ module.exports = (options) => {
           return ret
         })
       )
-  })
-
-  function compileArrayTemplate(arr) {
-    const ret = compileArrayTemplateLazy(arr)
-    return ret !== arr ? ret : () => rxjs.of(arr)
   }
 
-  const compileObjectTemplateLazy = weakCache(function compileObjectTemplateLazy(obj) {
+  const compileArrayTemplate = weakCache(function compileArrayTemplate(arr) {
+    return compileArrayTemplateLazy(arr) ?? (() => rxjs.of(arr))
+  })
+
+  const compileObjectTemplateLazy = (obj) => {
     if (!fp.isPlainObject(obj)) {
       throw new Error('invalid argument')
     }
@@ -81,9 +75,8 @@ module.exports = (options) => {
     const keys = Object.keys(obj)
 
     for (let i = 0; i < keys.length; i++) {
-      const val = obj[keys[i]]
-      const resolver = compileTemplateLazy(val)
-      if (resolver !== val) {
+      const resolver = compileTemplateLazy(obj[keys[i]])
+      if (resolver) {
         resolvers ??= []
         resolvers.push(resolver)
         indices ??= []
@@ -92,7 +85,7 @@ module.exports = (options) => {
     }
 
     if (!resolvers) {
-      return obj
+      return null
     }
 
     return (...args) =>
@@ -105,12 +98,11 @@ module.exports = (options) => {
           return ret
         })
       )
-  })
-
-  function compileObjectTemplate(obj) {
-    const ret = compileObjectTemplateLazy(obj)
-    return ret !== obj ? ret : () => rxjs.of(obj)
   }
+
+  const compileObjectTemplate = weakCache(function compileObjectTemplate(obj) {
+    return compileObjectTemplateLazy(obj) ?? (() => rxjs.of(obj))
+  })
 
   function inner(str) {
     const templateStart = str.lastIndexOf('{{')
@@ -148,7 +140,7 @@ module.exports = (options) => {
     const match = inner(str)
 
     if (!match) {
-      return str
+      return null
     }
 
     const { pre, type, body, post } = match
@@ -173,8 +165,7 @@ module.exports = (options) => {
   })
 
   const compileStringTemplate = function compileStringTemplate(str) {
-    const ret = compileStringTemplateLazy(str)
-    return ret !== str ? ret : () => rxjs.of(str)
+    return compileStringTemplateLazy(str) ?? (() => rxjs.of(str))
   }
 
   function stringify(value, escape) {
