@@ -125,6 +125,7 @@ module.exports = (options) => {
     }
 
     return {
+      input: str,
       pre: str.slice(0, templateStart),
       type,
       body: str.slice(bodyStart, bodyEnd),
@@ -132,39 +133,41 @@ module.exports = (options) => {
     }
   }
 
-  const compileStringTemplateLazy = weakCache(function compileStringTemplatLazy(str) {
+  const _compileStringTemplate = weakCache(
+    function _compileStringTemplate(match) {
+      const { pre, type, body, post } = match
+
+      const compileExpression = compilers[type]
+      if (!compileExpression) {
+        throw new Error('unknown expression type')
+      }
+
+      const expr = compileExpression(body)
+
+      if (!pre && !post) {
+        return expr
+      }
+
+      return (...args) =>
+        expr(...args).pipe(
+          rx.switchMap((body) =>
+            compileStringTemplate(`${pre}${stringify(body, type !== 'js')}${post}`)(...args)
+          )
+        )
+    },
+    (match) => match.input
+  )
+
+  function compileStringTemplateLazy(str) {
     if (!fp.isString(str)) {
       throw new Error('invalid argument')
     }
 
     const match = inner(str)
+    return match ? _compileStringTemplate(str, match) : null
+  }
 
-    if (!match) {
-      return null
-    }
-
-    const { pre, type, body, post } = match
-
-    const compileExpression = compilers[type]
-    if (!compileExpression) {
-      throw new Error('unknown expression type')
-    }
-
-    const expr = compileExpression(body)
-
-    if (!pre && !post) {
-      return expr
-    }
-
-    return (...args) =>
-      expr(...args).pipe(
-        rx.switchMap((body) =>
-          compileStringTemplate(`${pre}${stringify(body, type !== 'js')}${post}`)(...args)
-        )
-      )
-  })
-
-  const compileStringTemplate = function compileStringTemplate(str) {
+  function compileStringTemplate(str) {
     return compileStringTemplateLazy(str) ?? (() => rxjs.of(str))
   }
 
