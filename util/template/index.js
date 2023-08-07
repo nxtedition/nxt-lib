@@ -37,27 +37,25 @@ module.exports = (options) => {
     for (let i = 0; i < arr.length; i++) {
       const resolver = compileTemplateLazy(arr[i])
       if (resolver) {
-        resolvers ??= []
+        resolvers ??= [() => rxjs.of({ indices, arr })]
         resolvers.push(resolver)
         indices ??= []
         indices.push(i)
       }
     }
 
-    if (!resolvers) {
-      return null
-    }
-
-    return (...args) =>
-      rxjs.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
-        rx.map((values) => {
-          const ret = [...arr]
-          for (let n = 0; n < values.length; n++) {
-            ret[indices[n]] = values[n]
-          }
-          return ret
-        })
-      )
+    return resolvers
+      ? (...args) =>
+          rxjs.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
+            rx.map((values) => {
+              const ret = [...arr]
+              for (let n = 0; n < values.length; n++) {
+                ret[indices[n]] = values[n]
+              }
+              return ret
+            })
+          )
+      : null
   }
 
   const compileArrayTemplate = weakCache(function compileArrayTemplate(arr) {
@@ -84,20 +82,18 @@ module.exports = (options) => {
       }
     }
 
-    if (!resolvers) {
-      return null
-    }
-
-    return (...args) =>
-      rxjs.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
-        rx.map((values) => {
-          const ret = { ...obj }
-          for (let n = 0; n < values.length; n++) {
-            ret[indices[n]] = values[n]
-          }
-          return ret
-        })
-      )
+    return resolvers
+      ? (...args) =>
+          rxjs.combineLatest(resolvers.map((resolver) => resolver(...args))).pipe(
+            rx.map((values) => {
+              const ret = { ...obj }
+              for (let n = 0; n < values.length; n++) {
+                ret[indices[n]] = values[n]
+              }
+              return ret
+            })
+          )
+      : null
   }
 
   const compileObjectTemplate = weakCache(function compileObjectTemplate(obj) {
@@ -133,30 +129,27 @@ module.exports = (options) => {
     }
   }
 
-  const _compileStringTemplate = weakCache(
-    function _compileStringTemplate(match) {
-      const { pre, type, body, post } = match
+  const _compileStringTemplate = weakCache(function _compileStringTemplate(str, match) {
+    const { pre, type, body, post } = match
 
-      const compileExpression = compilers[type]
-      if (!compileExpression) {
-        throw new Error('unknown expression type')
-      }
+    const compileExpression = compilers[type]
+    if (!compileExpression) {
+      throw new Error('unknown expression type: ' + type)
+    }
 
-      const expr = compileExpression(body)
+    const expr = compileExpression(body)
 
-      if (!pre && !post) {
-        return expr
-      }
+    if (!pre && !post) {
+      return expr
+    }
 
-      return (...args) =>
-        expr(...args).pipe(
-          rx.switchMap((body) =>
-            compileStringTemplate(`${pre}${stringify(body, type !== 'js')}${post}`)(...args)
-          )
+    return (...args) =>
+      expr(...args).pipe(
+        rx.switchMap((body) =>
+          compileStringTemplate(`${pre}${stringify(body, type !== 'js')}${post}`)(...args)
         )
-    },
-    (match) => match.input
-  )
+      )
+  })
 
   function compileStringTemplateLazy(str) {
     if (!fp.isString(str)) {
