@@ -128,9 +128,10 @@ module.exports = (options) => {
     }
 
     return expr(args$).pipe(
-      rx.switchMap((body) =>
-        compileStringTemplate(`${pre}${stringify(body, type !== 'js')}${post}`, args$)
-      )
+      rx.switchMap((body) => {
+        const str = `${pre}${stringify(body, type !== 'js')}${post}`
+        return compileStringTemplate(str, args$) ?? rxjs.of(str)
+      })
     )
   }
 
