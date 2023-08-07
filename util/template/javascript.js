@@ -141,6 +141,8 @@ function proxyify(value, expression) {
   }
 }
 
+const MAP_POOL = []
+
 module.exports = ({ ds, ...options }) => {
   class Expression {
     constructor(context, script, expression, args, observer) {
@@ -151,7 +153,7 @@ module.exports = ({ ds, ...options }) => {
 
       // TODO (perf): This could be faster by using an array + indices.
       // A bit similar to how react-hooks works.
-      this._entries = new Map()
+      this._entries = null
       this._refreshing = false
       this._counter = 0
       this._value = kEmpty
@@ -159,7 +161,7 @@ module.exports = ({ ds, ...options }) => {
       this._destroyed = false
       this._subscription = null
       this._args = null
-      this._hasArgs = false
+      this._ready = false
       this._handler = {
         get: (target, prop) => proxyify(target[prop], this),
       }
@@ -169,16 +171,20 @@ module.exports = ({ ds, ...options }) => {
         this._subscription = args.subscribe({
           next: (args) => {
             this._args = this._proxify ? proxyify(args, this) : args
-            this._hasArgs = true
+            this._ready = true
             this._refresh()
           },
           error: (err) => {
             this._observer.error(err)
+            this._subscription = null
+          },
+          complete: () => {
+            this._subscription = null
           },
         })
       } else {
         this._args = this._proxify ? proxyify(args, this) : args
-        this._hasArgs = true
+        this._ready = true
       }
 
       this._refreshNT(this)
@@ -231,16 +237,25 @@ module.exports = ({ ds, ...options }) => {
     _destroy() {
       this._destroyed = true
       this._subscription?.unsubscribe()
-      for (const entry of this._entries.values()) {
-        entry.dispose()
+
+      if (this._entries) {
+        for (const entry of this._entries.values()) {
+          entry.dispose()
+        }
+        this._entries.clear()
+
+        if (MAP_POOL.length < 1024) {
+          MAP_POOL.push(this._entries)
+        }
+
+        this._entries = null
       }
-      this._entries.clear()
     }
 
     _refreshNT(self) {
       self._refreshing = false
 
-      if (self._destroyed || self._disposing || !self._hasArgs) {
+      if (self._destroyed || self._disposing || !self._ready) {
         return
       }
 
@@ -271,18 +286,29 @@ module.exports = ({ ds, ...options }) => {
         self._context.nxt = null
 
         self._disposing = true
-        for (const entry of self._entries.values()) {
-          if (entry.counter !== self._counter) {
-            entry.dispose()
-            self._entries.delete(entry.key)
+
+        if (self._entries) {
+          for (const entry of self._entries.values()) {
+            if (entry.counter !== self._counter) {
+              entry.dispose()
+              self._entries.delete(entry.key)
+            }
+          }
+          if (self._entries.size === 0) {
+            self._entries = null
           }
         }
+
+        if (!self._entries) {
+          self._args = null
+        }
+
         self._disposing = false
       }
     }
 
     _refresh = () => {
-      if (this._refreshing || this._destroyed || this._disposing || !this._hasArgs) {
+      if (this._refreshing || this._destroyed || this._disposing || !this._ready) {
         return
       }
 
@@ -291,6 +317,7 @@ module.exports = ({ ds, ...options }) => {
     }
 
     _getEntry(key, Entry, opaque) {
+      this._entries ??= MAP_POOL.pop() ?? new Map()
       let entry = this._entries.get(key)
       if (!entry) {
         entry = new Entry(key, this._refresh, opaque)
