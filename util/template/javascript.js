@@ -19,6 +19,9 @@ class TimerEntry {
 
   dispose() {
     clearTimeout(this.timer)
+
+    this.refresh = null
+    this.timer = null
   }
 }
 
@@ -28,6 +31,7 @@ class FetchEntry {
     this.counter = null
     this.refresh = refresh
     this.ac = new AbortController()
+    this.signal = this.ac.signal
     this.body = null
     this.status = null
     this.options = options
@@ -38,22 +42,28 @@ class FetchEntry {
     // TODO (fix): expire...
 
     undici
-      .fetch(resource, { ...this.options, signal: this.ac.signal })
+      .fetch(resource, { ...this.options, signal: this.signal })
       .then(async (res) => {
-        // TODO (fix): max size...
-        this.body = Buffer.from(await res.arrayBuffer())
-        this.status = res.status
-        this.headers = res.headers
-        this.refresh()
+        if (!this.signal.aborted) {
+          // TODO (fix): max size...
+          this.body = Buffer.from(await res.arrayBuffer())
+          this.status = res.status
+          this.headers = res.headers
+          this.refresh()
+        }
       })
       .catch((err) => {
-        this.error = err
-        this.refresh()
+        if (!this.signal.aborted) {
+          this.error = err
+          this.refresh()
+        }
       })
   }
 
   dispose() {
     this.ac.abort()
+
+    this.refresh = null
   }
 }
 
@@ -78,7 +88,9 @@ class RecordEntry {
     } else {
       this.record.off('update', this.refresh)
     }
+
     this.record = null
+    this.refresh = null
   }
 }
 
