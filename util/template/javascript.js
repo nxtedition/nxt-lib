@@ -186,9 +186,8 @@ module.exports = ({ ds, ...options }) => {
       } else {
         this._args = this._handler ? proxyify(args, this) : args
         this._ready = true
+        this._refreshNT(this)
       }
-
-      this._refreshNT(this)
     }
 
     suspend() {
