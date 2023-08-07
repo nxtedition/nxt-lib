@@ -3,7 +3,6 @@ const rxjs = require('rxjs')
 const fp = require('lodash/fp')
 const getNxtpressionsCompiler = require('./nextpressions')
 const getJavascriptCompiler = require('./javascript')
-const weakCache = require('../../weakCache')
 const JSON5 = require('json5')
 
 module.exports = (options) => {
@@ -76,7 +75,7 @@ module.exports = (options) => {
       : null
   }
 
-  const inner = weakCache(function inner(str) {
+  const inner = function inner(str) {
     const templateStart = str.lastIndexOf('{{')
     if (templateStart === -1) {
       return null
@@ -103,7 +102,7 @@ module.exports = (options) => {
       body: str.slice(bodyStart, bodyEnd),
       post: str.slice(templateEnd),
     }
-  })
+  }
 
   function compileStringTemplate(str, args$) {
     if (!fp.isString(str)) {
