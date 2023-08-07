@@ -300,9 +300,10 @@ module.exports = ({ ds, ...options }) => {
           }
         }
 
-        if (!self._entries) {
-          self._args = null
-        }
+        // TODO (perf): Make this work.
+        // if (!self._entries) {
+        //   self._args = null
+        // }
 
         self._disposing = false
       }
