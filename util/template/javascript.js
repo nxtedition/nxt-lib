@@ -162,15 +162,16 @@ module.exports = ({ ds, ...options }) => {
       this._subscription = null
       this._args = null
       this._ready = false
-      this._handler = {
-        get: (target, prop) => proxyify(target[prop], this),
-      }
-      this._proxify = Boolean(options.proxyify)
+      this._handler = options.proxyify
+        ? {
+            get: (target, prop) => proxyify(target[prop], this),
+          }
+        : null
 
       if (rxjs.isObservable(args)) {
         this._subscription = args.subscribe({
           next: (args) => {
-            this._args = this._proxify ? proxyify(args, this) : args
+            this._args = this._handler ? proxyify(args, this) : args
             this._ready = true
             this._refresh()
           },
@@ -183,7 +184,7 @@ module.exports = ({ ds, ...options }) => {
           },
         })
       } else {
-        this._args = this._proxify ? proxyify(args, this) : args
+        this._args = this._handler ? proxyify(args, this) : args
         this._ready = true
       }
 
