@@ -218,7 +218,7 @@ module.exports = (options) => {
     return typeof val === 'string' && val.indexOf('{{') !== -1
   }
 
-  function compileTemplate(template, args$ = null) {
+  function compileTemplate(template) {
     if (fp.isPlainObject(template)) {
       return compileObjectTemplate(template)
     } else if (fp.isArray(template)) {
