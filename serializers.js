@@ -173,6 +173,8 @@ function errSerializer(err) {
         if (key !== 'cause' && !Object.prototype.hasOwnProperty.call(val, seen)) {
           _err[key] = errSerializer(val)
         }
+      } else if (key === 'data' && typeof val !== 'string') {
+        _err[key] = JSON.stringify(val)
       } else {
         _err[key] = val
       }
