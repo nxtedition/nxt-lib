@@ -44,7 +44,7 @@ module.exports = function ({
     traceData = ''
 
     if (pending > limit / 4) {
-      logger.warn('throttling')
+      logger.warn('throttling tracing')
       if (pending > limit) {
         sleep(1000)
       } else if (pending > limit / 2) {
