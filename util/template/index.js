@@ -196,12 +196,7 @@ module.exports = (options) => {
       }
 
       return (args$) =>
-        expr(args$).pipe(
-          rx.switchMap((body) => {
-            const str = `${pre}${stringify(body, type !== 'js')}${post}`
-            return compileStringTemplate(str)?.(args$) ?? rxjs.of(str)
-          })
-        )
+        expr(args$).pipe(rx.map((body) => `${pre}${stringify(body, type !== 'js')}${post}`))
     },
     (str, hash) => hash ?? hashTemplate(str)
   )
