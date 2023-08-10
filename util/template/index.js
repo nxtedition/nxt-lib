@@ -71,8 +71,8 @@ module.exports = (options) => {
   }
 
   const _compileArrayTemplate = weakCache(
-    (arr, hash) => {
-      if (!fp.isArray(arr)) {
+    (template, hash) => {
+      if (!fp.isArray(template)) {
         throw new Error('invalid argument')
       }
 
@@ -83,8 +83,8 @@ module.exports = (options) => {
       let resolvers
       let indices
 
-      for (let i = 0; i < arr.length; i++) {
-        const resolver = compileTemplate(arr[i])
+      for (let i = 0; i < template.length; i++) {
+        const resolver = compileTemplate(template[i])
         if (resolver) {
           resolvers ??= []
           resolvers.push(resolver)
@@ -94,8 +94,14 @@ module.exports = (options) => {
       }
 
       return resolvers
-        ? (args$) =>
-            rxjs.combineLatest(resolvers.map((resolver) => resolver(args$))).pipe(
+        ? (arr, args$) => {
+            const len = resolvers.length
+            const values = new Array(len)
+            for (let n = 0; n < len; n++) {
+              values[n] = resolvers[n](arr[indices[n]], args$)
+            }
+
+            return rxjs.combineLatest(values).pipe(
               rx.map((values) => {
                 const ret = [...arr]
                 for (let n = 0; n < values.length; n++) {
@@ -104,22 +110,23 @@ module.exports = (options) => {
                 return ret
               })
             )
+          }
         : null
     },
     (arr, hash) => hash ?? hashTemplate(arr)
   )
 
-  const compileArrayTemplate = (arr) => {
-    if (!fp.isArray(arr)) {
+  const compileArrayTemplate = (template) => {
+    if (!fp.isArray(template)) {
       throw new Error('invalid argument')
     }
-    const hash = hashTemplate(arr)
-    return hash ? _compileArrayTemplate(arr, hash) : null
+    const hash = hashTemplate(template)
+    return hash ? _compileArrayTemplate(template, hash) : null
   }
 
   const _compileObjectTemplate = weakCache(
-    (obj, hash) => {
-      if (!fp.isPlainObject(obj)) {
+    (template, hash) => {
+      if (!fp.isPlainObject(template)) {
         throw new Error('invalid argument')
       }
 
@@ -130,10 +137,10 @@ module.exports = (options) => {
       let resolvers
       let indices
 
-      const keys = Object.keys(obj)
+      const keys = Object.keys(template)
 
       for (let i = 0; i < keys.length; i++) {
-        const resolver = compileTemplate(obj[keys[i]])
+        const resolver = compileTemplate(template[keys[i]])
         if (resolver) {
           resolvers ??= []
           resolvers.push(resolver)
@@ -143,8 +150,14 @@ module.exports = (options) => {
       }
 
       return resolvers
-        ? (args$) =>
-            rxjs.combineLatest(resolvers.map((resolver) => resolver(args$))).pipe(
+        ? (obj, args$) => {
+            const len = resolvers.length
+            const values = new Array(len)
+            for (let n = 0; n < len; n++) {
+              values[n] = resolvers[n](obj[indices[n]], args$)
+            }
+
+            return rxjs.combineLatest(values).pipe(
               rx.map((values) => {
                 const ret = { ...obj }
                 for (let n = 0; n < values.length; n++) {
@@ -153,23 +166,24 @@ module.exports = (options) => {
                 return ret
               })
             )
+          }
         : null
     },
     (obj, hash) => hash ?? hashTemplate(obj)
   )
 
-  const compileObjectTemplate = (obj) => {
-    if (!fp.isPlainObject(obj)) {
+  const compileObjectTemplate = (template) => {
+    if (!fp.isPlainObject(template)) {
       throw new Error('invalid argument')
     }
 
-    const hash = hashTemplate(obj)
-    return hash ? _compileObjectTemplate(obj, hash) : null
+    const hash = hashTemplate(template)
+    return hash ? _compileObjectTemplate(template, hash) : null
   }
 
   const _compileStringTemplate = weakCache(
-    (str, hash) => {
-      if (!fp.isString(str)) {
+    (template, hash) => {
+      if (!fp.isString(template)) {
         throw new Error('invalid argument')
       }
 
@@ -177,7 +191,7 @@ module.exports = (options) => {
         return null
       }
 
-      const match = inner(str)
+      const match = inner(template)
       if (!match) {
         return null
       }
@@ -192,22 +206,22 @@ module.exports = (options) => {
       const expr = compileExpression(body)
 
       if (!pre && !post) {
-        return (args$) => expr(args$)
+        return (str, args$) => expr(args$)
       }
 
-      return (args$) =>
+      return (str, args$) =>
         expr(args$).pipe(rx.map((body) => `${pre}${stringify(body, type !== 'js')}${post}`))
     },
     (str, hash) => hash ?? hashTemplate(str)
   )
 
-  const compileStringTemplate = (obj) => {
-    if (!fp.isString(obj)) {
+  const compileStringTemplate = (template) => {
+    if (!fp.isString(template)) {
       throw new Error('invalid argument')
     }
 
-    const hash = hashTemplate(obj)
-    return hash ? _compileStringTemplate(obj, hash) : null
+    const hash = hashTemplate(template)
+    return hash ? _compileStringTemplate(template, hash) : null
   }
 
   function stringify(value, escape) {
@@ -243,7 +257,7 @@ module.exports = (options) => {
 
   function onResolveTemplate(template, args$) {
     try {
-      return compileTemplate(template)?.(args$) ?? rxjs.of(template)
+      return compileTemplate(template)?.(template, args$) ?? rxjs.of(template)
     } catch (err) {
       return rxjs.throwError(() => err)
     }
