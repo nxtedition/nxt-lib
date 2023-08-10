@@ -76,6 +76,10 @@ module.exports = (options) => {
         throw new Error('invalid argument')
       }
 
+      if (!hash) {
+        return null
+      }
+
       let resolvers
       let indices
 
@@ -114,9 +118,13 @@ module.exports = (options) => {
   }
 
   const _compileObjectTemplate = weakCache(
-    (obj) => {
+    (obj, hash) => {
       if (!fp.isPlainObject(obj)) {
         throw new Error('invalid argument')
+      }
+
+      if (!hash) {
+        return null
       }
 
       let resolvers
@@ -163,6 +171,10 @@ module.exports = (options) => {
     (str, hash) => {
       if (!fp.isString(str)) {
         throw new Error('invalid argument')
+      }
+
+      if (!hash) {
+        return null
       }
 
       const match = inner(str)
