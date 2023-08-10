@@ -192,7 +192,7 @@ module.exports = (options) => {
         return null
       }
     },
-    (template, hash) => hash ?? hashTemplate(template)
+    (template, hash) => hash
   )
 
   function compileTemplate(template) {
