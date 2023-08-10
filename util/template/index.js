@@ -42,7 +42,120 @@ module.exports = (options) => {
     }
   }
 
-  const hashTemplate = (template, prefix) => {
+  function compileArrayTemplate(arr) {
+    if (!fp.isArray(arr)) {
+      throw new Error('invalid argument')
+    }
+
+    let resolvers
+    let indices
+
+    for (let i = 0; i < arr.length; i++) {
+      const resolver = _compileTemplate(arr[i])
+      if (resolver) {
+        resolvers ??= []
+        resolvers.push(resolver)
+        indices ??= []
+        indices.push(i)
+      }
+    }
+
+    return resolvers
+      ? (args$) =>
+          rxjs.combineLatest(resolvers.map((resolver) => resolver(args$))).pipe(
+            rx.map((values) => {
+              const ret = [...arr]
+              for (let n = 0; n < values.length; n++) {
+                ret[indices[n]] = values[n]
+              }
+              return ret
+            })
+          )
+      : null
+  }
+
+  function compileObjectTemplate(obj) {
+    if (!fp.isPlainObject(obj)) {
+      throw new Error('invalid argument')
+    }
+
+    let resolvers
+    let indices
+
+    const keys = Object.keys(obj)
+
+    for (let i = 0; i < keys.length; i++) {
+      const resolver = _compileTemplate(obj[keys[i]])
+      if (resolver) {
+        resolvers ??= []
+        resolvers.push(resolver)
+        indices ??= []
+        indices.push(keys[i])
+      }
+    }
+
+    return resolvers
+      ? (args$) =>
+          rxjs.combineLatest(resolvers.map((resolver) => resolver(args$))).pipe(
+            rx.map((values) => {
+              const ret = { ...obj }
+              for (let n = 0; n < values.length; n++) {
+                ret[indices[n]] = values[n]
+              }
+              return ret
+            })
+          )
+      : null
+  }
+
+  function compileStringTemplate(str) {
+    if (!fp.isString(str)) {
+      throw new Error('invalid argument')
+    }
+
+    const match = inner(str)
+    if (!match) {
+      return null
+    }
+
+    const { pre, type, body, post } = match
+
+    const compileExpression = compilers[type]
+    if (!compileExpression) {
+      throw new Error('unknown expression type: ' + type)
+    }
+
+    const expr = compileExpression(body)
+
+    if (!pre && !post) {
+      return (args$) => expr(args$)
+    }
+
+    return (args$) =>
+      expr(args$).pipe(
+        rx.switchMap((body) => {
+          const str = `${pre}${stringify(body, type !== 'js')}${post}`
+          return compileStringTemplate(str)?.(args$) ?? rxjs.of(str)
+        })
+      )
+  }
+
+  function stringify(value, escape) {
+    if (value == null) {
+      return ''
+    } else if (fp.isArray(value) || fp.isPlainObject(value)) {
+      return JSON5.stringify(value)
+    } else if (fp.isString(value) && escape) {
+      return value.replace(/"/g, '\\"')
+    }
+    return value
+  }
+
+  function isTemplate(val) {
+    return typeof val === 'string' && val.indexOf('{{') !== -1
+  }
+
+  function hashTemplate(template, prefix) {
     if (fp.isPlainObject(template)) {
       let hashes
       for (const key of Object.keys(template)) {
@@ -70,155 +183,7 @@ module.exports = (options) => {
     }
   }
 
-  const _compileArrayTemplate = weakCache(
-    (arr, hash) => {
-      if (!fp.isArray(arr)) {
-        throw new Error('invalid argument')
-      }
-
-      let resolvers
-      let indices
-
-      for (let i = 0; i < arr.length; i++) {
-        const resolver = compileTemplate(arr[i])
-        if (resolver) {
-          resolvers ??= []
-          resolvers.push(resolver)
-          indices ??= []
-          indices.push(i)
-        }
-      }
-
-      return resolvers
-        ? (args$) =>
-            rxjs.combineLatest(resolvers.map((resolver) => resolver(args$))).pipe(
-              rx.map((values) => {
-                const ret = [...arr]
-                for (let n = 0; n < values.length; n++) {
-                  ret[indices[n]] = values[n]
-                }
-                return ret
-              })
-            )
-        : null
-    },
-    (arr, hash) => hash ?? hashTemplate(arr)
-  )
-
-  const compileArrayTemplate = (arr) => {
-    if (!fp.isArray(arr)) {
-      throw new Error('invalid argument')
-    }
-    const hash = hashTemplate(arr)
-    return hash ? _compileArrayTemplate(arr, hash) : null
-  }
-
-  const _compileObjectTemplate = weakCache(
-    (obj) => {
-      if (!fp.isPlainObject(obj)) {
-        throw new Error('invalid argument')
-      }
-
-      let resolvers
-      let indices
-
-      const keys = Object.keys(obj)
-
-      for (let i = 0; i < keys.length; i++) {
-        const resolver = compileTemplate(obj[keys[i]])
-        if (resolver) {
-          resolvers ??= []
-          resolvers.push(resolver)
-          indices ??= []
-          indices.push(keys[i])
-        }
-      }
-
-      return resolvers
-        ? (args$) =>
-            rxjs.combineLatest(resolvers.map((resolver) => resolver(args$))).pipe(
-              rx.map((values) => {
-                const ret = { ...obj }
-                for (let n = 0; n < values.length; n++) {
-                  ret[indices[n]] = values[n]
-                }
-                return ret
-              })
-            )
-        : null
-    },
-    (obj, hash) => hash ?? hashTemplate(obj)
-  )
-
-  const compileObjectTemplate = (obj) => {
-    if (!fp.isPlainObject(obj)) {
-      throw new Error('invalid argument')
-    }
-
-    const hash = hashTemplate(obj)
-    return hash ? _compileObjectTemplate(obj, hash) : null
-  }
-
-  const _compileStringTemplate = weakCache(
-    (str, hash) => {
-      if (!fp.isString(str)) {
-        throw new Error('invalid argument')
-      }
-
-      const match = inner(str)
-      if (!match) {
-        return null
-      }
-
-      const { pre, type, body, post } = match
-
-      const compileExpression = compilers[type]
-      if (!compileExpression) {
-        throw new Error('unknown expression type: ' + type)
-      }
-
-      const expr = compileExpression(body)
-
-      if (!pre && !post) {
-        return (args$) => expr(args$)
-      }
-
-      return (args$) =>
-        expr(args$).pipe(
-          rx.switchMap((body) => {
-            const str = `${pre}${stringify(body, type !== 'js')}${post}`
-            return compileStringTemplate(str)?.(args$) ?? rxjs.of(str)
-          })
-        )
-    },
-    (str, hash) => hash ?? hashTemplate(str)
-  )
-
-  const compileStringTemplate = (obj) => {
-    if (!fp.isString(obj)) {
-      throw new Error('invalid argument')
-    }
-
-    const hash = hashTemplate(obj)
-    return hash ? _compileStringTemplate(obj, hash) : null
-  }
-
-  function stringify(value, escape) {
-    if (value == null) {
-      return ''
-    } else if (fp.isArray(value) || fp.isPlainObject(value)) {
-      return JSON5.stringify(value)
-    } else if (fp.isString(value) && escape) {
-      return value.replace(/"/g, '\\"')
-    }
-    return value
-  }
-
-  function isTemplate(val) {
-    return typeof val === 'string' && val.indexOf('{{') !== -1
-  }
-
-  function compileTemplate(template) {
+  function _compileTemplate(template) {
     if (fp.isPlainObject(template)) {
       return compileObjectTemplate(template)
     } else if (fp.isArray(template)) {
@@ -229,6 +194,11 @@ module.exports = (options) => {
       return null
     }
   }
+
+  const compileTemplate = weakCache(
+    (template) => _compileTemplate(template),
+    (template) => hashTemplate(template)
+  )
 
   async function resolveTemplate(template, args$) {
     return rxjs.firstValueFrom(onResolveTemplate(template, args$))
