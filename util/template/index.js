@@ -218,7 +218,7 @@ module.exports = (options) => {
     return typeof val === 'string' && val.indexOf('{{') !== -1
   }
 
-  function compileTemplate(template) {
+  function compileTemplate(template, args$ = null) {
     if (fp.isPlainObject(template)) {
       return compileObjectTemplate(template)
     } else if (fp.isArray(template)) {
@@ -235,12 +235,8 @@ module.exports = (options) => {
   }
 
   function onResolveTemplate(template, args$) {
-    if (fp.isString(template) && template.lastIndexOf('{{') === -1) {
-      return rxjs.of(template)
-    }
-
     try {
-      return compileTemplate(template, args$) ?? rxjs.of(template)
+      return compileTemplate(template)?.(args$) ?? rxjs.of(template)
     } catch (err) {
       return rxjs.throwError(() => err)
     }
