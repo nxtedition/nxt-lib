@@ -158,19 +158,28 @@ module.exports = ({ ds, proxify }) => {
 
     const { pre, type, body, post } = match
 
-    const compileExpression = compilers[type]
-    if (!compileExpression) {
+    if (type === 'js') {
+      const expr = compilers.js(body)
+
+      if (!pre && !post) {
+        return (str, args$) => expr(args$)
+      }
+
+      return (str, args$) => expr(args$).pipe(rx.map((body) => `${pre}${stringify(body)}${post}`))
+    } else if (type === 'nxt') {
+      const expr = compilers.nxt(body)
+
+      if (!pre && !post) {
+        return (str, args$) => expr(args$)
+      }
+
+      return (str, args$) =>
+        expr(args$).pipe(
+          rx.switchMap((body) => onResolveTemplate(`${pre}${stringify(body, true)}${post}`, args$))
+        )
+    } else {
       throw new Error('unknown expression type: ' + type)
     }
-
-    const expr = compileExpression(body)
-
-    if (!pre && !post) {
-      return (str, args$) => expr(args$)
-    }
-
-    return (str, args$) =>
-      expr(args$).pipe(rx.map((body) => `${pre}${stringify(body, type !== 'js')}${post}`))
   }
 
   function stringify(value, escape) {
