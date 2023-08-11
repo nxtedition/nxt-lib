@@ -7,10 +7,14 @@ const JSON5 = require('json5')
 const objectHash = require('object-hash')
 const weakCache = require('../../weakCache')
 
-module.exports = (options) => {
+module.exports = ({ ds, proxify }) => {
+  const compiler = {
+    current: null,
+  }
+
   const compilers = {
-    nxt: getNxtpressionsCompiler(options),
-    js: getJavascriptCompiler(options),
+    nxt: getNxtpressionsCompiler({ ds }),
+    js: getJavascriptCompiler({ ds, proxify, compiler }),
   }
 
   function inner(str) {
@@ -212,10 +216,10 @@ module.exports = (options) => {
     }
   }
 
-  return {
+  return Object.assign(compiler, {
     resolveTemplate,
     onResolveTemplate,
     compileTemplate,
     isTemplate,
-  }
+  })
 }

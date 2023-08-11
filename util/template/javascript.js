@@ -14,13 +14,13 @@ class TimerEntry {
   constructor(key, refresh, delay) {
     this.key = key
     this.counter = null
+
     this.timer = setTimeout(refresh, delay)
   }
 
   dispose() {
     clearTimeout(this.timer)
 
-    this.refresh = null
     this.timer = null
   }
 }
@@ -29,12 +29,12 @@ class FetchEntry {
   constructor(key, refresh, { resource, options }) {
     this.key = key
     this.counter = null
+
     this.refresh = refresh
     this.ac = new AbortController()
     this.signal = this.ac.signal
     this.body = null
     this.status = null
-    this.options = options
     this.error = null
 
     // TODO (fix): options.signal
@@ -42,9 +42,9 @@ class FetchEntry {
     // TODO (fix): expire...
 
     undici
-      .fetch(resource, { ...this.options, signal: this.signal })
+      .fetch(resource, { ...options, signal: this.signal })
       .then(async (res) => {
-        if (!this.signal.aborted) {
+        if (this.refresh) {
           // TODO (fix): max size...
           this.body = Buffer.from(await res.arrayBuffer())
           this.status = res.status
@@ -53,7 +53,7 @@ class FetchEntry {
         }
       })
       .catch((err) => {
-        if (!this.signal.aborted) {
+        if (this.refresh) {
           this.error = err
           this.refresh()
         }
@@ -61,9 +61,10 @@ class FetchEntry {
   }
 
   dispose() {
-    this.ac.abort()
-
     this.refresh = null
+
+    this.ac.abort()
+    this.ac = null
   }
 }
 
@@ -71,6 +72,7 @@ class RecordEntry {
   constructor(key, refresh, ds) {
     this.key = key
     this.counter = null
+
     this.refresh = refresh
     this.record = ds.record.getRecord(key)
 
@@ -116,6 +118,36 @@ class ObservableEntry {
   dispose() {
     this.subscription.unsubscribe()
     this.subscription = null
+    this.refresh = null
+  }
+}
+
+class PromiseEntry {
+  constructor(key, refresh, promise) {
+    this.key = key
+    this.counter = null
+    this.value = kEmpty
+    this.error = null
+    this.refresh = refresh
+
+    promise.then(
+      (value) => {
+        if (this.refresh) {
+          this.value = value
+          this.refresh()
+        }
+      },
+      (err) => {
+        if (this.refresh) {
+          this.error = err
+          this.refresh()
+        }
+      }
+    )
+  }
+
+  dispose() {
+    this.refresh = null
   }
 }
 
@@ -141,13 +173,15 @@ const globals = {
   nxt: null,
 }
 
-function proxyify(value, expression) {
+function proxify(value, expression, handler) {
   if (!value) {
     return value
   } else if (rxjs.isObservable(value)) {
-    return proxyify(expression.observe(value), expression)
+    return proxify(expression.observe(value), expression)
+  } else if (typeof value?.then === 'function') {
+    return proxify(expression.wait(value), expression, handler)
   } else if (typeof value === 'object') {
-    return new Proxy(value, expression._handler)
+    return new Proxy(value, handler)
   } else {
     return value
   }
@@ -155,7 +189,14 @@ function proxyify(value, expression) {
 
 const MAP_POOL = []
 
-module.exports = ({ ds, ...options }) => {
+function makeWrapper(expression) {
+  const handler = {
+    get: (target, prop) => proxify(target[prop], this),
+  }
+  return (value) => proxify(value, expression, handler)
+}
+
+module.exports = ({ ds, proxify, compiler }) => {
   class Expression {
     constructor(context, script, expression, args, observer) {
       this._context = context
@@ -172,19 +213,13 @@ module.exports = ({ ds, ...options }) => {
       this._disposing = false
       this._destroyed = false
       this._subscription = null
-      this._args = null
-      this._ready = false
-      this._handler = options.proxyify
-        ? {
-            get: (target, prop) => proxyify(target[prop], this),
-          }
-        : null
+      this._args = kEmpty
+      this._wrap = null
 
       if (rxjs.isObservable(args)) {
         this._subscription = args.subscribe({
           next: (args) => {
-            this._args = this._handler ? proxyify(args, this) : args
-            this._ready = true
+            this._args = proxify ? this.wrap(args) : args
             this._refresh()
           },
           error: (err) => {
@@ -196,10 +231,14 @@ module.exports = ({ ds, ...options }) => {
           },
         })
       } else {
-        this._args = this._handler ? proxyify(args, this) : args
-        this._ready = true
+        this._args = proxify ? this.wrap(args) : args
         this._refreshNT(this)
       }
+    }
+
+    wrap(value) {
+      this._wrap ??= makeWrapper(this)
+      return this._wrap(value)
     }
 
     suspend() {
@@ -212,6 +251,10 @@ module.exports = ({ ds, ...options }) => {
 
     observe(observable, throws) {
       return this._getObservable(observable, throws)
+    }
+
+    wait(promise, throws) {
+      return this._getWait(promise, throws)
     }
 
     ds(id, state, throws) {
@@ -267,7 +310,7 @@ module.exports = ({ ds, ...options }) => {
     _refreshNT(self) {
       self._refreshing = false
 
-      if (self._destroyed || self._disposing || !self._ready) {
+      if (self._destroyed || self._disposing || self._args === kEmpty) {
         return
       }
 
@@ -277,6 +320,7 @@ module.exports = ({ ds, ...options }) => {
       self._context.$ = self._args
       self._context.nxt = self
       try {
+        compiler.current = this
         const value = self._script.runInContext(self._context)
         if (value !== self._value) {
           self._value = value
@@ -294,6 +338,8 @@ module.exports = ({ ds, ...options }) => {
           })
         )
       } finally {
+        compiler.current = null
+
         self._context.$ = null
         self._context.nxt = null
 
@@ -321,7 +367,7 @@ module.exports = ({ ds, ...options }) => {
     }
 
     _refresh = () => {
-      if (this._refreshing || this._destroyed || this._disposing || !this._ready) {
+      if (this._refreshing || this._destroyed || this._disposing || this._args === kEmpty) {
         return
       }
 
@@ -365,6 +411,28 @@ module.exports = ({ ds, ...options }) => {
       }
 
       const entry = this._getEntry(observable, ObservableEntry, observable)
+
+      if (entry.error) {
+        throw entry.error
+      }
+
+      if (entry.value === kEmpty) {
+        if (throws ?? true) {
+          throw kSuspend
+        } else {
+          return null
+        }
+      }
+
+      return entry.value
+    }
+
+    _getWait(promise, throws) {
+      if (typeof promise?.then !== 'function') {
+        throw new Error(`invalid argument: Promise (${promise})`)
+      }
+
+      const entry = this._getEntry(promise, PromiseEntry, promise)
 
       if (entry.error) {
         throw entry.error
