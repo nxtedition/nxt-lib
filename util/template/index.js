@@ -10,6 +10,10 @@ const weakCache = require('../../weakCache')
 module.exports = ({ ds, proxify }) => {
   const compiler = {
     current: null,
+    resolveTemplate,
+    onResolveTemplate,
+    compileTemplate,
+    isTemplate,
   }
 
   const compilers = {
@@ -216,10 +220,5 @@ module.exports = ({ ds, proxify }) => {
     }
   }
 
-  return Object.assign(compiler, {
-    resolveTemplate,
-    onResolveTemplate,
-    compileTemplate,
-    isTemplate,
-  })
+  return compiler
 }

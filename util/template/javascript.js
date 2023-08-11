@@ -1,3 +1,4 @@
+const assert = require('node:assert')
 const weakCache = require('../../weakCache')
 const rxjs = require('rxjs')
 const vm = require('node:vm')
@@ -174,10 +175,13 @@ const globals = {
 }
 
 function proxify(value, expression, handler) {
+  assert(expression)
+  assert(handler)
+
   if (!value) {
     return value
   } else if (rxjs.isObservable(value)) {
-    return proxify(expression.observe(value), expression)
+    return proxify(expression.observe(value), expression, handler)
   } else if (typeof value?.then === 'function') {
     return proxify(expression.wait(value), expression, handler)
   } else if (typeof value === 'object') {
@@ -191,7 +195,7 @@ const MAP_POOL = []
 
 function makeWrapper(expression) {
   const handler = {
-    get: (target, prop) => proxify(target[prop], this),
+    get: (target, prop) => proxify(target[prop], expression, handler),
   }
   return (value) => proxify(value, expression, handler)
 }
@@ -319,8 +323,11 @@ module.exports = ({ ds, proxify, compiler }) => {
       // TODO (fix): freeze?
       self._context.$ = self._args
       self._context.nxt = self
+
+      const previous = compiler.current
+      compiler.current = self
+
       try {
-        compiler.current = this
         const value = self._script.runInContext(self._context)
         if (value !== self._value) {
           self._value = value
@@ -338,7 +345,7 @@ module.exports = ({ ds, proxify, compiler }) => {
           })
         )
       } finally {
-        compiler.current = null
+        compiler.current = previous
 
         self._context.$ = null
         self._context.nxt = null
