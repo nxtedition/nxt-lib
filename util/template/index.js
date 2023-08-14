@@ -165,7 +165,16 @@ module.exports = ({ ds, proxify }) => {
         return (str, args$) => expr(args$)
       }
 
-      return (str, args$) => expr(args$).pipe(rx.map((body) => `${pre}${stringify(body)}${post}`))
+      return (str, args$) =>
+        rxjs
+          .combineLatest([
+            compileStringTemplate(pre)?.(str, args$) ?? rxjs.of(pre),
+            expr(args$),
+            compileStringTemplate(post)?.(str, args$) ?? rxjs.of(post),
+          ])
+          .pipe(
+            rx.map(([pre, body, post]) => (pre || post ? `${pre}${stringify(body)}${post}` : body))
+          )
     } else if (type === 'nxt') {
       const expr = compilers.nxt(body)
 

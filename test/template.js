@@ -20,3 +20,9 @@ test('cache', async (t) => {
   t.equal(compileTemplate(x), compileTemplate(x))
   t.end()
 })
+
+test('string concat', async (t) => {
+  const x = '{{#js $.pre }} {{#js $.body}} {{#js $.post}}'
+  t.equal(await resolveTemplate(x, { pre: 'pre', body: 'body', post: 'post' }), 'pre body post')
+  t.end()
+})
