@@ -258,8 +258,8 @@ module.exports = function (opts) {
 
       const src = res.body
 
-      let resume
-      let error
+      let resume = null
+      let error = null
       let str = ''
 
       src
