@@ -231,7 +231,7 @@ module.exports = function (opts) {
             ...options.query,
             feed: 'continuous',
           })}`,
-        idempotent: true,
+        idempotent: false,
         blocking: true,
         method,
         body: JSON.stringify(body),
@@ -241,18 +241,12 @@ module.exports = function (opts) {
           'request-id': genReqId(),
           ...(body ? { 'content-type': 'application/json' } : {}),
         },
+        throwOnError: true,
         highWaterMark: 128 * 1024, // TODO (fix): Needs support in undici...
         bodyTimeout: 2 * (params.heartbeat || 60e3),
       }
-      const res = await client.request(req)
 
-      if (res.statusCode < 200 || res.statusCode >= 300) {
-        throw makeError(req, {
-          status: res.statusCode,
-          headers: res.headers,
-          data: await res.body.text(),
-        })
-      }
+      const res = await client.request(req)
 
       retryCount = 0
 
