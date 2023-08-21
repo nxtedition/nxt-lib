@@ -256,63 +256,29 @@ module.exports = function (opts) {
 
       retryCount = 0
 
-      const src = res.body
-
-      let resume = null
-      let error = null
       let str = ''
+      for await (const chunk of res.body) {
+        const lines = (str + chunk).split('\n')
+        str = lines.pop() ?? ''
 
-      src
-        .on('readable', () => {
-          resume?.()
-          resume = null
-        })
-        .on('error', (err) => {
-          error = err
-
-          resume?.()
-          resume = null
-        })
-
-      try {
-        while (true) {
-          const chunk = src.read()
-          if (chunk !== null) {
-            str += chunk
-          } else if (error) {
-            throw error
-          } else {
-            const lines = str.split('\n')
-            str = lines.pop() ?? ''
-
-            if (lines.length === 0) {
-              await new Promise((resolve) => {
-                resume = resolve
-              })
+        const results = batched ? [] : null
+        for (const line of lines) {
+          if (line) {
+            const change = JSON.parse(line)
+            if (change.seq) {
+              params.since = change.seq
+            }
+            if (results) {
+              results.push(change)
             } else {
-              const results = batched ? [] : null
-              for (const line of lines) {
-                if (line) {
-                  const change = JSON.parse(line)
-                  if (change.seq) {
-                    params.since = change.seq
-                  }
-                  if (results) {
-                    results.push(change)
-                  } else {
-                    yield change
-                  }
-                }
-              }
-
-              if (results?.length) {
-                yield results
-              }
+              yield change
             }
           }
         }
-      } finally {
-        src.destroy()
+
+        if (results?.length) {
+          yield results
+        }
       }
     }
 
