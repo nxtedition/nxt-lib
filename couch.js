@@ -282,33 +282,33 @@ module.exports = function (opts) {
           } else if (error) {
             throw error
           } else {
-            const promise = new Promise((resolve) => {
-              resume = resolve
-            })
-
             const lines = str.split('\n')
-            str = lines.pop()
+            str = lines.pop() ?? ''
 
-            const results = batched ? [] : null
-            for (const line of lines) {
-              if (line) {
-                const change = JSON.parse(line)
-                if (change.seq) {
-                  params.since = change.seq
-                }
-                if (results) {
-                  results.push(change)
-                } else {
-                  yield change
+            if (lines.length === 0) {
+              await new Promise((resolve) => {
+                resume = resolve
+              })
+            } else {
+              const results = batched ? [] : null
+              for (const line of lines) {
+                if (line) {
+                  const change = JSON.parse(line)
+                  if (change.seq) {
+                    params.since = change.seq
+                  }
+                  if (results) {
+                    results.push(change)
+                  } else {
+                    yield change
+                  }
                 }
               }
-            }
 
-            if (results?.length) {
-              yield results
+              if (results?.length) {
+                yield results
+              }
             }
-
-            await promise
           }
         }
       } finally {
