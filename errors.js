@@ -32,7 +32,6 @@ module.exports.parseError = function parseError(error) {
       : new Error(message || 'unknown error'),
     {
       ...properties,
-      data: typeof data === 'string' ? data : JSON.stringify(data),
       cause: cause ? parseError(error.cause) : undefined,
     }
   )
@@ -68,12 +67,6 @@ module.exports.serializeError = function serializeError(error) {
 
   errors = Array.isArray(errors) ? errors.map(serializeError) : undefined
   cause = cause ? serializeError(cause) : undefined
-
-  if (typeof data === 'string') {
-    try {
-      data = JSON.parse(data)
-    } catch {}
-  }
 
   return JSON.parse(
     JSON.stringify({
