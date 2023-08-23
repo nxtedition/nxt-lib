@@ -28,7 +28,14 @@ function getHeaders(obj) {
 }
 
 module.exports = {
-  err: serializers.err,
+  err: (err) => {
+    if (Array.isArray(err)) {
+      err = new AggregateError(err)
+    } else if (err.data !== null && typeof err.data === 'object') {
+      err = { ...err, data: JSON.stringify(err.data) }
+    }
+    return serializers.err(err)
+  },
   res: (res) =>
     res && {
       id: res.id || res.req?.id || getHeader(res, 'request-id') || getHeader(res.req, 'request-id'),
