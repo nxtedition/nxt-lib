@@ -174,16 +174,16 @@ const globals = {
   nxt: null,
 }
 
-function proxify(value, expression, handler) {
+function proxify(value, expression, handler, suspend = true) {
   assert(expression)
   assert(handler)
 
   if (!value) {
     return value
   } else if (rxjs.isObservable(value)) {
-    return proxify(expression.observe(value), expression, handler)
+    return proxify(expression.observe(value, suspend), expression, handler, suspend)
   } else if (typeof value?.then === 'function') {
-    return proxify(expression.wait(value), expression, handler)
+    return proxify(expression.wait(value, suspend), expression, handler, suspend)
   } else if (typeof value === 'object') {
     return new Proxy(value, handler)
   } else {
@@ -197,7 +197,7 @@ function makeWrapper(expression) {
   const handler = {
     get: (target, prop) => proxify(target[prop], expression, handler),
   }
-  return (value) => proxify(value, expression, handler)
+  return (value, suspend = true) => proxify(value, expression, handler, suspend)
 }
 
 module.exports = ({ ds, proxify, compiler }) => {
@@ -240,53 +240,53 @@ module.exports = ({ ds, proxify, compiler }) => {
       }
     }
 
-    wrap(value) {
+    wrap(value, suspend = true) {
       this._wrap ??= makeWrapper(this)
-      return this._wrap(value)
+      return this._wrap(value, suspend)
     }
 
     suspend() {
       throw kSuspend
     }
 
-    fetch(url, init, throws) {
-      return this._getFetch(url, init, throws)
+    fetch(url, init, suspend = true) {
+      return this._getFetch(url, init, suspend)
     }
 
-    observe(observable, throws) {
-      return this._getObservable(observable, throws)
+    observe(observable, suspend = true) {
+      return this._getObservable(observable, suspend)
     }
 
-    wait(promise, throws) {
-      return this._getWait(promise, throws)
+    wait(promise, suspend = true) {
+      return this._getWait(promise, suspend)
     }
 
-    ds(id, state, throws) {
-      return this._getRecord(id, state, throws)
+    ds(id, state, suspend = true) {
+      return this._getRecord(id, state, suspend)
     }
 
-    _ds(key, postfix, state, throws) {
+    _ds(key, postfix, state, suspend = true) {
       return !key || typeof key !== 'string'
         ? null
-        : this._getRecord(postfix ? key + postfix : key, state, throws)
+        : this._getRecord(postfix ? key + postfix : key, state, suspend)
     }
 
-    asset(id, type, state, throws) {
-      return this._getHasRawAssetType(id, type, state, throws)
+    asset(id, type, state, suspend = true) {
+      return this._getHasRawAssetType(id, type, state, suspend)
     }
 
-    _asset(id, type, state, throws) {
+    _asset(id, type, state, suspend) {
       if (!type || typeof type !== 'string') {
         throw new Error(`invalid argument: type (${type})`)
       }
 
       return !id || typeof id !== 'string'
         ? null
-        : this._getHasRawAssetType(id, type, state, throws)
+        : this._getHasRawAssetType(id, type, state, suspend)
     }
 
-    timer(dueTime, dueValue) {
-      return this._getTimer(dueTime, dueValue)
+    timer(dueTime, dueValue, suspend = true) {
+      return this._getTimer(dueTime, dueValue, suspend)
     }
 
     hash(value) {
@@ -393,7 +393,7 @@ module.exports = ({ ds, proxify, compiler }) => {
       return entry
     }
 
-    _getFetch(resource, options, throws) {
+    _getFetch(resource, options, suspend) {
       const key = JSON.stringify({ resource, options })
       const entry = this._getEntry(key, FetchEntry, { resource, options })
 
@@ -402,7 +402,7 @@ module.exports = ({ ds, proxify, compiler }) => {
       }
 
       if (!entry.status) {
-        if (throws ?? true) {
+        if (suspend ?? true) {
           throw kSuspend
         } else {
           return null
@@ -412,7 +412,7 @@ module.exports = ({ ds, proxify, compiler }) => {
       return { status: entry.status, headers: entry.headers, body: entry.body }
     }
 
-    _getObservable(observable, throws) {
+    _getObservable(observable, suspend) {
       if (!rxjs.isObservable(observable)) {
         throw new Error(`invalid argument: observable (${observable})`)
       }
@@ -424,7 +424,7 @@ module.exports = ({ ds, proxify, compiler }) => {
       }
 
       if (entry.value === kEmpty) {
-        if (throws ?? true) {
+        if (suspend ?? true) {
           throw kSuspend
         } else {
           return null
@@ -434,7 +434,7 @@ module.exports = ({ ds, proxify, compiler }) => {
       return entry.value
     }
 
-    _getWait(promise, throws) {
+    _getWait(promise, suspend) {
       if (typeof promise?.then !== 'function') {
         throw new Error(`invalid argument: Promise (${promise})`)
       }
@@ -446,7 +446,7 @@ module.exports = ({ ds, proxify, compiler }) => {
       }
 
       if (entry.value === kEmpty) {
-        if (throws ?? true) {
+        if (suspend ?? true) {
           throw kSuspend
         } else {
           return null
@@ -456,7 +456,27 @@ module.exports = ({ ds, proxify, compiler }) => {
       return entry.value
     }
 
-    _getRecord(key, state, throws) {
+    _getTimer(dueTime, dueValue = dueTime, suspend) {
+      const key = JSON.stringify({ dueTime, dueValue })
+
+      dueTime = Number.isFinite(dueTime) ? dueTime : new Date(dueTime).valueOf()
+
+      const timeout = dueTime - Date.now()
+
+      if (Number.isFinite(dueTime) && timeout > 0) {
+        this._getEntry(key, TimerEntry, timeout)
+
+        if (suspend ?? true) {
+          throw kSuspend
+        } else {
+          return null
+        }
+      }
+
+      return dueValue
+    }
+
+    _getRecord(key, state, suspend) {
       if (!key || typeof key !== 'string') {
         throw new Error(`invalid argument: key (${key})`)
       }
@@ -476,7 +496,7 @@ module.exports = ({ ds, proxify, compiler }) => {
       const entry = this._getEntry(key, RecordEntry, ds)
 
       if (entry.record.state < state) {
-        if (throws ?? true) {
+        if (suspend ?? true) {
           throw kSuspend
         } else {
           return null
@@ -486,7 +506,7 @@ module.exports = ({ ds, proxify, compiler }) => {
       return entry.record.data
     }
 
-    _getHasRawAssetType(id, type, state, throws) {
+    _getHasRawAssetType(id, type, state, suspend) {
       if (!id || typeof id !== 'string') {
         throw new Error(`invalid argument: id (${id})`)
       }
@@ -498,27 +518,9 @@ module.exports = ({ ds, proxify, compiler }) => {
       const data = this._getRecord(
         id + ':asset.rawTypes?',
         state ?? ds.record.PROVIDER,
-        throws ?? true
+        suspend ?? true
       )
       return data && Array.isArray(data.value) && data.value.includes(type) ? id : null
-    }
-
-    _getTimer(dueTime, dueValue = dueTime, undueValue = null) {
-      dueTime = Number.isFinite(dueTime) ? dueTime : new Date(dueTime).valueOf()
-
-      if (!Number.isFinite(dueTime)) {
-        return undueValue
-      }
-
-      const nowTime = Date.now()
-
-      if (nowTime >= dueTime) {
-        return dueValue
-      }
-
-      this._getEntry(objectHash({ dueTime, dueValue, undueValue }), TimerEntry, dueTime - nowTime)
-
-      return undueValue
     }
   }
 
