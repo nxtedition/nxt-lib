@@ -30,7 +30,7 @@ function getHeaders(obj) {
 module.exports = {
   err: (err) => {
     if (Array.isArray(err)) {
-      err = new AggregateError(err)
+      err = err.length === 1 ? err[0] : new AggregateError(err)
     } else if (err.data !== null && typeof err.data === 'object') {
       err = { ...err, data: JSON.stringify(err.data) }
     }
