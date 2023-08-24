@@ -1,5 +1,6 @@
 const objectHash = require('object-hash')
 const fp = require('lodash/fp.js')
+const { toString } = Object.prototype
 
 module.exports.AbortError = class AbortError extends Error {
   constructor() {
@@ -37,6 +38,8 @@ module.exports.parseError = function parseError(error) {
   )
 }
 
+const kSeen = Symbol('kSeen')
+
 module.exports.serializeError = function serializeError(error) {
   if (!error) {
     return null
@@ -51,6 +54,22 @@ module.exports.serializeError = function serializeError(error) {
     return errors.length === 0 ? null : errors.length === 1 ? errors[0] : errors
   }
 
+  if (Object.prototype.hasOwnProperty.call(error, kSeen)) {
+    return null
+  }
+
+  error[kSeen] = undefined
+
+  const type =
+    toString.call(error.constructor) === '[object Function]' ? error.constructor.name : error.name
+
+  let data = error.data || error.body
+  try {
+    data = JSON.parse(data)
+  } catch {
+    // Do nothing...
+  }
+
   let {
     msg,
     message = msg,
@@ -61,17 +80,19 @@ module.exports.serializeError = function serializeError(error) {
     statusCode,
     status = statusCode,
     headers,
-    data = body,
     ...properties
   } = error
 
   errors = Array.isArray(errors) ? errors.map(serializeError) : undefined
   cause = cause ? serializeError(cause) : undefined
 
+  delete error[kSeen]
+
   return JSON.parse(
     JSON.stringify({
       ...properties,
       message,
+      type,
       code,
       status,
       headers,
