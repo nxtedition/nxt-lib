@@ -64,10 +64,12 @@ module.exports.serializeError = function serializeError(error) {
     toString.call(error.constructor) === '[object Function]' ? error.constructor.name : error.name
 
   let data = error.data || error.body
-  try {
-    data = JSON.parse(data)
-  } catch {
-    // Do nothing...
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data)
+    } catch {
+      // Do nothing...
+    }
   }
 
   let {
