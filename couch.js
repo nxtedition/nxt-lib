@@ -246,33 +246,38 @@ module.exports = function (opts) {
         bodyTimeout: 2 * (params.heartbeat || 60e3),
       }
 
-      const res = await client.request(req)
+      try {
+        const res = await client.request(req)
 
-      retryCount = 0
+        retryCount = 0
 
-      let str = ''
-      for await (const chunk of res.body) {
-        const lines = (str + chunk).split('\n')
-        str = lines.pop() ?? ''
+        let str = ''
+        for await (const chunk of res.body) {
+          const lines = (str + chunk).split('\n')
+          str = lines.pop() ?? ''
 
-        const results = batched ? [] : null
-        for (const line of lines) {
-          if (line) {
-            const change = JSON.parse(line)
-            if (change.seq) {
-              params.since = change.seq
-            }
-            if (results) {
-              results.push(change)
-            } else {
-              yield change
+          const results = batched ? [] : null
+          for (const line of lines) {
+            if (line) {
+              const change = JSON.parse(line)
+              if (change.seq) {
+                params.since = change.seq
+              }
+              if (results) {
+                results.push(change)
+              } else {
+                yield change
+              }
             }
           }
-        }
 
-        if (results?.length) {
-          yield results
+          if (results?.length) {
+            yield results
+          }
         }
+      } catch (err) {
+        Object.assign(err, { data: req })
+        throw err
       }
     }
 
@@ -282,28 +287,29 @@ module.exports = function (opts) {
       let remaining = parseInt(options.limit) || Infinity
 
       const next = async () => {
+        const req = {
+          path:
+            dbPathname +
+            '/_changes' +
+            `?${new URLSearchParams({
+              ...params,
+              ...options.query,
+              limit: Math.min(remaining, batchSize),
+              feed: live ? 'longpoll' : 'normal',
+            })}`,
+          idempotent: true,
+          blocking: live,
+          method,
+          body: JSON.stringify(body),
+          signal: ac.signal,
+          headers: {
+            'user-agent': userAgent,
+            'request-id': genReqId(),
+            ...(body ? { 'content-type': 'application/json' } : {}),
+          },
+        }
+
         try {
-          const req = {
-            path:
-              dbPathname +
-              '/_changes' +
-              `?${new URLSearchParams({
-                ...params,
-                ...options.query,
-                limit: Math.min(remaining, batchSize),
-                feed: live ? 'longpoll' : 'normal',
-              })}`,
-            idempotent: true,
-            blocking: live,
-            method,
-            body: JSON.stringify(body),
-            signal: ac.signal,
-            headers: {
-              'user-agent': userAgent,
-              'request-id': genReqId(),
-              ...(body ? { 'content-type': 'application/json' } : {}),
-            },
-          }
           const res = await client.request(req)
 
           if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -316,6 +322,7 @@ module.exports = function (opts) {
 
           return await res.body.json()
         } catch (err) {
+          Object.assign(err, { data: req })
           return { err }
         }
       }
