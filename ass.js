@@ -121,7 +121,6 @@ function formatASSTime(seconds) {
     ':' +
     (s === 0 ? '00' : s < 10 ? '0' + s : s) +
     ':' +
-    (cs === 0 ? '00' : cs < 10 ? '0' + cs : cs) +
-    ':'
+    (cs === 0 ? '00' : cs < 10 ? '0' + cs : cs)
   )
 }
