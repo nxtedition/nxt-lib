@@ -453,81 +453,90 @@ module.exports = function (opts) {
       path += `?${querystring.stringify(params)}`
     }
 
+    const req = {
+      path,
+      origin: dbOrigin,
+      idempotent,
+      method,
+      body: typeof body === 'object' && body ? JSON.stringify(body) : body,
+      headers,
+    }
+
     return new Promise((resolve, reject) =>
-      client.dispatch(
-        {
-          path,
-          origin: dbOrigin,
-          idempotent,
-          method,
-          body: typeof body === 'object' && body ? JSON.stringify(body) : body,
-          headers,
+      client.dispatch(req, {
+        resolve,
+        reject,
+        signal,
+        status: null,
+        headers: null,
+        abort: null,
+        data: '',
+        onConnect(abort) {
+          if (!this.signal) {
+            return
+          }
+
+          if (this.signal.aborted) {
+            abort()
+            return
+          }
+
+          this.abort = abort
+          if ('addEventListener' in this.signal) {
+            this.signal.addEventListener('abort', abort)
+          } else {
+            this.signal.addListener('abort', abort)
+          }
         },
-        {
-          resolve,
-          reject,
-          signal,
-          status: null,
-          headers: null,
-          abort: null,
-          data: '',
-          onConnect(abort) {
-            if (!this.signal) {
-              return
-            }
-
-            if (this.signal.aborted) {
-              abort()
-              return
-            }
-
-            this.abort = abort
-            if ('addEventListener' in this.signal) {
-              this.signal.addEventListener('abort', abort)
+        onHeaders(statusCode, headers) {
+          this.status = statusCode
+          this.headers = parseHeaders(headers)
+        },
+        onData(chunk) {
+          this.data += chunk
+        },
+        onComplete() {
+          if (this.signal) {
+            if ('removeEventListener' in this.signal) {
+              this.signal.removeEventListener('abort', this.abort)
             } else {
-              this.signal.addListener('abort', abort)
+              this.signal.removeListener('abort', this.abort)
             }
-          },
-          onHeaders(statusCode, headers) {
-            this.status = statusCode
-            this.headers = parseHeaders(headers)
-          },
-          onData(chunk) {
-            this.data += chunk
-          },
-          onComplete() {
-            if (this.signal) {
-              if ('removeEventListener' in this.signal) {
-                this.signal.removeEventListener('abort', this.abort)
-              } else {
-                this.signal.removeListener('abort', this.abort)
-              }
-            }
+          }
 
-            let data = this.data
-            if (this.headers['content-type']?.toLowerCase() === 'application/json') {
-              data = JSON.parse(this.data)
-            }
+          let data = this.data
+          if (this.headers['content-type']?.toLowerCase() === 'application/json') {
+            data = JSON.parse(this.data)
+          }
 
+          if (this.status < 200 || this.status >= 300) {
+            this.reject(
+              makeError(req, {
+                status: this.status,
+                headers: this.headers,
+                data: this.data,
+              })
+            )
+          } else {
             this.resolve({
               data,
               status: this.status,
               headers: this.headers,
             })
-          },
-          onError(err) {
-            if (this.signal) {
-              if ('removeEventListener' in this.signal) {
-                this.signal.removeEventListener('abort', this.abort)
-              } else {
-                this.signal.removeListener('abort', this.abort)
-              }
+          }
+        },
+        onError(err) {
+          if (this.signal) {
+            if ('removeEventListener' in this.signal) {
+              this.signal.removeEventListener('abort', this.abort)
+            } else {
+              this.signal.removeListener('abort', this.abort)
             }
+          }
 
-            this.reject(err)
-          },
-        }
-      )
+          this.reject(err)
+        },
+      })
     )
   }
 

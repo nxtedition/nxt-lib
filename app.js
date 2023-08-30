@@ -4,6 +4,7 @@ const stream = require('node:stream')
 const { Buffer } = require('node:buffer')
 const net = require('net')
 const fp = require('lodash/fp.js')
+const assert = require('node:assert')
 
 module.exports = function (appConfig, onTerminate) {
   let ds
@@ -540,26 +541,19 @@ module.exports = function (appConfig, onTerminate) {
                       }
 
                       try {
-                        const { body } = await client.request({
+                        const { body, statusCode } = await client.request({
                           method: 'GET',
                           path: '/healthcheck',
                         })
                         await body.dump()
-                      } catch {
-                        try {
-                          const { body } = await client.request({
-                            method: 'GET',
-                            path: '/healthcheck',
-                          })
-                          await body.dump()
-                        } catch (err) {
-                          messages.push({
-                            id: 'app:ds_http_connection',
-                            level: 40,
-                            code: err.code,
-                            msg: 'ds: ' + err.message,
-                          })
-                        }
+                        assert(statusCode >= 200 && statusCode < 300)
+                      } catch (err) {
+                        messages.push({
+                          id: 'app:ds_http_connection',
+                          level: 40,
+                          code: err.code,
+                          msg: 'ds: ' + err.message,
+                        })
                       }
 
                       return messages
