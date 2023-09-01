@@ -122,9 +122,9 @@ module.exports.makeMessages = function makeMessages(error, options) {
   } else if (error) {
     let err
     if (typeof error === 'string' && error) {
-      err = { msg: error, id: options?.id, level: options?.level || 40, code: options?.code }
+      err = { msg: error, id: options?.id, level: options?.level || 50, code: options?.code }
     } else if (typeof error === 'object') {
-      const level = parseInt(error.level) || options?.level || 40
+      const level = parseInt(error.level) || options?.level || 50
       const code =
         [error?.code, options?.codes?.[error?.code]].find(
           (x) => typeof x === 'string' && x.length > 0
