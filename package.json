@@ -23,6 +23,7 @@
     "errors.js",
     "worker.js",
     "proxy.js",
+    "undici.js",
     "timeline.js",
     "docker-secrets.js"
   ],
@@ -72,7 +73,6 @@
     "date-fns": "^2.29.3",
     "fast-querystring": "^1.1.1",
     "hasha": "^5.2.2",
-    "http-errors": "^2.0.0",
     "json5": "^2.2.3",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
@@ -88,7 +88,8 @@
     "split-string": "^6.0.0",
     "toobusy-js": "^0.5.1",
     "undici": "^5.22.0",
-    "url-join": "^4.0.0"
+    "url-join": "^4.0.0",
+    "xuid": "^4.1.2"
   },
   "devDependencies": {
     "eslint": "^8.38.0",
