@@ -14,6 +14,9 @@ module.exports.request = async function request(
     redirect: { count: maxRedirections = 3 } = {},
     dispatcher,
     signal,
+    headersTimeout,
+    bodyTimeout,
+    reset = false,
     method = 'GET',
     body,
     userAgent,
@@ -41,12 +44,15 @@ module.exports.request = async function request(
       try {
         const ures = await undici.request(url, {
           method,
+          reset,
           body,
           headers,
           signal,
           dispatcher,
           maxRedirections,
           throwOnError: true,
+          headersTimeout,
+          bodyTimeout,
         })
 
         upstreamLogger?.debug({ ureq, ures }, 'upstream request response')
