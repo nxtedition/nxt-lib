@@ -64,14 +64,6 @@ module.exports.request = async function request(
 
         assert(ures.statusCode >= 200 && ures.statusCode < 300)
 
-        if (method === 'HEAD' || method === 'DELETE' || method === 'OPTIONS') {
-          await ures.body.dump()
-        }
-
-        if (ures.headers['content-length'] === '0') {
-          await ures.body.dump()
-        }
-
         // TODO (fix): Wrap response to handle error that can continue with range request...
 
         return ures
