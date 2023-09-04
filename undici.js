@@ -17,8 +17,8 @@ module.exports.request = async function request(
     headersTimeout,
     bodyTimeout,
     reset = false,
-    method = 'GET',
     body,
+    method = body ? 'POST' : 'GET',
     userAgent,
     headers,
   }
