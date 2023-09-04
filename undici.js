@@ -11,8 +11,9 @@ module.exports.request = async function request(
   {
     logger,
     id = xuid(),
-    retry: { count: maxRetries = 8, status = [] } = {},
-    redirect: { count: maxRedirections = 3 } = {},
+    retry,
+    maxRedirections: _maxRedirections,
+    redirect,
     dispatcher,
     signal,
     headersTimeout,
@@ -24,6 +25,21 @@ module.exports.request = async function request(
     headers,
   }
 ) {
+  if (retry === false) {
+    retry = { count: 0 }
+  } else if (typeof retry === 'number') {
+    retry = { count: retry }
+  }
+
+  if (redirect === false) {
+    redirect = { count: 0 }
+  } else if (typeof redirect === 'number') {
+    redirect = { count: redirect }
+  }
+
+  const { count: maxRedirections = _maxRedirections ?? 3 } = redirect ?? {}
+  const { count: maxRetries = 8, status = [] } = retry ?? {}
+
   const ureq = {
     url,
     method,
