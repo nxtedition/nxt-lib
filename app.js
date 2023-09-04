@@ -143,6 +143,8 @@ module.exports = function (appConfig, onTerminate) {
     )
   }
 
+  logger.debug({ data: JSON.stringify(config, null, 2) }, 'config')
+
   {
     const { isMainThread, parentPort } = require('node:worker_threads')
     if (!isMainThread && parentPort) {
