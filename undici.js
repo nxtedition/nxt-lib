@@ -111,7 +111,7 @@ module.exports.request = async function request(
 
         upstreamLogger?.warn({ err, retryCount, delay }, 'upstream request retrying')
 
-        return tp.setTimeout(delay, undefined, { signal })
+        await tp.setTimeout(delay, undefined, { signal })
       }
     }
   } catch (err) {
