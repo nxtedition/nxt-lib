@@ -4,6 +4,7 @@ const xuid = require('xuid')
 const { isReadableNodeStream } = require('./stream')
 const undici = require('undici')
 const stream = require('stream')
+const omitEmpty = require('omit-empty')
 
 module.exports.request = async function request(
   url,
@@ -27,11 +28,11 @@ module.exports.request = async function request(
     url,
     method,
     body,
-    headers: {
+    headers: omitEmpty({
       'request-id': id,
       'user-agent': userAgent,
       ...headers,
-    },
+    }),
   }
 
   const upstreamLogger = logger?.child({ ureq })
