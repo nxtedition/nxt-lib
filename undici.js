@@ -109,13 +109,13 @@ module.exports.request = async function request(
         const delay =
           parseInt(err.headers?.['Retry-After']) * 1e3 || Math.min(10e3, retryCount * 1e3 + 1e3)
 
-        logger?.warn({ err, retryCount, delay }, 'upstream request retrying')
+        upstreamLogger?.warn({ err, retryCount, delay }, 'upstream request retrying')
 
         return tp.setTimeout(delay, undefined, { signal })
       }
     }
   } catch (err) {
-    logger?.error({ err }, 'upstream request failed')
+    upstreamLogger?.error({ err }, 'upstream request failed')
     throw err
   }
 }
