@@ -11,6 +11,13 @@ function isReadableNodeStream(obj, strict = false) {
   )
 }
 
+function isStream(obj) {
+  return (
+    obj && typeof obj === 'object' && typeof obj.pipe === 'function' && typeof obj.on === 'function'
+  )
+}
+
 module.exports = {
+  isStream,
   isReadableNodeStream,
 }

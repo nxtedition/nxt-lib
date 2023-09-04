@@ -23,6 +23,7 @@
     "errors.js",
     "worker.js",
     "proxy.js",
+    "stream.js",
     "undici.js",
     "timeline.js",
     "docker-secrets.js"
