@@ -1,11 +1,11 @@
-import * as undici from 'undici'
-import assert from 'node:assert'
-import xuid from 'xuid'
-import tp from 'node:timers/promises'
-import stream from 'node:stream'
-import { isReadableNodeStream } from './stream.js'
+const assert = require('assert')
+const tp = require('timers/promises')
+const xuid = require('xuid')
+const { isReadableNodeStream } = require('./stream')
+const undici = require('undici')
+const stream = require('stream')
 
-export async function request(
+module.exports.request = async function request(
   url,
   {
     logger,
