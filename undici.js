@@ -10,7 +10,7 @@ module.exports.request = async function request(
   {
     logger,
     id = xuid(),
-    retry: { count: maxRetries = 8 } = {},
+    retry: { count: maxRetries = 8, status = [] } = {},
     redirect: { count: maxRedirections = 3 } = {},
     dispatcher,
     signal,
@@ -28,7 +28,7 @@ module.exports.request = async function request(
     method,
     body,
     headers: {
-      'req-id': id,
+      'request-id': id,
       'user-agent': userAgent,
       ...headers,
     },
@@ -96,7 +96,8 @@ module.exports.request = async function request(
             err.statusCode !== 429 &&
             err.statusCode !== 502 &&
             err.statusCode !== 503 &&
-            err.statusCode !== 504
+            err.statusCode !== 504 &&
+            !status.includes(err.statusCode)
           ) {
             throw err
           }
