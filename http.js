@@ -101,7 +101,7 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.warn({ err }, 'request error')
     })
 
-    if (!res.headersSent && !res.destroyed) {
+    if (!req.aborted && !res.headersSent && !res.destroyed && !res.complete) {
       res.statusCode = err.statusCode || 500
 
       let reqId = req?.id || err.id
