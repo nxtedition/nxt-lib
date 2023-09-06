@@ -43,6 +43,7 @@ module.exports = {
       statusCode: res.statusCode || res.status,
       bytesWritten: res.bytesWritten,
       headers: getHeaders(res),
+      headersSent: res.headersSent,
     },
   socket: (socket) =>
     socket && {
