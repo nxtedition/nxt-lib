@@ -6,6 +6,7 @@ const getJavascriptCompiler = require('./javascript')
 const JSON5 = require('json5')
 const objectHash = require('object-hash')
 const weakCache = require('../../weakCache')
+const firstValueFrom = require('../../rxjs/firstValueFrom')
 
 module.exports = ({ ds, proxify }) => {
   const compiler = {
@@ -226,8 +227,8 @@ module.exports = ({ ds, proxify }) => {
     return hash ? compileTemplateCache(template, hash) : null
   }
 
-  async function resolveTemplate(template, args$) {
-    return rxjs.firstValueFrom(onResolveTemplate(template, args$))
+  async function resolveTemplate(template, args$, options) {
+    return firstValueFrom(onResolveTemplate(template, args$), options)
   }
 
   function onResolveTemplate(template, args$) {
