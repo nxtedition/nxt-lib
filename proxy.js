@@ -38,13 +38,13 @@ module.exports.reduceHeaders = function reduceHeaders(
     }
   }
 
-  let remove
+  let remove = []
   if (connection && !HOP_EXPR.test(connection)) {
     remove = connection.split(/,\s*/)
   }
 
   for (const [key, val] of entries) {
-    if (key.charAt(0) !== ':' && !remove?.includes(key) && !HOP_EXPR.test(key)) {
+    if (key.charAt(0) !== ':' && !remove.includes(key) && !HOP_EXPR.test(key)) {
       acc = fn(acc, key, val)
     }
   }
