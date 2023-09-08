@@ -24,6 +24,7 @@ module.exports.request = async function request(
     method = body ? 'POST' : 'GET',
     userAgent,
     headers,
+    dump = method === 'HEAD',
   }
 ) {
   if (retry === false) {
@@ -101,6 +102,10 @@ module.exports.request = async function request(
         }
 
         assert(ures.statusCode >= 200 && ures.statusCode < 300)
+
+        if (dump) {
+          await ures.body.dump()
+        }
 
         // TODO (fix): Wrap response to handle error that can continue with range request...
 
