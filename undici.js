@@ -1,7 +1,7 @@
 const assert = require('assert')
 const tp = require('timers/promises')
 const xuid = require('xuid')
-const { isReadableNodeStream } = require('./stream')
+const { isReadableNodeStream, readableStreamLength } = require('./stream')
 const undici = require('undici')
 const stream = require('stream')
 const omitEmpty = require('omit-empty')
@@ -13,6 +13,7 @@ module.exports.request = async function request(
     id = xuid(),
     retry,
     maxRedirections: _maxRedirections,
+    idempotent,
     redirect,
     dispatcher,
     signal,
@@ -38,7 +39,27 @@ module.exports.request = async function request(
   }
 
   const { count: maxRedirections = _maxRedirections ?? 3 } = redirect ?? {}
-  const { count: maxRetries = 8, status = [] } = retry ?? {}
+  const {
+    count: maxRetries = 8,
+    method: retryMethod = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE', 'TRACE'],
+    status: retryStatus = [420, 429, 502, 503, 504],
+    code: retryCode = [
+      'ECONNRESET',
+      'ECONNREFUSED',
+      'ENOTFOUND',
+      'ENETDOWN',
+      'ENETUNREACH',
+      'EHOSTDOWN',
+      'EHOSTUNREACH',
+      'EPIPE',
+    ],
+    message: retryMessage = ['other side closed'],
+  } = retry ?? {}
+
+  if (readableStreamLength(body) === 0) {
+    body.on('error', () => {})
+    body = null
+  }
 
   const ureq = {
     url,
@@ -98,28 +119,15 @@ module.exports.request = async function request(
           throw err
         }
 
-        if (method === 'HEAD' || method === 'GET') {
-          if (
-            err.code !== 'ECONNRESET' &&
-            err.code !== 'ECONNREFUSED' &&
-            err.code !== 'ENOTFOUND' &&
-            err.code !== 'ENETDOWN' &&
-            err.code !== 'ENETUNREACH' &&
-            err.code !== 'EHOSTDOWN' &&
-            err.code !== 'EHOSTUNREACH' &&
-            err.code !== 'EPIPE' &&
-            err.message !== 'other side closed' &&
-            err.statusCode !== 420 &&
-            err.statusCode !== 429 &&
-            err.statusCode !== 502 &&
-            err.statusCode !== 503 &&
-            err.statusCode !== 504 &&
-            !status.includes(err.statusCode)
-          ) {
-            throw err
-          }
-        } else {
-          // TODO (fix): What to do?
+        if (!retryMethod.includes(method) && !idempotent) {
+          throw err
+        }
+
+        if (
+          !retryCode.includes(err.code) &&
+          !retryMessage.includes(err.message) &&
+          !retryStatus.includes(err.statusCode)
+        ) {
           throw err
         }
 
