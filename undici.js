@@ -41,7 +41,7 @@ module.exports.request = async function request(
   const { count: maxRedirections = _maxRedirections ?? 3 } = redirect ?? {}
   const {
     count: maxRetries = 8,
-    method: retryMethod = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE', 'TRACE'],
+    method: retryMethod = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE', 'TRACE', 'PATCH'],
     status: retryStatus = [420, 429, 502, 503, 504],
     code: retryCode = [
       'ECONNRESET',
