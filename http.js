@@ -349,3 +349,20 @@ module.exports.retry = async function _retry(fn, options) {
     }
   }
 }
+
+module.exports.parseHeaders = function parseHeaders(rawHeaders, obj = {}) {
+  for (let i = 0; i < rawHeaders.length; i += 2) {
+    const key = rawHeaders[i].toString().toLowerCase()
+    let val = obj[key]
+    if (!val) {
+      obj[key] = rawHeaders[i + 1].toString()
+    } else {
+      if (!Array.isArray(val)) {
+        val = [val]
+        obj[key] = val
+      }
+      val.push(rawHeaders[i + 1].toString())
+    }
+  }
+  return obj
+}
