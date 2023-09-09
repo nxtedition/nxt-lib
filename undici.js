@@ -80,8 +80,9 @@ module.exports.request = async function request(
   try {
     /* eslint-disable no-unreachable-loop */
     for (let retryCount = 0; true; retryCount++) {
+      let ures
       try {
-        const ures = await undici.request(url, {
+        ures = await undici.request(url, {
           method,
           reset,
           body,
@@ -97,7 +98,6 @@ module.exports.request = async function request(
         upstreamLogger?.debug({ ureq, ures }, 'upstream request response')
 
         if (ures.statusCode >= 300 && ures.statusCode < 400) {
-          await ures.body.dump()
           throw new Error('maxRedirections exceeded')
         }
 
@@ -111,6 +111,8 @@ module.exports.request = async function request(
 
         return ures
       } catch (err) {
+        await ures?.body.dump()
+
         if (retryCount >= maxRetries) {
           throw err
         }
