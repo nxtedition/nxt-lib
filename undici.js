@@ -1,4 +1,5 @@
 const assert = require('assert')
+const { errorMonitor } = require('node:events')
 const tp = require('timers/promises')
 const xuid = require('xuid')
 const { isReadableNodeStream, readableStreamLength } = require('./stream')
@@ -73,9 +74,9 @@ module.exports.request = async function request(
     }),
   }
 
-  const upstreamLogger = logger?.child({ ureq })
+  let upstreamLogger = logger?.child({ ureq })
 
-  upstreamLogger?.debug({ ureq }, 'upstream request started')
+  upstreamLogger?.debug('upstream request started')
 
   try {
     /* eslint-disable no-unreachable-loop */
@@ -95,7 +96,9 @@ module.exports.request = async function request(
           bodyTimeout,
         })
 
-        upstreamLogger?.debug({ ureq, ures }, 'upstream request response')
+        upstreamLogger = upstreamLogger?.child({ ures })
+
+        upstreamLogger?.debug('upstream request response')
 
         if (ures.statusCode >= 300 && ures.statusCode < 400) {
           throw new Error('maxRedirections exceeded')
@@ -106,6 +109,10 @@ module.exports.request = async function request(
         if (dump) {
           await ures.body.dump()
         }
+
+        ures.body.on(errorMonitor, (err) => {
+          upstreamLogger?.debug({ err }, 'upstream request body failed')
+        })
 
         // TODO (fix): Wrap response to handle error that can continue with range request...
 
