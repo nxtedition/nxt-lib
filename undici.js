@@ -111,7 +111,7 @@ module.exports.request = async function request(
         }
 
         ures.body.on(errorMonitor, (err) => {
-          upstreamLogger?.debug({ err }, 'upstream request body failed')
+          upstreamLogger?.debug({ err }, 'upstream request response body failed')
         })
 
         // TODO (fix): Wrap response to handle error that can continue with range request...
