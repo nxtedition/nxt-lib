@@ -366,3 +366,15 @@ module.exports.parseHeaders = function parseHeaders(rawHeaders, obj = {}) {
   }
   return obj
 }
+
+module.exports.findHeader = function parseHeaders(rawHeaders, name) {
+  const len = name.length
+
+  for (let i = 0; i < rawHeaders.length; i += 2) {
+    const key = rawHeaders[i + 0]
+    if (key.length === len && key.toString().toLowerCase() === name) {
+      return rawHeaders[i + 1].toString()
+    }
+  }
+  return null
+}
