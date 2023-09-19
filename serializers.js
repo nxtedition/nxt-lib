@@ -31,10 +31,14 @@ module.exports = {
   err: (err) => {
     if (Array.isArray(err)) {
       err = err.length === 1 ? err[0] : new AggregateError(err)
-    } else if (err.data !== null && typeof err.data === 'object') {
-      err = { ...err, data: JSON.stringify(err.data) }
     }
-    return serializers.err(err)
+    const ret = serializers.err(err)
+
+    if (ret.data !== null && typeof ret.data === 'object') {
+      ret.data = JSON.stringify(ret.data)
+    }
+
+    return ret
   },
   res: (res) =>
     res && {
