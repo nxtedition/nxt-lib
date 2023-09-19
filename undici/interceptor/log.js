@@ -5,10 +5,11 @@ class Handler {
   constructor(opts, { handler }) {
     this.handler = handler
     this.opts = opts
-    this.logger = opts.logger.child({ ureq: { id: xuid() } })
-    this.pos = 0
     this.abort = null
     this.aborted = false
+
+    this.logger = opts.logger.child({ ureq: { id: xuid() } })
+    this.pos = 0
   }
 
   onConnect(abort) {

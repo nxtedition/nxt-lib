@@ -9,16 +9,19 @@ class Handler {
     this.handler = handler
     this.opts = opts
     this.abort = null
+    this.aborted = false
+
     this.timeout = null
     this.count = 0
-    this.aborted = false
     this.retryAfter = null
   }
 
   onConnect(abort) {
+    this.retryAfter = null
+    this.abort = abort
     return this.handler.onConnect((reason) => {
       this.aborted = true
-      abort(reason)
+      this.abort(reason)
     })
   }
 
@@ -48,24 +51,18 @@ class Handler {
       return this.handler.onError(err)
     }
 
-    let retryAfter
-    try {
-      retryAfter = this.opts.retry(err, this.count++, this.opts)
-      assert(retryAfter == null || Number.isFinite(retryAfter), 'invalid retryAfter')
-    } catch (err2) {
-      return this.handler.onError(new AggregateError([err, err2]))
-    }
-
+    const retryAfter = this.opts.retry(err, this.count++, this.opts)
     if (retryAfter == null) {
       return this.handler.onError(err)
     }
+    assert(Number.isFinite(retryAfter), 'invalid retryAfter')
 
     this.timeout = setTimeout(() => {
       this.timeout = null
       try {
         this.dispatch(this.opts, this)
       } catch (err2) {
-        return this.handler.onError(new AggregateError([err, err2]))
+        this.handler.onError(err)
       }
     }, retryAfter)
   }
