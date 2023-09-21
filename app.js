@@ -1,10 +1,11 @@
-const { getDockerSecretsSync } = require('./docker-secrets')
-const { getGlobalDispatcher } = require('undici')
+const os = require('node:os')
+const net = require('node:net')
+const assert = require('node:assert')
 const stream = require('node:stream')
 const { Buffer } = require('node:buffer')
-const net = require('net')
+const { getDockerSecretsSync } = require('./docker-secrets')
+const { getGlobalDispatcher } = require('undici')
 const fp = require('lodash/fp.js')
-const assert = require('node:assert')
 
 module.exports = function (appConfig, onTerminate) {
   let ds
@@ -90,14 +91,20 @@ module.exports = function (appConfig, onTerminate) {
 
   const destroyers = []
 
-  const instanceId = process.env.NODE_APP_INSTANCE || process.env.pm_id || ''
-
-  const serviceName = appConfig.name + (instanceId && instanceId !== '0' ? `-${instanceId}` : '')
+  const serviceName = appConfig.name
+  const serviceModule = appConfig.module ?? 'main'
   const serviceVersion = appConfig.version
+  const serviceInstanceId =
+    // process.env.name is the pm2 name of the process
+    appConfig.instanceId ?? appConfig.containerId ?? process.env.name ?? os.hostname()
 
   const userAgent =
-    appConfig.userAgent ||
-    (serviceName ? `${serviceName}/${serviceVersion || '*'} Node/${process.version}` : null)
+    appConfig.userAgent ??
+    (serviceName &&
+      `${serviceName}/${
+        serviceVersion || '*'
+      } (module:${serviceModule}; instance:${serviceInstanceId}) Node/${process.version}`) ??
+    null
 
   const terminate = async (finalLogger) => {
     finalLogger ??= logger
@@ -137,6 +144,7 @@ module.exports = function (appConfig, onTerminate) {
       {
         ...loggerConfig,
         name: serviceName,
+        module: serviceModule,
         base: loggerConfig?.base ? { ...loggerConfig.base } : {},
       },
       terminate
@@ -166,12 +174,7 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.perf && process.platform === 'linux') {
-    const os = require('os')
-
-    const containerId = appConfig.containerId ?? os.hostname()
-    const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
-
-    const perfName = typeof appConfig.perf === 'string' ? appConfig.perf : hostname
+    const perfName = typeof appConfig.perf === 'string' ? appConfig.perf : serviceInstanceId
 
     try {
       const linuxPerf = require('linux-perf')
@@ -648,21 +651,15 @@ module.exports = function (appConfig, onTerminate) {
     const { isMainThread } = require('node:worker_threads')
 
     if (isMainThread) {
-      const os = require('os')
-      const rx = require('rxjs/operators')
-
-      const containerId = appConfig.containerId ?? os.hostname()
-      const hostname = process.env.NODE_ENV === 'production' ? containerId : serviceName
-
       const unprovide = ds.record.provide(`^([^:]+):monitor\\.([^?]+)[?]?`, (key) => {
         const [, id, prop] = key.match(/^([^:]+):monitor\.([^?]+)[?]?/)
 
         if (id === serviceName) {
           // TODO (fix): If id === serviceName check if there are multiple instances.
-          return monitorProviders[prop + '$']?.pipe(rx.map((value) => ({ [hostname]: value })))
+          return monitorProviders[prop + '$']
         }
 
-        if (id === hostname) {
+        if (id === serviceInstanceId) {
           return monitorProviders[prop + '$']
         }
       })
@@ -794,7 +791,9 @@ module.exports = function (appConfig, onTerminate) {
     tracer: trace,
     userAgent,
     serviceName,
+    serviceModule,
     serviceVersion,
+    serviceInstanceId,
     signal: ac.signal,
   }
 }
