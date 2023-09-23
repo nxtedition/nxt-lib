@@ -166,17 +166,17 @@ async function request(urlOrOpts, opts = {}) {
   return new Promise((resolve, reject) => {
     let dispatch = (opts, handler) => dispatcher.dispatch(opts, handler)
 
-    // dispatch = dispatchers.abort(dispatch)
-    // dispatch = dispatchers.catch(dispatch)
-    // dispatch = dispatchers.log(dispatch)
-    // dispatch = dispatchers.responseRetry(dispatch)
-    // dispatch = dispatchers.responseStatusRetry(dispatch)
+    dispatch = dispatchers.abort(dispatch)
+    dispatch = dispatchers.catch(dispatch)
+    dispatch = dispatchers.log(dispatch)
+    dispatch = dispatchers.responseRetry(dispatch)
+    dispatch = dispatchers.responseStatusRetry(dispatch)
     dispatch = dispatchers.responseBodyRetry(dispatch)
-    // dispatch = dispatchers.responseBodyContentLength(dispatch)
-    // dispatch = dispatchers.responseBodyContentMD5(dispatch)
-    // dispatch = dispatchers.responseBodyDump(dispatch)
-    // dispatch = dispatchers.redirect(dispatch)
-    // dispatch = dispatchers.signal(dispatch)
+    dispatch = dispatchers.responseBodyContentLength(dispatch)
+    dispatch = dispatchers.responseBodyContentMD5(dispatch)
+    dispatch = dispatchers.responseBodyDump(dispatch)
+    dispatch = dispatchers.redirect(dispatch)
+    dispatch = dispatchers.signal(dispatch)
 
     dispatch(opts, {
       resolve,

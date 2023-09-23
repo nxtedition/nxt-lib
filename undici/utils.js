@@ -22,7 +22,7 @@ module.exports.parseRange = function parseRange(range) {
     return null
   }
 
-  return { start, end }
+  return { start, end: end + 1 }
 }
 
 module.exports.parseContentRange = function parseContentRange(range) {
@@ -50,7 +50,7 @@ module.exports.parseContentRange = function parseContentRange(range) {
     return null
   }
 
-  return { start, end, size }
+  return { start, end: end + 1, size }
 }
 
 module.exports.findHeader = function findHeader(rawHeaders, name) {

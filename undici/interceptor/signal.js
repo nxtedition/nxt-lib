@@ -1,12 +1,12 @@
 class Handler {
-  constructor(opts, { handler }) {
+  constructor(opts, signal, { handler }) {
     this.handler = handler
-    this.signal = opts.signal
+    this.signal = signal
     this.abort = null
   }
 
   onConnect(abort) {
-    this.abort = () => abort(this.signal.reason)
+    this.abort = () => { abort(this.signal.reason) }
     this.signal.addEventListener('abort', this.abort)
 
     if (this.signal.aborted) {
@@ -39,5 +39,9 @@ class Handler {
   }
 }
 
-module.exports = (dispatch) => (opts, handler) =>
-  opts.signal ? dispatch(opts, new Handler(opts, { handler })) : dispatch(opts, handler)
+module.exports =
+  (dispatch) =>
+  ({ signal, ...opts }, handler) =>
+    signal
+      ? dispatch(opts, new Handler(opts, signal, { handler }))
+      : dispatch(opts, handler)

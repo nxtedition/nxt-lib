@@ -15,6 +15,7 @@ class Handler {
     this.pos = 0
     this.end = null
     this.error = null
+    this.etag = null
   }
 
   onConnect(abort) {
@@ -30,12 +31,18 @@ class Handler {
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
+    const etag = findHeader(rawHeaders, 'etag')
+
     if (this.resume) {
       this.resume = null
 
       // TODO (fix): Support other statusCode with skip?
-
       if (statusCode !== 206) {
+        throw this.error
+      }
+
+      // TODO (fix): strict vs weak etag?
+      if (this.etag == null || this.etag !== etag) {
         throw this.error
       }
 
@@ -75,6 +82,7 @@ class Handler {
       assert(this.end == null || Number.isFinite(this.end), 'invalid content-length')
     }
 
+    this.etag = etag
     this.resume = resume
     return this.handler.onHeaders(statusCode, rawHeaders, () => this.resume(), statusMessage)
   }
@@ -94,7 +102,8 @@ class Handler {
       clearTimeout(this.timeout)
       this.timeout = null
     }
-    if (!this.resume || this.aborted || isDisturbed(this.opts.body)) {
+
+    if (!this.resume || this.aborted || !this.etag || isDisturbed(this.opts.body)) {
       return this.handler.onError(err)
     }
 
@@ -112,6 +121,8 @@ class Handler {
         range: `bytes=${this.pos}-${this.end ?? ''}`,
       },
     }
+
+    this.opts.logger?.debug('retrying response body', { retryAfter })
 
     this.timeout = setTimeout(() => {
       this.timeout = null

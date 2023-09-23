@@ -9,7 +9,7 @@ const filePath = '/Users/robertnagy/Downloads/a66f220981c97bad.mp4'
 
 let currentResponse
 const server = createServer((req, res) => {
-  if (Math.random() > 0.5) {
+  if (Math.random() > 0.8) {
     res.statusCode = 429
     res.end()
     return
@@ -19,7 +19,7 @@ const server = createServer((req, res) => {
   send(req, filePath).pipe(res)
 })
 
-server.listen(0, async () => {
+async function run () {
   let expected
   {
     const hasher = crypto.createHash('md5')
@@ -29,19 +29,24 @@ server.listen(0, async () => {
     expected = hasher.digest('hex')
   }
 
-  for (let n = 0; n < 10e3; n++) {
-    const body = await request(`http://localhost:${server.address().port}`)
-    const hasher = crypto.createHash('md5')
-    for await (const chunk of body) {
-      if (Math.random() > 0.5) {
-        currentResponse.destroy()
-        continue
-      }
-
-      hasher.update(chunk)
+  server.listen(0, async () => {
+    for (let n = 0; n < 10e3; n++) {
+      const body = await request(`http://localhost:${server.address().port}`)
+      const hasher = crypto.createHash('md5')
+      let pos = 0
+      await new Promise(resolve => body.on('data', (data) => {
+        hasher.update(data)
+        if (Math.random() > 0.95) {
+          currentResponse.destroy()
+        }
+      }).on('end', () => {
+        const actual = hasher.digest('hex')
+        console.log('# ', n, actual, expected)
+        assert.equal(actual, expected)
+        resolve(null)
+      }))
     }
-    const actual = hasher.digest('hex')
-    assert.equal(actual, expected)
-    console.log('# ', n)
-  }
-})
+  })
+}
+
+run()

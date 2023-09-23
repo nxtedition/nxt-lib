@@ -69,6 +69,8 @@ class Handler {
       return this.handler.onError(err)
     }
 
+    this.opts.logger?.debug('retrying response status', { retryAfter: this.retryAfter })
+
     this.timeout = setTimeout(() => {
       this.timeout = null
       try {

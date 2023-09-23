@@ -10,7 +10,7 @@ class Handler {
     this.opts = opts
     this.abort = null
     this.aborted = false
-
+    this.responded = false
     this.timeout = null
     this.count = 0
     this.retryAfter = null
@@ -30,6 +30,7 @@ class Handler {
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
+    this.responded = true
     return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
   }
 
@@ -47,7 +48,7 @@ class Handler {
       this.timeout = null
     }
 
-    if (this.aborted || isDisturbed(this.opts.body)) {
+    if (this.responded || this.aborted || isDisturbed(this.opts.body)) {
       return this.handler.onError(err)
     }
 
@@ -56,6 +57,8 @@ class Handler {
       return this.handler.onError(err)
     }
     assert(Number.isFinite(retryAfter), 'invalid retryAfter')
+
+    this.opts.logger?.debug('retrying response', { retryAfter })
 
     this.timeout = setTimeout(() => {
       this.timeout = null
