@@ -17,7 +17,6 @@ class Handler {
   }
 
   onConnect(abort) {
-    this.retryAfter = null
     this.abort = abort
     return this.handler.onConnect((reason) => {
       this.aborted = true
@@ -77,6 +76,7 @@ class Handler {
         this.handler.onError(err)
       }
     }, this.retryAfter)
+    this.retryAfter = null
   }
 }
 

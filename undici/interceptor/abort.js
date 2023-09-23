@@ -5,14 +5,12 @@ class Handler {
     this.handler = handler
     this.pos = 0
     this.reason = null
-    this.resume = null
   }
 
   onConnect(abort) {
     this.abort = abort
     this.handler.onConnect((reason) => {
       this.reason = reason ?? new AbortError()
-      this.resume?.()
     })
   }
 
@@ -22,8 +20,10 @@ class Handler {
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
     if (this.reason == null) {
-      this.resume = resume
-      return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+      const ret = this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+      if (this.reason == null) {
+        return ret
+      }
     }
 
     return true
@@ -31,7 +31,10 @@ class Handler {
 
   onData(chunk) {
     if (this.reason == null) {
-      return this.handler.onData(chunk)
+      const ret = this.handler.onData(chunk)
+      if (this.reason == null) {
+        return ret
+      }
     }
 
     this.pos += chunk.length

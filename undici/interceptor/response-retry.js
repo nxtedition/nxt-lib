@@ -8,14 +8,12 @@ class Handler {
     this.opts = opts
     this.abort = null
     this.aborted = false
-    this.responded = false
     this.timeout = null
     this.count = 0
     this.retryAfter = null
   }
 
   onConnect(abort) {
-    this.retryAfter = null
     this.abort = abort
     return this.handler.onConnect((reason) => {
       this.aborted = true
@@ -28,7 +26,7 @@ class Handler {
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
-    this.responded = true
+    this.aborted = true
     return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
   }
 
@@ -46,7 +44,7 @@ class Handler {
       this.timeout = null
     }
 
-    if (this.responded || this.aborted || isDisturbed(this.opts.body)) {
+    if (this.aborted || isDisturbed(this.opts.body)) {
       return this.handler.onError(err)
     }
 
@@ -66,6 +64,7 @@ class Handler {
         this.handler.onError(err)
       }
     }, retryAfter)
+    this.retryAfter = null
   }
 }
 

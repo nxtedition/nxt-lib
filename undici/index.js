@@ -107,15 +107,15 @@ async function request(urlOrOpts, opts = {}) {
     bodyTimeout: opts.bodyTimeout,
     idempotent,
     signal: opts.signal,
-    retry: opts.retry ?? true,
-    redirect: { count: opts.maxRedirections, ...opts.redirect },
+    retry: opts.retry ?? 8,
+    follow: { count: opts.maxRedirections ?? 8, ...opts.redirect, ...opts.follow },
     dump,
     logger: opts.logger,
   }
 
   const dispatcher = opts.dispatcher ?? undici.getGlobalDispatcher()
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     let dispatch = (opts, handler) => dispatcher.dispatch(opts, handler)
 
     dispatch = dispatchers.catch(dispatch)
@@ -132,7 +132,6 @@ async function request(urlOrOpts, opts = {}) {
 
     dispatch(opts, {
       resolve,
-      reject,
       /** @type {Function | null} */ abort: null,
       /** @type {stream.Readable | null} */ body: null,
       onConnect(abort) {
@@ -157,6 +156,7 @@ async function request(urlOrOpts, opts = {}) {
           })
 
           this.resolve(this.body)
+          this.resolve = null
         }
 
         return false
@@ -173,7 +173,7 @@ async function request(urlOrOpts, opts = {}) {
         if (this.body) {
           this.body.destroy(err)
         } else {
-          this.reject(err)
+          this.resolve(Promise.reject(err))
         }
       },
     })
