@@ -1,10 +1,8 @@
 const assert = require('node:assert')
-const { isDisturbed } = require('../utils.js')
+const { isDisturbed, retryAfter: retryAfterFn } = require('../utils.js')
 
 class Handler {
   constructor(opts, { dispatch, handler }) {
-    assert(typeof opts.retry === 'function')
-
     this.dispatch = dispatch
     this.handler = handler
     this.opts = opts
@@ -52,7 +50,7 @@ class Handler {
       return this.handler.onError(err)
     }
 
-    const retryAfter = this.opts.retry(err, this.count++, this.opts)
+    const retryAfter = retryAfterFn(err, this.count++, this.opts)
     if (retryAfter == null) {
       return this.handler.onError(err)
     }

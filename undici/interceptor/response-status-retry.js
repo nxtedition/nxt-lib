@@ -1,12 +1,10 @@
 const assert = require('node:assert')
-const { isDisturbed } = require('../utils')
+const { isDisturbed, retryAfter: retryAfterFn } = require('../utils')
 const createError = require('http-errors')
 const { parseHeaders } = require('../../http')
 
 class Handler {
   constructor(opts, { dispatch, handler }) {
-    assert(typeof opts.retry === 'function')
-
     this.dispatch = dispatch
     this.handler = handler
     this.opts = opts
@@ -38,7 +36,7 @@ class Handler {
 
     const err = createError(statusCode, { headers: parseHeaders(rawHeaders) })
 
-    const retryAfter = this.opts.retry(err, this.count++, this.opts)
+    const retryAfter = retryAfterFn(err, this.count++, this.opts)
     if (retryAfter == null) {
       return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
     }

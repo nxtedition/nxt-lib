@@ -42,7 +42,7 @@ class Readable extends stream.Readable {
     return Buffer.concat(buffers)
   }
 
-  async buffer(stream) {
+  async buffer() {
     return Buffer.from(await this.arrayBuffer())
   }
 
@@ -76,54 +76,6 @@ const dispatchers = {
   signal: require('./interceptor/signal.js'),
 }
 
-function makeDefaultRetry(opts) {
-  return function defaultRetry(err, retryCount) {
-    if (opts.retry === null || opts.retry === false) {
-      return null
-    }
-
-    if (typeof opts.retry === 'function') {
-      const ret = opts.retry(err, retryCount)
-      if (ret != null) {
-        return ret
-      }
-    }
-
-    const retryMax = opts.retry?.count ?? opts.maxRetries ?? 8
-
-    if (retryCount > retryMax) {
-      return null
-    }
-
-    if (err.statusCode && [420, 429, 502, 503, 504].includes(err.statusCode)) {
-      const retryAfter = err.headers['retry-after'] ? err.headers['retry-after'] * 1e3 : null
-      return retryAfter ?? Math.min(10e3, retryCount * 1e3)
-    }
-
-    if (
-      err.code &&
-      [
-        'ECONNRESET',
-        'ECONNREFUSED',
-        'ENOTFOUND',
-        'ENETDOWN',
-        'ENETUNREACH',
-        'EHOSTDOWN',
-        'EHOSTUNREACH',
-        'EPIPE',
-      ].includes(err.code)
-    ) {
-      return Math.min(10e3, retryCount * 1e3)
-    }
-
-    if (err.message && ['other side closed'].includes(err.message)) {
-      return Math.min(10e3, retryCount * 1e3)
-    }
-
-    return null
-  }
-}
-
 async function request(urlOrOpts, opts = {}) {
   let url
   if (typeof urlOrOpts === 'string') {
@@ -155,7 +107,7 @@ async function request(urlOrOpts, opts = {}) {
     bodyTimeout: opts.bodyTimeout,
     idempotent,
     signal: opts.signal,
-    retry: makeDefaultRetry(opts),
+    retry: opts.retry ?? true,
     redirect: { count: opts.maxRedirections, ...opts.redirect },
     dump,
     logger: opts.logger,
@@ -166,8 +118,8 @@ async function request(urlOrOpts, opts = {}) {
   return new Promise((resolve, reject) => {
     let dispatch = (opts, handler) => dispatcher.dispatch(opts, handler)
 
-    dispatch = dispatchers.abort(dispatch)
     dispatch = dispatchers.catch(dispatch)
+    dispatch = dispatchers.abort(dispatch)
     dispatch = dispatchers.log(dispatch)
     dispatch = dispatchers.responseRetry(dispatch)
     dispatch = dispatchers.responseStatusRetry(dispatch)

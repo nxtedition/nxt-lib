@@ -5,12 +5,14 @@ class Handler {
     this.handler = handler
     this.pos = 0
     this.reason = null
+    this.resume = null
   }
 
   onConnect(abort) {
     this.abort = abort
     this.handler.onConnect((reason) => {
       this.reason = reason ?? new AbortError()
+      this.resume?.()
     })
   }
 
@@ -19,9 +21,12 @@ class Handler {
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
-    return this.reason == null
-      ? this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
-      : true
+    if (this.reason == null) {
+      this.resume = resume
+      return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+    }
+
+    return true
   }
 
   onData(chunk) {
@@ -40,11 +45,9 @@ class Handler {
   }
 
   onComplete(rawTrailers) {
-    if (this.reason == null) {
-      return this.handler.onComplete(rawTrailers)
-    } else {
-      return this.handler.onError(this.reason)
-    }
+    return this.reason == null
+      ? this.handler.onComplete(rawTrailers)
+      : this.handler.onError(this.reason)
   }
 
   onError(err) {
@@ -52,5 +55,4 @@ class Handler {
   }
 }
 
-module.exports = (dispatch) => (opts, handler) =>
-  opts.dump ? dispatch(opts, new Handler(opts, { handler })) : dispatch(opts, handler)
+module.exports = (dispatch) => (opts, handler) => dispatch(opts, new Handler(opts, { handler }))

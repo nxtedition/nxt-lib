@@ -6,7 +6,9 @@ class Handler {
   }
 
   onConnect(abort) {
-    this.abort = () => { abort(this.signal.reason) }
+    this.abort = () => {
+      abort(this.signal.reason)
+    }
     this.signal.addEventListener('abort', this.abort)
 
     if (this.signal.aborted) {
@@ -42,6 +44,4 @@ class Handler {
 module.exports =
   (dispatch) =>
   ({ signal, ...opts }, handler) =>
-    signal
-      ? dispatch(opts, new Handler(opts, signal, { handler }))
-      : dispatch(opts, handler)
+    signal ? dispatch(opts, new Handler(opts, signal, { handler })) : dispatch(opts, handler)

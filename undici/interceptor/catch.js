@@ -6,10 +6,9 @@ class Handler {
   onConnect(abort) {
     this.abort = abort
     try {
-      return this.onConnect(abort)
+      return this.handler.onConnect(abort)
     } catch (err) {
       this.abort(err)
-      return false
     }
   }
 
@@ -18,7 +17,6 @@ class Handler {
       return this.handler.onBodySent(chunk)
     } catch (err) {
       this.abort(err)
-      return false
     }
   }
 
@@ -54,5 +52,4 @@ class Handler {
   }
 }
 
-module.exports = (dispatch) => (opts, handler) =>
-  opts.dump ? dispatch(opts, new Handler(opts, { handler })) : dispatch(opts, handler)
+module.exports = (dispatch) => (opts, handler) => dispatch(opts, new Handler(opts, { handler }))
