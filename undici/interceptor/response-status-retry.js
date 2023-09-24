@@ -10,18 +10,28 @@ class Handler {
     this.opts = opts
     this.abort = null
     this.aborted = false
+    this.reason = null
 
     this.timeout = null
     this.count = 0
     this.retryAfter = null
+
+    this.handler.onConnect((reason) => {
+      this.aborted = true
+      if (this.abort) {
+        this.abort(reason)
+      } else {
+        this.reason = reason
+      }
+    })
   }
 
   onConnect(abort) {
-    this.abort = abort
-    return this.handler.onConnect((reason) => {
-      this.aborted = true
-      this.abort(reason)
-    })
+    if (this.aborted) {
+      abort(this.reason)
+    } else {
+      this.abort = abort
+    }
   }
 
   onBodySent(chunk) {

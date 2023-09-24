@@ -13,20 +13,30 @@ class Handler {
     this.opts = opts
     this.abort = null
     this.aborted = false
+    this.reason = null
 
     this.count = 0
     this.pos = 0
     this.end = null
     this.error = null
     this.etag = null
+
+    this.handler.onConnect((reason) => {
+      this.aborted = true
+      if (this.abort) {
+        this.abort(reason)
+      } else {
+        this.reason = reason
+      }
+    })
   }
 
   onConnect(abort) {
-    this.abort = abort
-    this.handler.onConnect((reason) => {
-      this.aborted = true
-      this.abort(reason)
-    })
+    if (this.aborted) {
+      abort(this.reason)
+    } else {
+      this.abort = abort
+    }
   }
 
   onBodySent(chunk) {
