@@ -3,8 +3,8 @@ const fp = require('lodash/fp.js')
 const { toString } = Object.prototype
 
 module.exports.AbortError = class AbortError extends Error {
-  constructor() {
-    super('The operation was aborted')
+  constructor(message) {
+    super(message ?? 'The operation was aborted')
     this.code = 'ABORT_ERR'
     this.name = 'AbortError'
   }
@@ -34,7 +34,7 @@ module.exports.parseError = function parseError(error) {
     {
       ...properties,
       cause: cause ? parseError(error.cause) : undefined,
-    }
+    },
   )
 }
 
@@ -101,7 +101,7 @@ module.exports.serializeError = function serializeError(error) {
       data,
       cause,
       errors,
-    })
+    }),
   )
 }
 
@@ -115,7 +115,7 @@ module.exports.makeMessages = function makeMessages(error, options) {
     return fp.pipe(
       fp.flattenDeep,
       fp.flatMap((x) => makeMessages(x, null)),
-      fp.uniqBy('id')
+      fp.uniqBy('id'),
     )(error)
   } else if (Array.isArray(error.messages)) {
     return makeMessages(error.messages, null)
@@ -127,11 +127,11 @@ module.exports.makeMessages = function makeMessages(error, options) {
       const level = parseInt(error.level) || options?.level || 50
       const code =
         [error?.code, options?.codes?.[error?.code]].find(
-          (x) => typeof x === 'string' && x.length > 0
+          (x) => typeof x === 'string' && x.length > 0,
         ) ?? undefined
       const msg =
         [error.msg, error.message, code?.toLowerCase().replace('_', ' ')].find(
-          (x) => typeof x === 'string' && x.length > 0
+          (x) => typeof x === 'string' && x.length > 0,
         ) || 'unknown error'
 
       let data = error.data

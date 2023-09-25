@@ -98,13 +98,14 @@ module.exports = function (appConfig, onTerminate) {
     // process.env.name is the pm2 name of the process
     appConfig.instanceId ?? appConfig.containerId ?? process.env.name ?? os.hostname()
 
-  const userAgent =
+  const userAgent = globalThis.userAgent = (
     appConfig.userAgent ??
     (serviceName &&
       `${serviceName}/${
         serviceVersion || '*'
       } (module:${serviceModule}; instance:${serviceInstanceId}) Node/${process.version}`) ??
     null
+  )
 
   const terminate = async (finalLogger) => {
     finalLogger ??= logger
@@ -147,7 +148,7 @@ module.exports = function (appConfig, onTerminate) {
         module: serviceModule,
         base: loggerConfig?.base ? { ...loggerConfig.base } : {},
       },
-      terminate
+      terminate,
     )
   }
 
@@ -228,7 +229,7 @@ module.exports = function (appConfig, onTerminate) {
         } else {
           return {}
         }
-      })
+      }),
     )
 
     if (couchConfig.url) {
@@ -256,7 +257,7 @@ module.exports = function (appConfig, onTerminate) {
         } else {
           return {}
         }
-      })
+      }),
     )
 
     if (!dsConfig.credentials || !dsConfig.url) {
@@ -310,7 +311,7 @@ module.exports = function (appConfig, onTerminate) {
 
         logger[level](
           { ds: { connectionState, username: userName, url: dsConfig.url } },
-          'Deepstream Connection State Changed.'
+          'Deepstream Connection State Changed.',
         )
 
         prevConnectionState = connectionState
@@ -351,7 +352,7 @@ module.exports = function (appConfig, onTerminate) {
         rx.exhaustMap(() => {
           const ret = appConfig.stats({ ds, couch, logger })
           return ret?.then || ret?.subscribe ? ret : rxjs.of(ret)
-        })
+        }),
       )
     } else if (typeof appConfig.stats === 'object') {
       stats$ = rxjs.timer(0, 10e3).pipe(rx.map(() => appConfig.stats))
@@ -369,12 +370,12 @@ module.exports = function (appConfig, onTerminate) {
       rx.retryWhen((err$) =>
         err$.pipe(
           rx.tap((err) => logger.error({ err }, 'monitor.stats')),
-          rx.delay(10e3)
-        )
+          rx.delay(10e3),
+        ),
       ),
       rx.startWith({}),
       rx.publishReplay(1),
-      rx.refCount()
+      rx.refCount(),
     )
 
     monitorProviders.stats$ = stats$
@@ -393,7 +394,7 @@ module.exports = function (appConfig, onTerminate) {
             heap: v8.getHeapStatistics(),
             ...stats,
           },
-          'STATS'
+          'STATS',
         )
         elu1 = elu2
       }
@@ -422,7 +423,7 @@ module.exports = function (appConfig, onTerminate) {
         })
         .pipe(
           rx.catchError((err) => rxjs.of({ warnings: [err.message] })),
-          rx.repeatWhen(() => rxjs.timer(10e3))
+          rx.repeatWhen(() => rxjs.timer(10e3)),
         )
     } else if (appConfig.status && typeof appConfig.status === 'object') {
       status$ = rxjs.timer(0, 10e3).pipe(rx.exhaustMap(() => appConfig.status))
@@ -448,7 +449,7 @@ module.exports = function (appConfig, onTerminate) {
             }),
             rx.startWith([]),
             rx.distinctUntilChanged(fp.isEqual),
-            rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3)))
+            rx.repeatWhen((complete$) => complete$.pipe(rx.delay(10e3))),
           ),
           toobusy
             ? rxjs.timer(0, 1e3).pipe(
@@ -462,10 +463,10 @@ module.exports = function (appConfig, onTerminate) {
                           msg: `lag: ${toobusy.lag()}`,
                         },
                       ]
-                    : []
+                    : [],
                 ),
                 rx.startWith([]),
-                rx.distinctUntilChanged(fp.isEqual)
+                rx.distinctUntilChanged(fp.isEqual),
               )
             : rxjs.of({}),
           couch
@@ -485,7 +486,7 @@ module.exports = function (appConfig, onTerminate) {
                   }
                 }),
                 rx.startWith([]),
-                rx.distinctUntilChanged(fp.isEqual)
+                rx.distinctUntilChanged(fp.isEqual),
               )
             : rxjs.of({}),
           ds
@@ -562,7 +563,7 @@ module.exports = function (appConfig, onTerminate) {
                       }
 
                       return messages
-                    })
+                    }),
                   )
                   .subscribe(o)
 
@@ -573,7 +574,7 @@ module.exports = function (appConfig, onTerminate) {
               }).pipe(rx.startWith([]), rx.distinctUntilChanged(fp.isEqual))
             : rxjs.of({}),
           rxjs.timer(0, 10e3),
-        ].filter(Boolean)
+        ].filter(Boolean),
       )
       .pipe(
         rx.auditTime(1e3),
@@ -597,7 +598,7 @@ module.exports = function (appConfig, onTerminate) {
                     ...message,
                     message: undefined,
                     msg: message.message,
-                  }
+                  },
             )
             .map((message) =>
               message.id
@@ -605,9 +606,9 @@ module.exports = function (appConfig, onTerminate) {
                 : {
                     ...message,
                     id: hashString(
-                      [message.msg, message].find(fp.isString) ?? JSON.stringify(message)
+                      [message.msg, message].find(fp.isString) ?? JSON.stringify(message),
                     ),
-                  }
+                  },
             )
 
           return { ...status, messages, timestamp: Date.now() }
@@ -622,7 +623,7 @@ module.exports = function (appConfig, onTerminate) {
         rx.startWith({}),
         rx.distinctUntilChanged(fp.isEqual),
         rx.publishReplay(1),
-        rx.refCount()
+        rx.refCount(),
       )
 
     const loggerSubscription = status$
@@ -747,13 +748,13 @@ module.exports = function (appConfig, onTerminate) {
           },
         ]
           .flat()
-          .filter(Boolean)
+          .filter(Boolean),
       )
 
       server = createServer(
         typeof appConfig.http === 'object' ? appConfig.http : {},
         { ds, couch, config: httpConfig, logger },
-        middleware
+        middleware,
       )
 
       if (httpConfig.keepAlive != null) {
