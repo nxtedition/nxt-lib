@@ -65,8 +65,7 @@ class Readable extends stream.Readable {
 const dispatchers = {
   abort: require('./interceptor/abort.js'),
   catch: require('./interceptor/catch.js'),
-  responseBodyContentLength: require('./interceptor/response-body-content-length.js'),
-  responseBodyContentMD5: require('./interceptor/response-body-content-md5.js'),
+  content: require('./interceptor/content.js'),
   responseBodyDump: require('./interceptor/response-body-dump.js'),
   log: require('./interceptor/log.js'),
   redirect: require('./interceptor/redirect.js'),
@@ -74,6 +73,7 @@ const dispatchers = {
   responseStatusRetry: require('./interceptor/response-status-retry.js'),
   responseRetry: require('./interceptor/response-retry.js'),
   signal: require('./interceptor/signal.js'),
+  proxy: require('./interceptor/proxy.js'),
 }
 
 async function request(urlOrOpts, opts = {}) {
@@ -81,6 +81,8 @@ async function request(urlOrOpts, opts = {}) {
   if (typeof urlOrOpts === 'string') {
     url = new URL(urlOrOpts)
   } else if (urlOrOpts instanceof URL) {
+    url = urlOrOpts
+  } else if (typeof urlOrOpts?.origin === 'string' && typeof urlOrOpts?.path === 'string') {
     url = urlOrOpts
   } else if (typeof urlOrOpts === 'object' && urlOrOpts != null) {
     opts = urlOrOpts
@@ -91,14 +93,21 @@ async function request(urlOrOpts, opts = {}) {
   const idempotent = opts.idempotent ?? (method === 'GET' || method === 'HEAD')
   const dump = opts.dump ?? method === 'HEAD'
 
+  let headers
+  if (Array.isArray(opts.headers)) {
+    headers = parseHeaders(opts.headers)
+  } else {
+    headers = opts.headers
+  }
+
   opts = {
     url,
     method,
     body: opts.body,
     headers: {
-      'request-id': opts.id ?? xuid(),
-      'user-agent': opts.userAgent,
-      ...opts.headers,
+      'request-id': xuid(),
+      'user-agent': opts.userAgent ?? globalThis.userAgent,
+      ...headers,
     },
     origin: opts.origin ?? url.origin,
     path: opts.path ?? url.search ? `${url.pathname}${url.search ?? ''}` : url.pathname,
@@ -124,11 +133,11 @@ async function request(urlOrOpts, opts = {}) {
     dispatch = dispatchers.responseRetry(dispatch)
     dispatch = dispatchers.responseStatusRetry(dispatch)
     dispatch = dispatchers.responseBodyRetry(dispatch)
-    dispatch = dispatchers.responseBodyContentLength(dispatch)
-    dispatch = dispatchers.responseBodyContentMD5(dispatch)
+    dispatch = dispatchers.content(dispatch)
     dispatch = dispatchers.responseBodyDump(dispatch)
     dispatch = dispatchers.redirect(dispatch)
     dispatch = dispatchers.signal(dispatch)
+    dispatch = dispatchers.proxy(dispatch)
 
     dispatch(opts, {
       resolve,

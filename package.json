@@ -23,7 +23,6 @@
     "app.js",
     "errors.js",
     "worker.js",
-    "proxy.js",
     "stream.js",
     "timeline.js",
     "docker-secrets.js"

@@ -19,7 +19,7 @@ const server = createServer((req, res) => {
   send(req, filePath).pipe(res)
 })
 
-async function run () {
+async function run() {
   let expected
   {
     const hasher = crypto.createHash('md5')
@@ -33,18 +33,21 @@ async function run () {
     for (let n = 0; n < 10e3; n++) {
       const body = await request(`http://localhost:${server.address().port}`)
       const hasher = crypto.createHash('md5')
-      let pos = 0
-      await new Promise(resolve => body.on('data', (data) => {
-        hasher.update(data)
-        if (Math.random() > 0.95) {
-          currentResponse.destroy()
-        }
-      }).on('end', () => {
-        const actual = hasher.digest('hex')
-        console.log('# ', n, actual, expected)
-        assert.equal(actual, expected)
-        resolve(null)
-      }))
+      await new Promise((resolve) =>
+        body
+          .on('data', (data) => {
+            hasher.update(data)
+            if (Math.random() > 0.95) {
+              currentResponse.destroy()
+            }
+          })
+          .on('end', () => {
+            const actual = hasher.digest('hex')
+            console.log('# ', n, actual, expected)
+            assert.equal(actual, expected)
+            resolve(null)
+          }),
+      )
     }
   })
 }
