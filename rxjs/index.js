@@ -3,4 +3,5 @@ module.exports = {
   combineMap: require('./combineMap'),
   firstValueFrom: require('./firstValueFrom'),
   lastValueFrom: require('./lastValueFrom'),
+  withAbortSignal: require('./withAbortSignal'),
 }

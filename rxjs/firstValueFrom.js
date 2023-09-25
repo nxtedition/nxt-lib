@@ -1,6 +1,5 @@
-const rxjs = require('rxjs')
 const rx = require('rxjs/operators')
-const { AbortError } = require('../errors')
+const withAbortSignal = require('./withAbortSignal')
 
 module.exports = function firstValueFrom(x$, config) {
   const hasConfig = config && typeof config === 'object'
@@ -8,8 +7,7 @@ module.exports = function firstValueFrom(x$, config) {
   const timeout = hasConfig ? config.timeout : undefined
 
   if (signal) {
-    x$ = signal.aborted ? rxjs.EMPTY : x$.pipe(rx.takeUntil(rxjs.fromEvent(signal, 'abort')))
-    x$ = x$.pipe(rx.throwIfEmpty(() => new AbortError()))
+    x$ = x$.pipe(withAbortSignal(signal))
   }
 
   if (timeout) {
