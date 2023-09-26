@@ -1,7 +1,7 @@
 const mime = require('mime')
 
 function lookup(name) {
-  if (!name) {
+  if (typeof name !== 'string' || name.length === 0) {
     return null
   }
   if (/\.nut$/.test(name)) {
@@ -30,7 +30,7 @@ function lookup(name) {
 }
 
 function extension(type, name) {
-  if (!type) {
+  if (typeof type !== 'string' || type.length === 0) {
     return null
   }
   if (/video\/(x-)?nut/.test(type)) {
@@ -51,7 +51,7 @@ function extension(type, name) {
 
   const extension = mime.getExtension(type) || (type || '').split('/').pop()
 
-  if (extension === 'qt' && name?.endsWith('mov')) {
+  if (extension === 'qt' && typeof name === 'string' && name.endsWith('mov')) {
     return 'mov'
   }
 
