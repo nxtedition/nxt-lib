@@ -6,12 +6,13 @@ const stream = require('stream')
 const { parseHeaders } = require('../http')
 
 class Readable extends stream.Readable {
-  constructor({ statusCode, statusMessage, headers, ...opts }) {
+  constructor({ statusCode, statusMessage, headers, size, ...opts }) {
     super(opts)
     this.statusCode = statusCode
     this.statusMessage = statusMessage
     this.headers = headers
     this.body = this
+    this.size = size
   }
 
   async text() {
@@ -156,12 +157,15 @@ async function request(urlOrOpts, opts = {}) {
         } else {
           assert(statusCode >= 200)
 
+          const contentLength = Number(headers['content-length'] ?? headers['Content-Length'])
+
           this.body = new Readable({
             read: resume,
             highWaterMark: 128 * 1024,
             statusCode,
             statusMessage,
             headers,
+            size: Number.isFinite(contentLength) ? contentLength : null,
           })
 
           this.resolve(this.body)
