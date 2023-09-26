@@ -29,7 +29,7 @@ function lookup(name) {
   return mime.getType(name)
 }
 
-function extension(type) {
+function extension(type, name) {
   if (!type) {
     return null
   }
@@ -48,7 +48,14 @@ function extension(type) {
   if (/audio\/(x-)?pcm-s16le/.test(type)) {
     return 'pcm-s16le'
   }
-  return mime.getExtension(type) || (type || '').split('/').pop()
+
+  const extension = mime.getExtension(type) || (type || '').split('/').pop()
+
+  if (extension === 'qt' && name?.endsWith('mov')) {
+    return 'mov'
+  }
+
+  return extension
 }
 
 module.exports = {
