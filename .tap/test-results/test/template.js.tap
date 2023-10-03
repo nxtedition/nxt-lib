@@ -1,0 +1,22 @@
+TAP version 14
+# Subtest: noop
+    ok 1 - should be equal
+    1..1
+ok 1 - noop # time=2.912ms
+
+# Subtest: simple
+    ok 1 - should be equivalent
+    1..1
+ok 2 - simple # time=2.162ms
+
+# Subtest: cache
+    ok 1 - should be equal
+    1..1
+ok 3 - cache # time=0.147ms
+
+# Subtest: string concat
+    ok 1 - should be equal
+    1..1
+ok 4 - string concat # time=1.176ms
+
+1..4

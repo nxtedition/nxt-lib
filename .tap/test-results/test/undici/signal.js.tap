@@ -1,0 +1,17 @@
+TAP version 14
+# Subtest: pre abort signal w/ reason
+    1..1
+    ok 1 - should be equal
+ok 1 - pre abort signal w/ reason # time=41.493ms
+
+# Subtest: post abort signal
+    1..1
+    ok 1 - should be equal
+ok 2 - post abort signal # time=8.934ms
+
+# Subtest: post abort signal w/ reason
+    1..1
+    ok 1 - should be equal
+ok 3 - post abort signal w/ reason # time=9.559ms
+
+1..3

@@ -1,0 +1,241 @@
+{
+  "date": "2023-10-03T13:37:35.117Z",
+  "argv": [
+    "/Users/robertnagy/.nvm/versions/node/v20.7.0/bin/node",
+    "/Users/robertnagy/GitHub/nxt-lib/test/template.js"
+  ],
+  "execArgv": [
+    "--import=file:///Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/import.mjs",
+    "--loader=file:///Users/robertnagy/GitHub/nxt-lib/node_modules/ts-node/esm.mjs",
+    "--no-warnings",
+    "--enable-source-maps",
+    "--import=file:///Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/processinfo/dist/mjs/import.mjs"
+  ],
+  "NODE_OPTIONS": "\"--import=file:///Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/processinfo/dist/mjs/import.mjs\"",
+  "cwd": "/Users/robertnagy/GitHub/nxt-lib",
+  "pid": 39248,
+  "ppid": 39247,
+  "parent": null,
+  "uuid": "7e81234f-8ab2-46d7-a563-f3b70aa19aa2",
+  "files": [
+    "/Users/robertnagy/GitHub/nxt-lib/test/template.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/glob.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/has-magic.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/brace-expansion/index.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/assert-valid-pattern.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/ast.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/escape.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/unescape.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/path-scurry/dist/mjs/index.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/pattern.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/walker.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/brace-expressions.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/lru-cache/dist/mjs/index.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/minipass/dist/mjs/index.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/ignore.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/processor.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/loader.mjs",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/hooks.mjs",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/mock-service-client.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/mock-service.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/index.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/dist/esm/index.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/export-line.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/is-relative-require.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/munge-mocks.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/service-key.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/commonjs/service-key.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/get-all-conditional-values.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/get-unique-condition-sets.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/get-all-conditions.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-all-exports.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-all-local-imports.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-conditional-value.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-import.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/dist/esm/call-site-like.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/dist/esm/require-resolve.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/is-windows.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/get-conditional-values-list.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/errors.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/get-named-exports-list.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/read-pkg.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-export.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/star-glob.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/to-path.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/file-exists.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/find-dep-package.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/to-file-url.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-dependency-export.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-package-import.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/dist/esm/parse.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/read-json.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/find-star-match.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/index.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/walk-up-path/dist/mjs/index.js",
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/index.js",
+    "/Users/robertnagy/GitHub/nxt-lib/util/template/index.js",
+    "/Users/robertnagy/GitHub/nxt-lib/util/template/nextpressions.js",
+    "/Users/robertnagy/GitHub/nxt-lib/weakCache.js",
+    "/Users/robertnagy/GitHub/nxt-lib/util/template/javascript.js",
+    "/Users/robertnagy/GitHub/nxt-lib/rxjs/firstValueFrom.js",
+    "/Users/robertnagy/GitHub/nxt-lib/rxjs/withAbortSignal.js",
+    "/Users/robertnagy/GitHub/nxt-lib/errors.js"
+  ],
+  "sources": {
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/glob.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/src/glob.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/has-magic.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/src/has-magic.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/assert-valid-pattern.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/src/assert-valid-pattern.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/ast.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/src/ast.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/escape.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/src/escape.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/unescape.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/src/unescape.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/path-scurry/dist/mjs/index.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/path-scurry/src/index.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/pattern.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/src/pattern.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/walker.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/src/walker.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/brace-expressions.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/src/brace-expressions.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/lru-cache/dist/mjs/index.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/lru-cache/src/index.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/minipass/dist/mjs/index.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/minipass/src/index.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/ignore.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/src/ignore.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/processor.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/src/processor.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/mock-service.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/src/mock-service.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/index.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/index.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/dist/esm/index.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/src/index.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/export-line.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/src/export-line.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/is-relative-require.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/is-relative-require.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/munge-mocks.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/src/munge-mocks.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/esm/service-key.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/src/service-key.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/dist/commonjs/service-key.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/mock/src/service-key-cjs.cts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/get-all-conditional-values.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/get-all-conditional-values.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/get-unique-condition-sets.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/get-unique-condition-sets.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/get-all-conditions.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/get-all-conditions.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-all-exports.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/resolve-all-exports.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-all-local-imports.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/resolve-all-local-imports.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-conditional-value.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/resolve-conditional-value.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-import.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/resolve-import.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/dist/esm/call-site-like.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/src/call-site-like.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/dist/esm/require-resolve.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/src/require-resolve.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/is-windows.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/is-windows.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/get-conditional-values-list.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/get-conditional-values-list.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/errors.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/errors.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/get-named-exports-list.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/get-named-exports-list.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/read-pkg.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/read-pkg.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-export.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/resolve-export.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/star-glob.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/star-glob.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/to-path.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/to-path.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/file-exists.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/file-exists.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/find-dep-package.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/find-dep-package.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/to-file-url.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/to-file-url.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-dependency-export.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/resolve-dependency-export.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/resolve-package-import.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/resolve-package-import.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/dist/esm/parse.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/@tapjs/stack/src/parse.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/read-json.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/read-json.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/dist/esm/find-star-match.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/resolve-import/src/find-star-match.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/dist/esm/index.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/src/index.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/walk-up-path/dist/mjs/index.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/walk-up-path/src/index.ts"
+    ],
+    "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/dist/mjs/index.js": [
+      "/Users/robertnagy/GitHub/nxt-lib/node_modules/glob/node_modules/minimatch/src/index.ts"
+    ]
+  },
+  "root": "7e81234f-8ab2-46d7-a563-f3b70aa19aa2",
+  "externalID": "test/template.js",
+  "code": 0,
+  "signal": null,
+  "runtime": 467.431125
+}

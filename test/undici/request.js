@@ -1,6 +1,6 @@
 const { test } = require('tap')
 const { createServer } = require('http')
-const { request } = require('../../undici/index.js')
+const { request } = require('../../lib/undici/index.js')
 
 test('simple request', (t) => {
   t.plan(1)

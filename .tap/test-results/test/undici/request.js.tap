@@ -1,0 +1,7 @@
+TAP version 14
+# Subtest: simple request
+    1..1
+    ok 1 - should be equal
+ok 1 - simple request # time=38.153ms
+
+1..1

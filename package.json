@@ -8,6 +8,7 @@
     "ass.js",
     "rxjs/*",
     "util/*",
+    "lib/*",
     "undici/*",
     "http-client.js",
     "subtract-ranges.js",

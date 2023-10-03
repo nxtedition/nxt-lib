@@ -1,0 +1,120 @@
+TAP version 14
+# Subtest: should follow redirection after a HTTP 300
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 1 - should follow redirection after a HTTP 300 # time=26.395ms
+
+# Subtest: should follow redirection after a HTTP 300 default
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 2 - should follow redirection after a HTTP 300 default # time=5.402ms
+
+# Subtest: should follow redirection after a HTTP 301
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 3 - should follow redirection after a HTTP 301 # time=7.103ms
+
+# Subtest: should follow redirection after a HTTP 302
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 4 - should follow redirection after a HTTP 302 # time=5.239ms
+
+# Subtest: should follow redirection after a HTTP 303 changing method to GET
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 5 - should follow redirection after a HTTP 303 changing method to GET # time=5.665ms
+
+# Subtest: should remove Host and request body related headers when following HTTP 303 (array)
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 6 - should remove Host and request body related headers when following HTTP 303 (array) # time=7.944ms
+
+# Subtest: should remove Host and request body related headers when following HTTP 303 (object)
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 7 - should remove Host and request body related headers when following HTTP 303 (object) # time=5.396ms
+
+# Subtest: should follow redirection after a HTTP 307
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 8 - should follow redirection after a HTTP 307 # time=4.188ms
+
+# Subtest: should follow redirection after a HTTP 308
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 9 - should follow redirection after a HTTP 308 # time=4.526ms
+
+# Subtest: should ignore HTTP 3xx response bodies
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 10 - should ignore HTTP 3xx response bodies # time=2.062ms
+
+# Subtest: should ignore query after redirection
+    ok 1 - should be equal
+    ok 2 - should be equal
+    1..2
+ok 11 - should ignore query after redirection # time=1.035ms
+
+# Subtest: should follow a redirect chain up to the allowed number of times
+    ok 1 - should be equal
+    1..1
+ok 12 - should follow a redirect chain up to the allowed number of times # time=2.395ms
+
+# Subtest: when a Location response header is NOT present
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    ok 4 - should be equal
+    ok 5 - should be equal
+    ok 6 - should be equal
+    1..6
+ok 13 - when a Location response header is NOT present # time=4.642ms
+
+# Subtest: should not follow redirects when using Readable request bodies
+    ok 1 - should be equal
+    1..1
+ok 14 - should not follow redirects when using Readable request bodies # time=2.174ms
+
+# Subtest: should follow redirections when going cross origin
+    ok 1 - should be equal
+    ok 2 - should be equal
+    ok 3 - should be equal
+    1..3
+ok 15 - should follow redirections when going cross origin # time=5.114ms
+
+# Subtest: should handle errors (promise)
+    ok 1 - should match pattern
+    1..1
+ok 16 - should handle errors (promise) # time=1.293ms
+
+# Subtest: removes authorization header on third party origin
+    ok 1 - should be equal
+    1..1
+ok 17 - removes authorization header on third party origin # time=2.334ms
+
+# Subtest: removes cookie header on third party origin
+    ok 1 - should be equal
+    1..1
+ok 18 - removes cookie header on third party origin # time=1.902ms
+
+1..18

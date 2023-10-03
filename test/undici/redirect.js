@@ -9,7 +9,7 @@ const {
   startRedirectingWithQueryParams,
 } = require('./utils/redirecting-servers')
 const { createReadable } = require('./utils/stream')
-const { request } = require('../../undici/index.js')
+const { request } = require('../../lib/undici/index.js')
 
 t.test('should follow redirection after a HTTP 300', async (t) => {
   const server = await startRedirectingServer(t)
