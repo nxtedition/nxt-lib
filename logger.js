@@ -28,8 +28,7 @@ module.exports.createLogger = function (
   } else if (!extreme) {
     stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: true })
   } else if (!isMainThread) {
-    // TODO (fix): Async logging?
-    stream = pino.destination({ fd: 1, sync: true })
+    stream = pino.destination({ fd: 1, sync: false })
   } else {
     stream = pino.destination({ sync: false, minLength: 4096 })
     setInterval(() => {
@@ -49,6 +48,12 @@ module.exports.createLogger = function (
     stream,
   )
 
+  function flush() {
+    stream?.end?.()
+    stream?.flush?.()
+    stream?.flushSync?.()
+  }
+
   let called = false
   const finalHandler = async (err, evt) => {
     if (called) {
@@ -62,11 +67,7 @@ module.exports.createLogger = function (
       }
       logger.fatal({ err }, evt || 'error caused exit')
 
-      if (stream?.flushSync) {
-        stream.flushSync()
-      }
-
-      process._rawDebug(err.stack)
+      flush()
 
       process.exit(1)
     } else {
@@ -78,9 +79,9 @@ module.exports.createLogger = function (
         exitSignal = err.exitSignal || 1
         logger.warn({ err })
       }
-      if (stream?.flushSync) {
-        stream.flushSync()
-      }
+
+      flush()
+
       logger.info({ exitSignal }, 'exit')
       process.exit(!exitSignal ? 0 : exitSignal)
     }
