@@ -12,14 +12,12 @@ module.exports.createLogger = function (
     stream = null,
     ...options
   } = {},
-  onTerminate
+  onTerminate,
 ) {
   if (!stream) {
-    if (!isMainThread) {
-      stream = pino.destination({ fd: 1, sync: true })
-    } else if (
+    if (
       process.stdout.write !== process.stdout.constructor.prototype.write ||
-      !process.stdout.fd
+      process.stdout.fd == null
     ) {
       stream = process.stdout
     }
@@ -29,6 +27,8 @@ module.exports.createLogger = function (
     // Do nothing...
   } else if (!extreme) {
     stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: true })
+  } else if (!isMainThread) {
+    stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: false })
   } else {
     stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: false, minLength: 4096 })
     setInterval(() => {
@@ -45,7 +45,7 @@ module.exports.createLogger = function (
         ...options.serializers,
       },
     },
-    stream
+    stream,
   )
 
   let called = false
