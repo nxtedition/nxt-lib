@@ -28,6 +28,7 @@ module.exports.createLogger = function (
   } else if (!extreme) {
     stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: true })
   } else if (!isMainThread) {
+    // TODO (fix): Async logging?
     stream = pino.destination({ fd: 1, sync: true })
   } else {
     stream = pino.destination({ sync: false, minLength: 4096 })
