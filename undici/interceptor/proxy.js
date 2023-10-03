@@ -26,18 +26,18 @@ class Handler {
 
   onConnect(abort) {
     this.abort = abort
-    this.handler.onConnect((reason) => {
+    this.handler.onConnect?.((reason) => {
       this.aborted = true
       this.abort(reason)
     })
   }
 
   onBodySent(chunk) {
-    return this.handler.onBodySent(chunk)
+    return this.handler.onBodySent?.(chunk)
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
-    return this.handler.onHeaders(
+    return this.handler.onHeaders?.(
       statusCode,
       reduceHeaders(
         {
@@ -58,15 +58,15 @@ class Handler {
   }
 
   onData(chunk) {
-    return this.handler.onData(chunk)
+    return this.handler.onData?.(chunk)
   }
 
   onComplete(rawTrailers) {
-    return this.handler.onComplete(rawTrailers)
+    return this.handler.onComplete?.(rawTrailers)
   }
 
   onError(err) {
-    return this.handler.onError(err)
+    return this.handler.onError?.(err)
   }
 }
 

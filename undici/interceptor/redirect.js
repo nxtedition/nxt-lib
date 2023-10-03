@@ -16,7 +16,7 @@ class Handler {
     this.count = 0
     this.location = null
 
-    this.handler.onConnect((reason) => {
+    this.handler.onConnect?.((reason) => {
       this.aborted = true
       if (this.abort) {
         this.abort(reason)
@@ -39,12 +39,12 @@ class Handler {
   }
 
   onError(error) {
-    this.handler.onError(error)
+    this.handler.onError?.(error)
   }
 
   onHeaders(statusCode, headers, resume, statusText) {
     if (redirectableStatusCodes.indexOf(statusCode) === -1) {
-      return this.handler.onHeaders(statusCode, headers, resume, statusText)
+      return this.handler.onHeaders?.(statusCode, headers, resume, statusText)
     }
 
     if (isDisturbed(this.opts.body)) {
@@ -110,7 +110,7 @@ class Handler {
         servers and browsers implementors, we ignore the body as there is no specified way to eventually parse it.
       */
     } else {
-      return this.handler.onData(chunk)
+      return this.handler.onData?.(chunk)
     }
   }
 
@@ -129,13 +129,13 @@ class Handler {
 
       this.dispatch(this.opts, this)
     } else {
-      this.handler.onComplete(trailers)
+      this.handler.onComplete?.(trailers)
     }
   }
 
   onBodySent(chunk) {
     if (this.handler.onBodySent) {
-      this.handler.onBodySent(chunk)
+      this.handler.onBodySent?.(chunk)
     }
   }
 }

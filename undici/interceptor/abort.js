@@ -9,18 +9,18 @@ class Handler {
 
   onConnect(abort) {
     this.abort = abort
-    this.handler.onConnect((reason) => {
+    this.handler.onConnect?.((reason) => {
       this.reason = reason ?? new AbortError()
     })
   }
 
   onBodySent(chunk) {
-    return this.handler.onBodySent(chunk)
+    return this.handler.onBodySent?.(chunk)
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
     if (this.reason == null) {
-      const ret = this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+      const ret = this.handler.onHeaders?.(statusCode, rawHeaders, resume, statusMessage)
       if (this.reason == null) {
         return ret
       }
@@ -31,7 +31,7 @@ class Handler {
 
   onData(chunk) {
     if (this.reason == null) {
-      const ret = this.handler.onData(chunk)
+      const ret = this.handler.onData?.(chunk)
       if (this.reason == null) {
         return ret
       }
@@ -49,12 +49,12 @@ class Handler {
 
   onComplete(rawTrailers) {
     return this.reason == null
-      ? this.handler.onComplete(rawTrailers)
-      : this.handler.onError(this.reason)
+      ? this.handler.onComplete?.(rawTrailers)
+      : this.handler.onError?.(this.reason)
   }
 
   onError(err) {
-    return this.handler.onError(err)
+    return this.handler.onError?.(err)
   }
 }
 

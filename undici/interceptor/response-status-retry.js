@@ -16,7 +16,7 @@ class Handler {
     this.count = 0
     this.retryAfter = null
 
-    this.handler.onConnect((reason) => {
+    this.handler.onConnect?.((reason) => {
       this.aborted = true
       if (this.abort) {
         this.abort(reason)
@@ -35,19 +35,19 @@ class Handler {
   }
 
   onBodySent(chunk) {
-    return this.handler.onBodySent(chunk)
+    return this.handler.onBodySent?.(chunk)
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
     if (statusCode < 400) {
-      return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+      return this.handler.onHeaders?.(statusCode, rawHeaders, resume, statusMessage)
     }
 
     const err = createError(statusCode, { headers: parseHeaders(rawHeaders) })
 
     const retryAfter = retryAfterFn(err, this.count++, this.opts)
     if (retryAfter == null) {
-      return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+      return this.handler.onHeaders?.(statusCode, rawHeaders, resume, statusMessage)
     }
     assert(Number.isFinite(retryAfter), 'invalid retryAfter')
 
@@ -59,11 +59,11 @@ class Handler {
   }
 
   onData(chunk) {
-    return this.handler.onData(chunk)
+    return this.handler.onData?.(chunk)
   }
 
   onComplete(rawTrailers) {
-    return this.handler.onComplete(rawTrailers)
+    return this.handler.onComplete?.(rawTrailers)
   }
 
   onError(err) {
@@ -73,7 +73,7 @@ class Handler {
     }
 
     if (this.retryAfter == null || this.aborted || isDisturbed(this.opts.body)) {
-      return this.handler.onError(err)
+      return this.handler.onError?.(err)
     }
 
     this.opts.logger?.debug('retrying response status', { retryAfter: this.retryAfter })
@@ -83,7 +83,7 @@ class Handler {
       try {
         this.dispatch(this.opts, this)
       } catch (err) {
-        this.handler.onError(err)
+        this.handler.onError?.(err)
       }
     }, this.retryAfter)
     this.retryAfter = null

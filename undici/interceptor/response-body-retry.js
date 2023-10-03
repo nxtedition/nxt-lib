@@ -21,7 +21,7 @@ class Handler {
     this.error = null
     this.etag = null
 
-    this.handler.onConnect((reason) => {
+    this.handler.onConnect?.((reason) => {
       this.aborted = true
       if (this.abort) {
         this.abort(reason)
@@ -40,7 +40,7 @@ class Handler {
   }
 
   onBodySent(chunk) {
-    return this.handler.onBodySent(chunk)
+    return this.handler.onBodySent?.(chunk)
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
@@ -77,7 +77,12 @@ class Handler {
       if (statusCode === 206) {
         const contentRange = parseContentRange(findHeader(rawHeaders, 'content-range'))
         if (!contentRange) {
-          return this.handler.onHeaders(statusCode, rawHeaders, () => this.resume(), statusMessage)
+          return this.handler.onHeaders?.(
+            statusCode,
+            rawHeaders,
+            () => this.resume(),
+            statusMessage,
+          )
         }
 
         const { start, size, end = size } = contentRange
@@ -97,17 +102,17 @@ class Handler {
 
     this.etag = etag
     this.resume = resume
-    return this.handler.onHeaders(statusCode, rawHeaders, () => this.resume(), statusMessage)
+    return this.handler.onHeaders?.(statusCode, rawHeaders, () => this.resume(), statusMessage)
   }
 
   onData(chunk) {
     this.pos += chunk.length
     this.count = 0
-    return this.handler.onData(chunk)
+    return this.handler.onData?.(chunk)
   }
 
   onComplete(rawTrailers) {
-    return this.handler.onComplete(rawTrailers)
+    return this.handler.onComplete?.(rawTrailers)
   }
 
   onError(err) {
@@ -117,12 +122,12 @@ class Handler {
     }
 
     if (!this.resume || this.aborted || !this.etag || isDisturbed(this.opts.body)) {
-      return this.handler.onError(err)
+      return this.handler.onError?.(err)
     }
 
     const retryAfter = retryAfterFn(err, this.count++, this.opts)
     if (retryAfter == null) {
-      return this.handler.onError(err)
+      return this.handler.onError?.(err)
     }
     assert(Number.isFinite(retryAfter), 'invalid retry')
 
@@ -142,7 +147,7 @@ class Handler {
       try {
         this.dispatch(this.opts, this)
       } catch (err) {
-        this.handler.onError(err)
+        this.handler.onError?.(err)
       }
     }, retryAfter)
   }

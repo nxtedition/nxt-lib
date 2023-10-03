@@ -13,7 +13,7 @@ class Handler {
     this.count = 0
     this.retryAfter = null
 
-    this.handler.onConnect((reason) => {
+    this.handler.onConnect?.((reason) => {
       this.aborted = true
       if (this.abort) {
         this.abort(reason)
@@ -32,20 +32,20 @@ class Handler {
   }
 
   onBodySent(chunk) {
-    return this.handler.onBodySent(chunk)
+    return this.handler.onBodySent?.(chunk)
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
     this.aborted = true
-    return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+    return this.handler.onHeaders?.(statusCode, rawHeaders, resume, statusMessage)
   }
 
   onData(chunk) {
-    return this.handler.onData(chunk)
+    return this.handler.onData?.(chunk)
   }
 
   onComplete(rawTrailers) {
-    return this.handler.onComplete(rawTrailers)
+    return this.handler.onComplete?.(rawTrailers)
   }
 
   onError(err) {
@@ -55,12 +55,12 @@ class Handler {
     }
 
     if (this.aborted || isDisturbed(this.opts.body)) {
-      return this.handler.onError(err)
+      return this.handler.onError?.(err)
     }
 
     const retryAfter = retryAfterFn(err, this.count++, this.opts)
     if (retryAfter == null) {
-      return this.handler.onError(err)
+      return this.handler.onError?.(err)
     }
     assert(Number.isFinite(retryAfter), 'invalid retryAfter')
 
@@ -71,7 +71,7 @@ class Handler {
       try {
         this.dispatch(this.opts, this)
       } catch (err2) {
-        this.handler.onError(err)
+        this.handler.onError?.(err)
       }
     }, retryAfter)
     this.retryAfter = null

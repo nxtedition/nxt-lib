@@ -8,15 +8,15 @@ class Handler {
 
   onConnect(abort) {
     this.abort = abort
-    return this.handler.onConnect(abort)
+    return this.handler.onConnect?.(abort)
   }
 
   onBodySent(chunk) {
-    return this.handler.onBodySent(chunk)
+    return this.handler.onBodySent?.(chunk)
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
-    return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+    return this.handler.onHeaders?.(statusCode, rawHeaders, resume, statusMessage)
   }
 
   onData(chunk) {
@@ -25,7 +25,7 @@ class Handler {
       return true
     }
 
-    this.handler.onComplete([])
+    this.handler.onComplete?.([])
     this.handler = null
 
     this.abort(new AbortError('dump'))
@@ -34,11 +34,11 @@ class Handler {
   }
 
   onComplete(rawTrailers) {
-    return this.handler.onComplete([])
+    return this.handler.onComplete?.([])
   }
 
   onError(err) {
-    return this.handler?.onError(err)
+    return this.handler?.onError?.(err)
   }
 }
 

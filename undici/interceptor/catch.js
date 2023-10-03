@@ -6,7 +6,7 @@ class Handler {
   onConnect(abort) {
     this.abort = abort
     try {
-      return this.handler.onConnect(abort)
+      return this.handler.onConnect?.(abort)
     } catch (err) {
       this.abort(err)
     }
@@ -14,7 +14,7 @@ class Handler {
 
   onBodySent(chunk) {
     try {
-      return this.handler.onBodySent(chunk)
+      return this.handler.onBodySent?.(chunk)
     } catch (err) {
       this.abort(err)
     }
@@ -22,7 +22,7 @@ class Handler {
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
     try {
-      return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+      return this.handler.onHeaders?.(statusCode, rawHeaders, resume, statusMessage)
     } catch (err) {
       this.abort(err)
       return false
@@ -31,7 +31,7 @@ class Handler {
 
   onData(chunk) {
     try {
-      return this.handler.onData(chunk)
+      return this.handler.onData?.(chunk)
     } catch (err) {
       this.abort(err)
       return false
@@ -40,7 +40,7 @@ class Handler {
 
   onComplete(rawTrailers) {
     try {
-      return this.handler.onComplete(rawTrailers)
+      return this.handler.onComplete?.(rawTrailers)
     } catch (err) {
       this.abort(err)
       return false
@@ -48,7 +48,7 @@ class Handler {
   }
 
   onError(err) {
-    return this.handler.onError(err)
+    return this.handler.onError?.(err)
   }
 }
 

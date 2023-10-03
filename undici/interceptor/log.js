@@ -15,14 +15,14 @@ class Handler {
   onConnect(abort) {
     this.abort = abort
     this.logger.debug({ ureq: this.opts }, 'upstream request started')
-    this.handler.onConnect((reason) => {
+    this.handler.onConnect?.((reason) => {
       this.aborted = true
       this.abort(reason)
     })
   }
 
   onBodySent(chunk) {
-    return this.handler.onBodySent(chunk)
+    return this.handler.onBodySent?.(chunk)
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
@@ -30,17 +30,17 @@ class Handler {
       { ures: { statusCode, headers: parseHeaders(rawHeaders) } },
       'upstream request response',
     )
-    return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+    return this.handler.onHeaders?.(statusCode, rawHeaders, resume, statusMessage)
   }
 
   onData(chunk) {
     this.pos += chunk.length
-    return this.handler.onData(chunk)
+    return this.handler.onData?.(chunk)
   }
 
   onComplete(rawTrailers) {
     this.logger.debug({ bytesRead: this.pos }, 'upstream request completed')
-    return this.handler.onComplete(rawTrailers)
+    return this.handler.onComplete?.(rawTrailers)
   }
 
   onError(err) {
@@ -49,7 +49,7 @@ class Handler {
     } else {
       this.logger.error({ bytesRead: this.pos, err }, 'upstream request failed')
     }
-    return this.handler.onError(err)
+    return this.handler.onError?.(err)
   }
 }
 

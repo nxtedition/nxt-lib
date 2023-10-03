@@ -15,11 +15,11 @@ class Handler {
   }
 
   onConnect(abort) {
-    return this.handler.onConnect(abort)
+    return this.handler.onConnect?.(abort)
   }
 
   onBodySent(chunk) {
-    return this.handler.onBodySent(chunk)
+    return this.handler.onBodySent?.(chunk)
   }
 
   onHeaders(statusCode, rawHeaders, resume, statusMessage) {
@@ -28,19 +28,19 @@ class Handler {
 
     this.hasher = this.md5 != null ? crypto.createHash('md5') : null
 
-    return this.handler.onHeaders(statusCode, rawHeaders, resume, statusMessage)
+    return this.handler.onHeaders?.(statusCode, rawHeaders, resume, statusMessage)
   }
 
   onData(chunk) {
     this.pos += chunk.length
     this.hasher?.update(chunk)
-    return this.handler.onData(chunk)
+    return this.handler.onData?.(chunk)
   }
 
   onComplete(rawTrailers) {
     const hash = this.hasher?.digest('base64')
     if (this.md5 != null && hash !== this.md5) {
-      this.handler.onError(
+      this.handler.onError?.(
         Object.assign(new Error('Request Content-Length mismatch'), {
           expected: this.md5,
           actual: hash,
@@ -48,18 +48,18 @@ class Handler {
       )
     }
     if (this.length != null && this.pos !== Number(this.length)) {
-      return this.handler.onError(
+      return this.handler.onError?.(
         Object.assign(new Error('Request Content-Length mismatch'), {
           expected: Number(this.length),
           actual: this.pos,
         }),
       )
     }
-    return this.handler.onComplete(rawTrailers)
+    return this.handler.onComplete?.(rawTrailers)
   }
 
   onError(err) {
-    this.handler.onError(err)
+    this.handler.onError?.(err)
   }
 }
 
