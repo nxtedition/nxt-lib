@@ -28,9 +28,9 @@ module.exports.createLogger = function (
   } else if (!extreme) {
     stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: true })
   } else if (!isMainThread) {
-    stream = pino.destination({ fd: 1, sync: false })
+    stream = pino.destination({ fd: 1, sync: true })
   } else {
-    stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: false, minLength: 4096 })
+    stream = pino.destination({ sync: false, minLength: 4096 })
     setInterval(() => {
       logger.flush()
     }, flushInterval).unref()
@@ -60,6 +60,9 @@ module.exports.createLogger = function (
         err = new Error(err)
       }
       logger.fatal({ err }, evt || 'error caused exit')
+
+      process._rawDebug(err.stack)
+
       if (stream?.flushSync) {
         stream.flushSync()
       }
