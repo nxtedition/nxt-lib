@@ -4,11 +4,10 @@ const xuid = require('xuid')
 class Handler {
   constructor(opts, { handler }) {
     this.handler = handler
-    this.opts = opts
+    this.opts = opts.id ? opts : { ...opts, id: xuid() }
     this.abort = null
     this.aborted = false
-
-    this.logger = opts.logger.child({ ureq: { id: xuid() } })
+    this.logger = opts.logger.child({ ureq: { id: opts.id } })
     this.pos = 0
   }
 
