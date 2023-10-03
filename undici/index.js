@@ -142,6 +142,7 @@ async function request(urlOrOpts, opts = {}) {
 
     dispatch(opts, {
       resolve,
+      logger: opts.logger,
       /** @type {Function | null} */ abort: null,
       /** @type {stream.Readable | null} */ body: null,
       onConnect(abort) {
@@ -166,6 +167,10 @@ async function request(urlOrOpts, opts = {}) {
             statusMessage,
             headers,
             size: Number.isFinite(contentLength) ? contentLength : null,
+          }).on('error', (err) => {
+            if (this.logger && this.body?.listenerCount('error') === 1) {
+              this.logger.error({ err }, 'unhandled response body error')
+            }
           })
 
           this.resolve(this.body)

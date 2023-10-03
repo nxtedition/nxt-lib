@@ -28,7 +28,7 @@ module.exports.createLogger = function (
   } else if (!extreme) {
     stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: true })
   } else if (!isMainThread) {
-    stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: false })
+    stream = pino.destination({ fd: 1, sync: false })
   } else {
     stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: false, minLength: 4096 })
     setInterval(() => {
