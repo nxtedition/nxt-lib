@@ -62,11 +62,12 @@ module.exports.createLogger = function (
       }
       logger.fatal({ err }, evt || 'error caused exit')
 
-      process._rawDebug(err.stack)
-
       if (stream?.flushSync) {
         stream.flushSync()
       }
+
+      process._rawDebug(err.stack)
+
       process.exit(1)
     } else {
       logger.info(`${evt} caught`)
