@@ -1,6 +1,7 @@
 const objectHash = require('object-hash')
 const fp = require('lodash/fp.js')
 const { toString } = Object.prototype
+const { SIGNALS } = require('./platform.js')
 
 module.exports.AbortError = class AbortError extends Error {
   constructor(message) {
@@ -77,6 +78,7 @@ module.exports.serializeError = function serializeError(error) {
     message = msg,
     errors,
     code,
+    signal,
     cause,
     body,
     statusCode,
@@ -84,6 +86,10 @@ module.exports.serializeError = function serializeError(error) {
     headers,
     ...properties
   } = error
+
+  if (typeof signal === 'number') {
+    signal = SIGNALS[signal] ?? signal
+  }
 
   errors = Array.isArray(errors) ? errors.map(serializeError) : undefined
   cause = cause ? serializeError(cause) : undefined
@@ -96,6 +102,7 @@ module.exports.serializeError = function serializeError(error) {
       message,
       type,
       code,
+      signal,
       status,
       headers,
       data,

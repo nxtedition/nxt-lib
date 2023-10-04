@@ -13,6 +13,7 @@
     "http-client.js",
     "subtract-ranges.js",
     "serializers.js",
+    "platform.js",
     "elasticsearch.js",
     "merge-ranges.js",
     "http.js",

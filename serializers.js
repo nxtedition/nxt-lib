@@ -1,4 +1,5 @@
 const serializers = require('pino-std-serializers')
+const { SIGNALS } = require('./platform.js')
 
 function getHeader(obj, key) {
   return obj?.headers?.get?.(key) || obj?.getHeader?.(key) || obj?.headers?.[key]
@@ -29,6 +30,8 @@ function getHeaders(obj) {
 
 module.exports = {
   err: (err) => {
+    // TODO (fix): Merge with errors/serializeError?
+
     if (Array.isArray(err)) {
       err = err.length === 1 ? err[0] : new AggregateError(err)
     }
@@ -36,6 +39,10 @@ module.exports = {
 
     if (ret.data !== null && typeof ret.data === 'object') {
       ret.data = JSON.stringify(ret.data)
+    }
+
+    if (typeof ret.signal === 'number') {
+      ret.signal = SIGNALS[ret.signal] ?? String(ret.signal)
     }
 
     return ret
