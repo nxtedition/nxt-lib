@@ -1,17 +1,10 @@
 const serializers = require('./serializers')
 const pino = require('pino')
-const { isMainThread } = require('node:worker_threads')
 
 const isProduction = process.env.NODE_ENV === 'production'
 
 module.exports.createLogger = function (
-  {
-    extreme = isProduction,
-    level = isProduction ? 'debug' : 'trace',
-    flushInterval = 1e3,
-    stream = null,
-    ...options
-  } = {},
+  { level = isProduction ? 'debug' : 'trace', flushInterval = 1e3, stream = null, ...options } = {},
   onTerminate,
 ) {
   if (!stream) {
@@ -25,10 +18,8 @@ module.exports.createLogger = function (
 
   if (stream) {
     // Do nothing...
-  } else if (!extreme) {
+  } else if (!isProduction) {
     stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: true })
-  } else if (!isMainThread) {
-    stream = pino.destination({ fd: 1, sync: false })
   } else {
     stream = pino.destination({ sync: false, minLength: 4096 })
     setInterval(() => {
