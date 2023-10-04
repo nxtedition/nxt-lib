@@ -45,6 +45,10 @@ module.exports = {
       ret.signal = SIGNALS[ret.signal] ?? String(ret.signal)
     }
 
+    if (typeof ret.code === 'number') {
+      ret.code = String(ret.code)
+    }
+
     return ret
   },
   res: (res) =>
