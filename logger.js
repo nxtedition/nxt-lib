@@ -40,9 +40,11 @@ module.exports.createLogger = function (
   )
 
   function flush() {
-    stream?.end?.()
-    stream?.flush?.()
-    stream?.flushSync?.()
+    if (!stream.destroyed) {
+      stream?.end?.()
+      stream?.flush?.()
+      stream?.flushSync?.()
+    }
   }
 
   let called = false
