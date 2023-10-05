@@ -1,3 +1,4 @@
+const { isMainThread } = require('node:worker_threads')
 const serializers = require('./serializers')
 const pino = require('pino')
 
@@ -20,6 +21,8 @@ module.exports.createLogger = function (
     // Do nothing...
   } else if (!isProduction) {
     stream = pino.destination({ fd: process.stdout.fd ?? 1, sync: true })
+  } else if (!isMainThread) {
+    stream = pino.destination({ fd: 1, sync: false, minLength: 0 })
   } else {
     stream = pino.destination({ sync: false, minLength: 4096 })
     setInterval(() => {
