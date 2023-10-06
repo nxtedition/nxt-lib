@@ -89,8 +89,6 @@ module.exports.request = async function request(ctx, next) {
   } catch (err) {
     const responseTime = Math.round(performance.now() - startTime)
 
-    reqLogger = reqLogger.child({ req, err, responseTime })
-
     req.on('error', (err) => {
       if (res.statusCode > 500 || err.code !== 'ECONNRESET') {
         reqLogger.warn({ err }, 'request error')
@@ -129,20 +127,22 @@ module.exports.request = async function request(ctx, next) {
         res.write(JSON.stringify(err.body))
       }
 
-      if (res.statusCode >= 500) {
-        reqLogger.error({ res }, 'request error')
-      } else if (res.statusCode >= 400) {
-        reqLogger.warn({ res }, 'request failed')
+      reqLogger = reqLogger.child({ req, res, err, responseTime })
+      if (res.statusCode < 500) {
+        reqLogger.warn('request failed')
+      } else {
+        reqLogger.error('request error')
       }
 
       res.end()
     } else {
+      reqLogger = reqLogger.child({ req, res, err, responseTime })
       if (req.aborted || err.name === 'AbortError') {
-        reqLogger.debug({ res }, 'request aborted')
+        reqLogger.debug('request aborted')
       } else if (err.statusCode < 500) {
-        reqLogger.warn({ res }, 'request failed')
+        reqLogger.warn('request failed')
       } else {
-        reqLogger.error({ res }, 'request error')
+        reqLogger.error('request error')
       }
 
       res.destroy()
