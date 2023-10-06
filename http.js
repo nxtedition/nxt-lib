@@ -40,7 +40,7 @@ module.exports.request = async function request(ctx, next) {
     }
 
     ctx.id = req.id = req.headers['request-id'] || genReqId()
-    ctx.logger = req.log = logger.child({ req: { id: req.id, url: req.url } })
+    ctx.logger = req.log = logger.child({ req })
     ctx.signal = signal
     ctx.method = req.method
     ctx.query = ctx.url.search ? querystring.parse(ctx.url.search.slice(1)) : {}
@@ -127,7 +127,7 @@ module.exports.request = async function request(ctx, next) {
         res.write(JSON.stringify(err.body))
       }
 
-      reqLogger = reqLogger.child({ req, res, err, responseTime })
+      reqLogger = reqLogger.child({ res, err, responseTime })
       if (res.statusCode < 500) {
         reqLogger.warn('request failed')
       } else {
@@ -136,7 +136,7 @@ module.exports.request = async function request(ctx, next) {
 
       res.end()
     } else {
-      reqLogger = reqLogger.child({ req, res, err, responseTime })
+      reqLogger = reqLogger.child({ res, err, responseTime })
       if (req.aborted || err.name === 'AbortError') {
         reqLogger.debug('request aborted')
       } else if (err.statusCode < 500) {
@@ -235,11 +235,11 @@ module.exports.upgrade = async function upgrade(ctx, next) {
     }
 
     ctx.id = req.id = req.headers['request-id'] || genReqId()
-    ctx.logger = req.log = logger.child({ req: { id: req.id, method: req.method, url: req.url } })
+    ctx.logger = req.log = logger.child({ req })
     ctx.signal = signal
     ctx.query = ctx.url?.search ? querystring.parse(ctx.url.search.slice(1)) : {}
 
-    reqLogger = logger.child({ req })
+    reqLogger = logger
     reqLogger.debug('stream started')
 
     socket.on('error', (err) => {
