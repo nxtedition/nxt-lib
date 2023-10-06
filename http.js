@@ -89,7 +89,7 @@ module.exports.request = async function request(ctx, next) {
   } catch (err) {
     const responseTime = Math.round(performance.now() - startTime)
 
-    reqLogger = reqLogger.child({ req, res, err, responseTime })
+    reqLogger = reqLogger.child({ req, err, responseTime })
 
     req.on('error', (err) => {
       if (res.statusCode > 500 || err.code !== 'ECONNRESET') {
@@ -130,19 +130,19 @@ module.exports.request = async function request(ctx, next) {
       }
 
       if (res.statusCode >= 500) {
-        reqLogger.error('request error')
+        reqLogger.error({ res }, 'request error')
       } else if (res.statusCode >= 400) {
-        reqLogger.warn('request failed')
+        reqLogger.warn({ res }, 'request failed')
       }
 
       res.end()
     } else {
       if (req.aborted || err.name === 'AbortError') {
-        reqLogger.debug('request aborted')
+        reqLogger.debug({ res }, 'request aborted')
       } else if (err.statusCode < 500) {
-        reqLogger.warn('request failed')
+        reqLogger.warn({ res }, 'request failed')
       } else {
-        reqLogger.error('request error')
+        reqLogger.error({ res }, 'request error')
       }
 
       res.destroy()
@@ -206,7 +206,7 @@ module.exports.createServer = function (options, ctx, middleware) {
       requestTimeout: 0,
       ...options,
     },
-    (req, res) => middleware({ req, res, ...factory() })
+    (req, res) => middleware({ req, res, ...factory() }),
   )
 
   server.setTimeout(2 * 60e3)
@@ -256,7 +256,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
           .on('error', reject)
           .on('timeout', () => {
             reject(new createError.RequestTimeout())
-          })
+          }),
       ),
       new Promise((resolve, reject) =>
         socket
@@ -264,7 +264,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
           .on('error', reject)
           .on('timeout', () => {
             reject(new createError.RequestTimeout())
-          })
+          }),
       ),
       next(),
     ])
