@@ -50,6 +50,10 @@ module.exports.serializeError = function serializeError(error) {
     return serializeError({ message: error })
   }
 
+  if (Buffer.isBuffer(error)) {
+    return null
+  }
+
   if (Array.isArray(error)) {
     const errors = error.map(serializeError).filter(Boolean)
     return errors.length === 0 ? null : errors.length === 1 ? errors[0] : errors

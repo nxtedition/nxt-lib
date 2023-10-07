@@ -32,9 +32,14 @@ module.exports = {
   err: (err) => {
     // TODO (fix): Merge with errors/serializeError?
 
+    if (Buffer.isBuffer(err)) {
+      err = new Error('unexpected buffer error')
+    }
+
     if (Array.isArray(err)) {
       err = err.length === 1 ? err[0] : new AggregateError(err)
     }
+
     const ret = serializers.err(err)
 
     if (ret.data !== null && typeof ret.data === 'object') {
