@@ -98,14 +98,13 @@ module.exports = function (appConfig, onTerminate) {
     // process.env.name is the pm2 name of the process
     appConfig.instanceId ?? appConfig.containerId ?? process.env.name ?? os.hostname()
 
-  const userAgent = globalThis.userAgent = (
+  const userAgent = (globalThis.userAgent =
     appConfig.userAgent ??
     (serviceName &&
       `${serviceName}/${
         serviceVersion || '*'
       } (module:${serviceModule}; instance:${serviceInstanceId}) Node/${process.version}`) ??
-    null
-  )
+    null)
 
   const terminate = async (finalLogger) => {
     finalLogger ??= logger
@@ -685,7 +684,6 @@ module.exports = function (appConfig, onTerminate) {
     // const undici = require('undici')
     const compose = require('koa-compose')
     const { createServer } = require('./http')
-    const createError = require('http-errors')
 
     const httpConfig = { ...appConfig.http, ...config.http }
 
@@ -730,12 +728,6 @@ module.exports = function (appConfig, onTerminate) {
             } else {
               return next()
             }
-          },
-          (ctx, next) => {
-            if (toobusy && toobusy()) {
-              throw new createError.ServiceUnavailable('too busy')
-            }
-            return next()
           },
           appConfig.http.request
             ? appConfig.http.request
