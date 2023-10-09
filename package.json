@@ -20,6 +20,7 @@
     "deepstream.js",
     "logger.js",
     "mime.js",
+    "proxy.js",
     "trace.js",
     "weakCache.js",
     "couch.js",
