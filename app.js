@@ -495,6 +495,7 @@ module.exports = function (appConfig, onTerminate) {
                           id: 'app:ds_connection_state',
                           level: 30,
                           msg: 'ds: connected',
+                          data: { connectionState },
                         },
                       ]
                     : [
@@ -502,6 +503,7 @@ module.exports = function (appConfig, onTerminate) {
                           id: 'app:ds_connection_state',
                           level: 40,
                           msg: 'ds: connecting',
+                          data: { connectionState },
                         },
                       ],
                 ),
