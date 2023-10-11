@@ -1,6 +1,5 @@
 const os = require('node:os')
 const net = require('node:net')
-const assert = require('node:assert')
 const stream = require('node:stream')
 const { Buffer } = require('node:buffer')
 const { getDockerSecretsSync } = require('./docker-secrets')
@@ -408,7 +407,6 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.status) {
     const rxjs = require('rxjs')
     const rx = require('rxjs/operators')
-    const undici = require('undici')
     const fp = require('lodash/fp')
     const hashString = require('./hash')
 
@@ -489,89 +487,80 @@ module.exports = function (appConfig, onTerminate) {
               )
             : rxjs.of({}),
           ds
-            ? new rxjs.Observable((o) => {
-                const client = new undici.Client(`http://${new URL(ds._url || ds.url).host}`, {
-                  keepAliveTimeout: 30e3,
-                })
-
-                const subscription = rxjs
-                  .timer(0, 10e3)
-                  .pipe(
-                    rx.exhaustMap(async () => {
-                      const messages = []
-
-                      if (ds.stats.record.records > 100e3) {
-                        messages.push({
-                          id: 'app:ds_record_records',
+            ? rxjs.fromEvent(ds, 'connectionStateChanged').pipe(
+                rxjs.map((connectionState) =>
+                  connectionState === 'OPEN'
+                    ? [
+                        {
+                          id: 'app:ds_connection_state',
+                          level: 30,
+                          msg: 'ds: connected',
+                        },
+                      ]
+                    : [
+                        {
+                          id: 'app:ds_connection_state',
                           level: 40,
-                          code: 'NXT_DEEPSTREAM_RECORDS_RECORDS',
-                          msg: 'ds: ' + ds.stats.record.records + ' records',
-                        })
-                      }
+                          msg: 'ds: connecting',
+                        },
+                      ],
+                ),
+              )
+            : rxjs.of([]),
+          ds
+            ? rxjs.timer(0, 10e3).pipe(
+                rx.exhaustMap(async () => {
+                  const messages = []
 
-                      if (ds.stats.record.pruning > 100e3) {
-                        messages.push({
-                          id: 'app:ds_record_pruning',
-                          level: 40,
-                          code: 'NXT_DEEPSTREAM_RECORDS_PRUNING',
-                          msg: 'ds: ' + ds.stats.record.pruning + ' pruning',
-                        })
-                      }
+                  if (ds.stats.record.records > 100e3) {
+                    messages.push({
+                      id: 'app:ds_record_records',
+                      level: 40,
+                      code: 'NXT_DEEPSTREAM_RECORDS_RECORDS',
+                      msg: 'ds: ' + ds.stats.record.records + ' records',
+                    })
+                  }
 
-                      if (ds.stats.record.pending > 10e3) {
-                        messages.push({
-                          id: 'app:ds_record_pending',
-                          level: 40,
-                          code: 'NXT_DEEPSTREAM_RECORDS_PENDING',
-                          msg: 'ds: ' + ds.stats.record.pending + ' pending',
-                        })
-                      }
+                  if (ds.stats.record.pruning > 100e3) {
+                    messages.push({
+                      id: 'app:ds_record_pruning',
+                      level: 40,
+                      code: 'NXT_DEEPSTREAM_RECORDS_PRUNING',
+                      msg: 'ds: ' + ds.stats.record.pruning + ' pruning',
+                    })
+                  }
 
-                      if (ds.stats.record.updating > 10e3) {
-                        messages.push({
-                          id: 'app:ds_record_updating',
-                          level: 40,
-                          code: 'NXT_DEEPSTREAM_RECORDS_UPDATING',
-                          msg: 'ds: ' + ds.stats.record.updating + ' updating',
-                        })
-                      }
+                  if (ds.stats.record.pending > 10e3) {
+                    messages.push({
+                      id: 'app:ds_record_pending',
+                      level: 40,
+                      code: 'NXT_DEEPSTREAM_RECORDS_PENDING',
+                      msg: 'ds: ' + ds.stats.record.pending + ' pending',
+                    })
+                  }
 
-                      if (ds.stats.record.patching > 10e3) {
-                        messages.push({
-                          id: 'app:ds_record_patching',
-                          level: 40,
-                          code: 'NXT_DEEPSTREAM_RECORDS_PATCHING',
-                          msg: 'ds: ' + ds.stats.record.patching + ' patching',
-                        })
-                      }
+                  if (ds.stats.record.updating > 10e3) {
+                    messages.push({
+                      id: 'app:ds_record_updating',
+                      level: 40,
+                      code: 'NXT_DEEPSTREAM_RECORDS_UPDATING',
+                      msg: 'ds: ' + ds.stats.record.updating + ' updating',
+                    })
+                  }
 
-                      try {
-                        const { body, statusCode } = await client.request({
-                          method: 'GET',
-                          path: '/healthcheck',
-                        })
-                        await body.dump()
-                        assert(statusCode >= 200 && statusCode < 300)
-                      } catch (err) {
-                        messages.push({
-                          id: 'app:ds_http_connection',
-                          level: 40,
-                          code: err.code,
-                          msg: 'ds: ' + err.message,
-                        })
-                      }
+                  if (ds.stats.record.patching > 10e3) {
+                    messages.push({
+                      id: 'app:ds_record_patching',
+                      level: 40,
+                      code: 'NXT_DEEPSTREAM_RECORDS_PATCHING',
+                      msg: 'ds: ' + ds.stats.record.patching + ' patching',
+                    })
+                  }
 
-                      return messages
-                    }),
-                  )
-                  .subscribe(o)
-
-                return () => {
-                  client.destroy()
-                  subscription.unsubscribe()
-                }
-              }).pipe(rx.startWith([]), rx.distinctUntilChanged(fp.isEqual))
-            : rxjs.of({}),
+                  return messages
+                }),
+              )
+            : rxjs.of([]),
           rxjs.timer(0, 10e3),
         ].filter(Boolean),
       )
