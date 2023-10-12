@@ -335,7 +335,7 @@ module.exports.retry = async function _retry(fn, options) {
 
   for (let retryCount = 0; true; ++retryCount) {
     try {
-      return await fn({ signal })
+      return await fn({ retryCount, signal })
     } catch (err) {
       if (retryCount >= count) {
         throw err
