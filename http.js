@@ -331,11 +331,11 @@ module.exports.delay = defaultDelay
 module.exports.isConnectionError = isConnectionError
 
 module.exports.retry = async function _retry(fn, options) {
-  const { maxRetries = 8, count = maxRetries, delay = defaultDelay } = options ?? {}
+  const { maxRetries = 8, count = maxRetries, delay = defaultDelay, signal } = options ?? {}
 
   for (let retryCount = 0; true; ++retryCount) {
     try {
-      return await fn()
+      return await fn({ signal })
     } catch (err) {
       if (retryCount >= count) {
         throw err
