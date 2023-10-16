@@ -22,7 +22,9 @@ function readableStreamLength(stream) {
     return null
   }
 
-  stream.read(0)
+  if (stream.read) {
+    stream.read(0)
+  }
 
   const state = stream._readableState
   return state && state.ended === true && Number.isFinite(state.length) ? state.length : null
