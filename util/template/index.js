@@ -108,7 +108,7 @@ module.exports = ({ ds, proxify }) => {
                 ret[indices[n]] = values[n]
               }
               return ret
-            })
+            }),
           )
         }
       : null
@@ -145,7 +145,7 @@ module.exports = ({ ds, proxify }) => {
                 ret[indices[n]] = values[n]
               }
               return ret
-            })
+            }),
           )
         }
       : null
@@ -174,7 +174,7 @@ module.exports = ({ ds, proxify }) => {
             compileStringTemplate(post)?.(str, args$) ?? rxjs.of(post),
           ])
           .pipe(
-            rx.map(([pre, body, post]) => (pre || post ? `${pre}${stringify(body)}${post}` : body))
+            rx.map(([pre, body, post]) => (pre || post ? `${pre}${stringify(body)}${post}` : body)),
           )
     } else if (type === 'nxt') {
       const expr = compilers.nxt(body)
@@ -185,7 +185,7 @@ module.exports = ({ ds, proxify }) => {
 
       return (str, args$) =>
         expr(args$).pipe(
-          rx.switchMap((body) => onResolveTemplate(`${pre}${stringify(body, true)}${post}`, args$))
+          rx.switchMap((body) => onResolveTemplate(`${pre}${stringify(body, true)}${post}`, args$)),
         )
     } else {
       throw new Error('unknown expression type: ' + type)
@@ -219,12 +219,13 @@ module.exports = ({ ds, proxify }) => {
         return null
       }
     },
-    (template, hash) => hash
+    (template, hash) => hash,
   )
 
   function compileTemplate(template) {
     const hash = hashTemplate(template)
-    return hash ? compileTemplateCache(template, hash) : null
+    const resolver = hash ? compileTemplateCache(template, hash) : null
+    return resolver ? (args$) => resolver(template, args$) : null
   }
 
   async function resolveTemplate(template, args$, options) {
@@ -233,7 +234,7 @@ module.exports = ({ ds, proxify }) => {
 
   function onResolveTemplate(template, args$) {
     try {
-      return compileTemplate(template)?.(template, args$) ?? rxjs.of(template)
+      return compileTemplate(template)?.(args$) ?? rxjs.of(template)
     } catch (err) {
       return rxjs.throwError(() => err)
     }
