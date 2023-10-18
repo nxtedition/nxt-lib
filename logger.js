@@ -42,14 +42,6 @@ module.exports.createLogger = function (
     stream,
   )
 
-  function flush() {
-    if (!stream.destroyed) {
-      stream?.end?.()
-      stream?.flush?.()
-      stream?.flushSync?.()
-    }
-  }
-
   let called = false
   const finalHandler = async (err, evt) => {
     if (called) {
@@ -63,7 +55,7 @@ module.exports.createLogger = function (
       }
       logger.fatal({ err }, evt || 'error caused exit')
 
-      flush()
+      logger.flush()
 
       process.exit(1)
     } else {
@@ -76,7 +68,7 @@ module.exports.createLogger = function (
         logger.warn({ err })
       }
 
-      flush()
+      logger.flush()
 
       logger.info({ exitSignal }, 'exit')
       process.exit(!exitSignal ? 0 : exitSignal)
