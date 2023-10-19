@@ -18,3 +18,4 @@ nxt*
 db
 .nyc*
 yarn.lock
+.tap
