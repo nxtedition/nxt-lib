@@ -134,6 +134,8 @@ module.exports.request = async function request(ctx, next) {
         reqLogger.error('request error')
       }
 
+      reqLogger.debug('request ended')
+
       res.end()
     } else {
       reqLogger = reqLogger.child({ res, err, responseTime })
@@ -144,6 +146,8 @@ module.exports.request = async function request(ctx, next) {
       } else {
         reqLogger.error('request error')
       }
+
+      reqLogger.debug('request destroyed')
 
       res.destroy()
     }
