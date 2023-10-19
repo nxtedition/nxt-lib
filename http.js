@@ -135,6 +135,8 @@ module.exports.request = async function request(ctx, next) {
         reqLogger.warn('request failed')
       }
 
+      reqLogger.debug('request ended')
+
       res.end()
     } else {
       if (req.aborted || err.name === 'AbortError') {
@@ -144,6 +146,8 @@ module.exports.request = async function request(ctx, next) {
       } else {
         reqLogger.error('request error')
       }
+
+      reqLogger.debug('request destroyed')
 
       res.destroy()
     }
@@ -206,7 +210,7 @@ module.exports.createServer = function (options, ctx, middleware) {
       requestTimeout: 0,
       ...options,
     },
-    (req, res) => middleware({ req, res, ...factory() })
+    (req, res) => middleware({ req, res, ...factory() }),
   )
 
   server.setTimeout(2 * 60e3)
@@ -256,7 +260,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
           .on('error', reject)
           .on('timeout', () => {
             reject(new createError.RequestTimeout())
-          })
+          }),
       ),
       new Promise((resolve, reject) =>
         socket
@@ -264,7 +268,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
           .on('error', reject)
           .on('timeout', () => {
             reject(new createError.RequestTimeout())
-          })
+          }),
       ),
       next(),
     ])
