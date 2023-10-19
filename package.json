@@ -72,7 +72,6 @@
     "/__tests__"
   ],
   "dependencies": {
-    "cache-control-parser": "^2.0.4",
     "date-fns": "^2.29.3",
     "fast-querystring": "^1.1.1",
     "hasha": "^5.2.2",
@@ -80,13 +79,11 @@
     "json5": "^2.2.3",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
-    "lru-cache": "^10.0.1",
     "mime": "^3.0.0",
     "moment-timezone": "^0.5.43",
     "nconf": "^0.12.0",
     "nested-error-stacks": "^2.1.1",
     "object-hash": "^3.0.0",
-    "omit-empty": "^1.0.0",
     "pino-std-serializers": "^6.2.2",
     "qs": "^6.11.1",
     "request-target": "^1.0.2",
@@ -94,8 +91,7 @@
     "split-string": "^6.0.0",
     "toobusy-js": "^0.5.1",
     "undici": "^5.25.4",
-    "url-join": "^4.0.0",
-    "xuid": "^4.1.2"
+    "url-join": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.8.2",
