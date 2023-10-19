@@ -9,7 +9,7 @@
     "rxjs/*",
     "util/*",
     "lib/*",
-    "undici/*",
+    "undici.js",
     "http-client.js",
     "subtract-ranges.js",
     "serializers.js",
