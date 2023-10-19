@@ -1,84 +1,209 @@
 TAP version 14
 # Subtest: should follow redirection after a HTTP 300
-    ok 1 - should be equal
-    ok 2 - should be equal
-    ok 3 - should be equal
-    1..3
-ok 1 - should follow redirection after a HTTP 300 # time=26.395ms
+    not ok 1 - Cannot read properties of undefined (reading 'content-length')
+      ---
+      stack: |
+        request (lib/undici/index.js:105:22)
+        Test.<anonymous> (test/undici/redirect.js:21:13)
+      at:
+        fileName: lib/undici/index.js
+        lineNumber: 105
+        columnNumber: 22
+        functionName: request
+      type: TypeError
+      tapCaught: returnedPromiseRejection
+      source: |2
+          if (
+            (method === 'HEAD' || method === 'GET') &&
+            (parseInt(headers['content-length']) > 0 || headers['transfer-encoding'])
+        ---------------------^
+          ) {
+            throw new createError.BadRequest('HEAD and GET cannot have body')
+      ...
+    
+    1..1
+not ok 1 - should follow redirection after a HTTP 300 # time=29.663ms
+  ---
+  at:
+    fileName: test/undici/redirect.js
+    lineNumber: 14
+    columnNumber: 3
+    typeName: Object
+  source: |
+    const { request } = require('../../lib/undici/index.js')
+  
+    t.test('should follow redirection after a HTTP 300', async (t) => {
+    --^
+      const server = await startRedirectingServer(t)
+  ...
 
 # Subtest: should follow redirection after a HTTP 300 default
-    ok 1 - should be equal
-    ok 2 - should be equal
-    ok 3 - should be equal
-    1..3
-ok 2 - should follow redirection after a HTTP 300 default # time=5.402ms
+    not ok 1 - Cannot read properties of undefined (reading 'content-length')
+      ---
+      stack: |
+        request (lib/undici/index.js:105:22)
+        Test.<anonymous> (test/undici/redirect.js:35:59)
+      at:
+        fileName: lib/undici/index.js
+        lineNumber: 105
+        columnNumber: 22
+        functionName: request
+      type: TypeError
+      tapCaught: returnedPromiseRejection
+      source: |2
+          if (
+            (method === 'HEAD' || method === 'GET') &&
+            (parseInt(headers['content-length']) > 0 || headers['transfer-encoding'])
+        ---------------------^
+          ) {
+            throw new createError.BadRequest('HEAD and GET cannot have body')
+      ...
+    
+    1..1
+not ok 2 - should follow redirection after a HTTP 300 default # time=3.951ms
+  ---
+  at:
+    fileName: test/undici/redirect.js
+    lineNumber: 32
+    columnNumber: 3
+    typeName: Object
+  source: |
+    })
+  
+    t.test('should follow redirection after a HTTP 300 default', async (t) => {
+    --^
+      const server = await startRedirectingServer(t)
+  ...
 
 # Subtest: should follow redirection after a HTTP 301
     ok 1 - should be equal
     ok 2 - should be equal
     ok 3 - should be equal
     1..3
-ok 3 - should follow redirection after a HTTP 301 # time=7.103ms
+ok 3 - should follow redirection after a HTTP 301 # time=36.796ms
 
 # Subtest: should follow redirection after a HTTP 302
     ok 1 - should be equal
     ok 2 - should be equal
     ok 3 - should be equal
     1..3
-ok 4 - should follow redirection after a HTTP 302 # time=5.239ms
+ok 4 - should follow redirection after a HTTP 302 # time=34.894ms
 
 # Subtest: should follow redirection after a HTTP 303 changing method to GET
     ok 1 - should be equal
     ok 2 - should be equal
     ok 3 - should be equal
     1..3
-ok 5 - should follow redirection after a HTTP 303 changing method to GET # time=5.665ms
+ok 5 - should follow redirection after a HTTP 303 changing method to GET # time=19.35ms
 
 # Subtest: should remove Host and request body related headers when following HTTP 303 (array)
     ok 1 - should be equal
     ok 2 - should be equal
     ok 3 - should be equal
     1..3
-ok 6 - should remove Host and request body related headers when following HTTP 303 (array) # time=7.944ms
+ok 6 - should remove Host and request body related headers when following HTTP 303 (array) # time=12.138ms
 
 # Subtest: should remove Host and request body related headers when following HTTP 303 (object)
     ok 1 - should be equal
     ok 2 - should be equal
     ok 3 - should be equal
     1..3
-ok 7 - should remove Host and request body related headers when following HTTP 303 (object) # time=5.396ms
+ok 7 - should remove Host and request body related headers when following HTTP 303 (object) # time=7.795ms
 
 # Subtest: should follow redirection after a HTTP 307
     ok 1 - should be equal
     ok 2 - should be equal
     ok 3 - should be equal
     1..3
-ok 8 - should follow redirection after a HTTP 307 # time=4.188ms
+ok 8 - should follow redirection after a HTTP 307 # time=7.729ms
 
 # Subtest: should follow redirection after a HTTP 308
     ok 1 - should be equal
     ok 2 - should be equal
     ok 3 - should be equal
     1..3
-ok 9 - should follow redirection after a HTTP 308 # time=4.526ms
+ok 9 - should follow redirection after a HTTP 308 # time=5.653ms
 
 # Subtest: should ignore HTTP 3xx response bodies
-    ok 1 - should be equal
-    ok 2 - should be equal
-    ok 3 - should be equal
-    1..3
-ok 10 - should ignore HTTP 3xx response bodies # time=2.062ms
+    not ok 1 - Cannot read properties of undefined (reading 'content-length')
+      ---
+      stack: |
+        request (lib/undici/index.js:105:22)
+        Test.<anonymous> (test/undici/redirect.js:223:13)
+      at:
+        fileName: lib/undici/index.js
+        lineNumber: 105
+        columnNumber: 22
+        functionName: request
+      type: TypeError
+      tapCaught: returnedPromiseRejection
+      source: |2
+          if (
+            (method === 'HEAD' || method === 'GET') &&
+            (parseInt(headers['content-length']) > 0 || headers['transfer-encoding'])
+        ---------------------^
+          ) {
+            throw new createError.BadRequest('HEAD and GET cannot have body')
+      ...
+    
+    1..1
+not ok 10 - should ignore HTTP 3xx response bodies # time=1.867ms
+  ---
+  at:
+    fileName: test/undici/redirect.js
+    lineNumber: 216
+    columnNumber: 3
+    typeName: Object
+  source: |
+    })
+  
+    t.test('should ignore HTTP 3xx response bodies', async (t) => {
+    --^
+      const server = await startRedirectingWithBodyServer(t)
+  ...
 
 # Subtest: should ignore query after redirection
-    ok 1 - should be equal
-    ok 2 - should be equal
-    1..2
-ok 11 - should ignore query after redirection # time=1.035ms
+    not ok 1 - Cannot read properties of undefined (reading 'content-length')
+      ---
+      stack: |
+        request (lib/undici/index.js:105:22)
+        Test.<anonymous> (test/undici/redirect.js:237:41)
+      at:
+        fileName: lib/undici/index.js
+        lineNumber: 105
+        columnNumber: 22
+        functionName: request
+      type: TypeError
+      tapCaught: returnedPromiseRejection
+      source: |2
+          if (
+            (method === 'HEAD' || method === 'GET') &&
+            (parseInt(headers['content-length']) > 0 || headers['transfer-encoding'])
+        ---------------------^
+          ) {
+            throw new createError.BadRequest('HEAD and GET cannot have body')
+      ...
+    
+    1..1
+not ok 11 - should ignore query after redirection # time=1.751ms
+  ---
+  at:
+    fileName: test/undici/redirect.js
+    lineNumber: 234
+    columnNumber: 3
+    typeName: Object
+  source: |
+    })
+  
+    t.test('should ignore query after redirection', async (t) => {
+    --^
+      const server = await startRedirectingWithQueryParams(t)
+  ...
 
 # Subtest: should follow a redirect chain up to the allowed number of times
     ok 1 - should be equal
     1..1
-ok 12 - should follow a redirect chain up to the allowed number of times # time=2.395ms
+ok 12 - should follow a redirect chain up to the allowed number of times # time=0.368ms
 
 # Subtest: when a Location response header is NOT present
     ok 1 - should be equal
@@ -88,33 +213,70 @@ ok 12 - should follow a redirect chain up to the allowed number of times # time=
     ok 5 - should be equal
     ok 6 - should be equal
     1..6
-ok 13 - when a Location response header is NOT present # time=4.642ms
+ok 13 - when a Location response header is NOT present # time=0.795ms
 
 # Subtest: should not follow redirects when using Readable request bodies
     ok 1 - should be equal
     1..1
-ok 14 - should not follow redirects when using Readable request bodies # time=2.174ms
+ok 14 - should not follow redirects when using Readable request bodies # time=7.147ms
 
 # Subtest: should follow redirections when going cross origin
     ok 1 - should be equal
     ok 2 - should be equal
     ok 3 - should be equal
     1..3
-ok 15 - should follow redirections when going cross origin # time=5.114ms
+ok 15 - should follow redirections when going cross origin # time=6.646ms
 
 # Subtest: should handle errors (promise)
-    ok 1 - should match pattern
+    not ok 1 - should match pattern
+      ---
+      diff: |
+        --- expected
+        +++ actual
+        @@ -1,1 +1,1 @@
+        -/EADDRNOTAVAIL|ECONNREFUSED/
+        +undefined
+      at:
+        fileName: test/undici/redirect.js
+        lineNumber: 325
+        columnNumber: 7
+        typeName: Test
+      stack: |
+        Test.<anonymous> (test/undici/redirect.js:325:7)
+      source: |2
+            t.fail('Did not throw')
+          } catch (error) {
+            t.match(error.code, /EADDRNOTAVAIL|ECONNREFUSED/)
+        ------^
+          }
+        })
+      ...
+    
     1..1
-ok 16 - should handle errors (promise) # time=1.293ms
+not ok 16 - should handle errors (promise) # time=3.691ms
+  ---
+  at:
+    fileName: test/undici/redirect.js
+    lineNumber: 320
+    columnNumber: 3
+    typeName: Object
+  source: |
+    })
+  
+    t.test('should handle errors (promise)', async (t) => {
+    --^
+      try {
+        await request('http://localhost:0', { maxRedirections: 10 })
+  ...
 
 # Subtest: removes authorization header on third party origin
     ok 1 - should be equal
     1..1
-ok 17 - removes authorization header on third party origin # time=2.334ms
+ok 17 - removes authorization header on third party origin # time=2.912ms
 
 # Subtest: removes cookie header on third party origin
     ok 1 - should be equal
     1..1
-ok 18 - removes cookie header on third party origin # time=1.902ms
+ok 18 - removes cookie header on third party origin # time=2.466ms
 
 1..18

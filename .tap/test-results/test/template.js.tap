@@ -2,21 +2,59 @@ TAP version 14
 # Subtest: noop
     ok 1 - should be equal
     1..1
-ok 1 - noop # time=2.912ms
+ok 1 - noop # time=3.431ms
 
 # Subtest: simple
     ok 1 - should be equivalent
     1..1
-ok 2 - simple # time=2.162ms
+ok 2 - simple # time=3.264ms
 
 # Subtest: cache
-    ok 1 - should be equal
+    not ok 1 - should be equal
+      ---
+      found: !function |-
+        ""
+        (args$) => resolver(template, args$)
+      wanted: !function |-
+        ""
+        (args$) => resolver(template, args$)
+      compare: ===
+      at:
+        fileName: test/template.js
+        lineNumber: 20
+        columnNumber: 5
+        typeName: Test
+      stack: |
+        Test.<anonymous> (test/template.js:20:5)
+      source: |
+        test('cache', async (t) => {
+          const x = '{{#js $.test }}'
+          t.equal(compileTemplate(x), compileTemplate(x))
+        ----^
+          t.end()
+        })
+      ...
+    
     1..1
-ok 3 - cache # time=0.147ms
+not ok 3 - cache # time=10.343ms
+  ---
+  at:
+    fileName: test/template.js
+    lineNumber: 18
+    columnNumber: 1
+    typeName: Object
+  source: |
+    })
+  
+    test('cache', async (t) => {
+    ^
+      const x = '{{#js $.test }}'
+      t.equal(compileTemplate(x), compileTemplate(x))
+  ...
 
 # Subtest: string concat
     ok 1 - should be equal
     1..1
-ok 4 - string concat # time=1.176ms
+ok 4 - string concat # time=1.262ms
 
 1..4

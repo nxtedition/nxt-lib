@@ -1,17 +1,123 @@
 TAP version 14
 # Subtest: pre abort signal w/ reason
     1..1
-    ok 1 - should be equal
-ok 1 - pre abort signal w/ reason # time=41.493ms
+    not ok 1 - should be equal
+      ---
+      diff: |
+        --- expected
+        +++ actual
+        @@ -1,1 +1,1 @@
+        -Error
+        +TypeError: Cannot read properties of undefined (reading 'content-length')
+      compare: ===
+      at:
+        fileName: test/undici/signal.js
+        lineNumber: 19
+        columnNumber: 9
+        typeName: Server
+      stack: |
+        Server.<anonymous> (test/undici/signal.js:19:9)
+      source: >2
+              await request(`http://localhost:${server.address().port}`, { signal: ac.signal })
+            } catch (err) {
+              t.equal(err, _err)
+        --------^
+            }
+          })
+      ...
+    
+not ok 1 - pre abort signal w/ reason # time=27.662ms
+  ---
+  at:
+    fileName: test/undici/signal.js
+    lineNumber: 5
+    columnNumber: 1
+    typeName: Object
+  source: |
+    const { request } = require('../../lib/undici/index.js')
+  
+    test('pre abort signal w/ reason', (t) => {
+    ^
+      t.plan(1)
+      const server = createServer((req, res) => {
+  ...
 
 # Subtest: post abort signal
     1..1
-    ok 1 - should be equal
-ok 2 - post abort signal # time=8.934ms
+    not ok 1 - Cannot read properties of undefined (reading 'content-length')
+      ---
+      stack: |
+        request (lib/undici/index.js:105:22)
+        Server.<anonymous> (test/undici/signal.js:33:24)
+      at:
+        fileName: lib/undici/index.js
+        lineNumber: 105
+        columnNumber: 22
+        functionName: request
+      type: TypeError
+      tapCaught: unhandledRejection
+      source: |2
+          if (
+            (method === 'HEAD' || method === 'GET') &&
+            (parseInt(headers['content-length']) > 0 || headers['transfer-encoding'])
+        ---------------------^
+          ) {
+            throw new createError.BadRequest('HEAD and GET cannot have body')
+      ...
+    
+not ok 2 - post abort signal # time=3.337ms
+  ---
+  at:
+    fileName: test/undici/signal.js
+    lineNumber: 24
+    columnNumber: 1
+    typeName: Object
+  source: |
+    })
+  
+    test('post abort signal', (t) => {
+    ^
+      t.plan(1)
+      const server = createServer((req, res) => {
+  ...
 
 # Subtest: post abort signal w/ reason
     1..1
-    ok 1 - should be equal
-ok 3 - post abort signal w/ reason # time=9.559ms
+    not ok 1 - Cannot read properties of undefined (reading 'content-length')
+      ---
+      stack: |
+        request (lib/undici/index.js:105:22)
+        Server.<anonymous> (test/undici/signal.js:56:24)
+      at:
+        fileName: lib/undici/index.js
+        lineNumber: 105
+        columnNumber: 22
+        functionName: request
+      type: TypeError
+      tapCaught: unhandledRejection
+      source: |2
+          if (
+            (method === 'HEAD' || method === 'GET') &&
+            (parseInt(headers['content-length']) > 0 || headers['transfer-encoding'])
+        ---------------------^
+          ) {
+            throw new createError.BadRequest('HEAD and GET cannot have body')
+      ...
+    
+not ok 3 - post abort signal w/ reason # time=3.511ms
+  ---
+  at:
+    fileName: test/undici/signal.js
+    lineNumber: 46
+    columnNumber: 1
+    typeName: Object
+  source: |
+    })
+  
+    test('post abort signal w/ reason', (t) => {
+    ^
+      t.plan(1)
+      const server = createServer((req, res) => {
+  ...
 
 1..3
