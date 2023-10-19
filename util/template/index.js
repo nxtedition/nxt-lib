@@ -84,7 +84,7 @@ module.exports = ({ ds, proxify }) => {
     let indices
 
     for (let i = 0; i < template.length; i++) {
-      const resolver = compileTemplate(template[i])
+      const resolver = _compileTemplate(template[i])
       if (resolver) {
         resolvers ??= []
         resolvers.push(resolver)
@@ -121,7 +121,7 @@ module.exports = ({ ds, proxify }) => {
     const keys = Object.keys(template)
 
     for (let i = 0; i < keys.length; i++) {
-      const resolver = compileTemplate(template[keys[i]])
+      const resolver = _compileTemplate(template[keys[i]])
       if (resolver) {
         resolvers ??= []
         resolvers.push(resolver)
@@ -207,7 +207,7 @@ module.exports = ({ ds, proxify }) => {
     return typeof val === 'string' && val.indexOf('{{') !== -1
   }
 
-  const compileTemplateCache = weakCache(
+  const _compileTemplateCache = weakCache(
     (template) => {
       if (fp.isPlainObject(template)) {
         return compileObjectTemplate(template)
@@ -222,9 +222,14 @@ module.exports = ({ ds, proxify }) => {
     (template, hash) => hash,
   )
 
-  function compileTemplate(template) {
+  function _compileTemplate(template) {
     const hash = hashTemplate(template)
-    const resolver = hash ? compileTemplateCache(template, hash) : null
+    const resolver = hash ? _compileTemplateCache(template, hash) : null
+    return resolver // ? (args$) => resolver(template, args$) : null
+  }
+
+  function compileTemplate(template) {
+    const resolver = _compileTemplate(template)
     return resolver ? (args$) => resolver(template, args$) : null
   }
 
@@ -234,7 +239,7 @@ module.exports = ({ ds, proxify }) => {
 
   function onResolveTemplate(template, args$) {
     try {
-      return compileTemplate(template)?.(args$) ?? rxjs.of(template)
+      return _compileTemplate(template)?.(template, args$) ?? rxjs.of(template)
     } catch (err) {
       return rxjs.throwError(() => err)
     }
