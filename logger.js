@@ -30,10 +30,10 @@ module.exports.createLogger = function (
     setInterval(() => {
       if (flushing > 2) {
         logger.warn('logger is flushing too slow')
-        logger.flushSync()
+        stream.flushSync()
       } else {
         flushing++
-        logger.flush(() => {
+        stream.flush(() => {
           flushing--
         })
       }
