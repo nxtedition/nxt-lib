@@ -24,7 +24,7 @@ module.exports.createLogger = function (
   } else if (!isMainThread) {
     stream = pino.destination({ fd: 1, sync: false, minLength: 0 })
   } else {
-    stream = pino.destination({ sync: false, minLength: 4096 })
+    stream = pino.destination({ sync: false, minLength: 16 * 1024 })
 
     let flushing = 0
     setInterval(() => {
