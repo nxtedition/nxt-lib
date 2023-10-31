@@ -25,8 +25,18 @@ module.exports.createLogger = function (
     stream = pino.destination({ fd: 1, sync: false, minLength: 0 })
   } else {
     stream = pino.destination({ sync: false, minLength: 4096 })
+
+    let flushing = 0
     setInterval(() => {
-      logger.flush()
+      if (flushing > 2) {
+        logger.warn('logger is flushing too slow')
+        logger.flushSync()
+      } else {
+        flushing++
+        logger.flush(() => {
+          flushing--
+        })
+      }
     }, flushInterval).unref()
   }
 
