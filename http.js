@@ -60,13 +60,31 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.trace({ req }, 'request started')
     }
 
-    const onClose = () => queueMicrotask(() => ac.abort())
-    const onTimeout = () => res.destroy(new createError.RequestTimeout())
-    const onError = (err) => ac.abort(err)
+    res
+      .on('timeout', function () {
+        this.destroy(new createError.RequestTimeout())
+      })
+      .on('error', (err) => {
+        reqLogger.error({ err }, 'response error')
+        ac.abort(err)
+      })
+      .on('close', () => {
+        reqLogger.debug('response closed')
+        if (!ac.signal.aborted) {
+          queueMicrotask(() => ac.abort())
+        }
+      })
 
-    res.on('close', onClose).on('timeout', onTimeout).on('error', onError)
-
-    req.on('timeout', onTimeout).on('error', onError)
+    req
+      .on('timeout', function () {
+        this.destroy(new createError.RequestTimeout())
+      })
+      .on('error', (err) => {
+        reqLogger.error({ err }, 'request error')
+      })
+      .on('close', () => {
+        reqLogger.debug('request closed')
+      })
 
     await next()
 
