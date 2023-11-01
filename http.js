@@ -70,9 +70,9 @@ module.exports.request = async function request(ctx, next) {
             reqLogger.error({ err }, 'response error')
             reject(err)
           })
-          .on('close', () => {
+          .on('close', function () {
             reqLogger.debug('response closed')
-            if (!res.writableEnded) {
+            if (!this.writableEnded) {
               reject(
                 Object.assign(new Error('response closed prematurely'), {
                   code: 'ERR_STREAM_PREMATURE_CLOSE',
