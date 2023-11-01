@@ -45,6 +45,10 @@ module.exports.request = async function request(ctx, next) {
     ctx.method = req.method
     ctx.query = ctx.url.search ? querystring.parse(ctx.url.search.slice(1)) : {}
 
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      req.resume() // Dump the body if there is one.
+    }
+
     res.setHeader('request-id', req.id)
 
     const isHealthcheck = ctx.url.pathname === '/healthcheck'
@@ -99,7 +103,7 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.warn({ err }, 'request error')
     })
 
-    if (!req.aborted && !res.headersSent && !res.destroyed && !res.complete) {
+    if (!res.headersSent && !res.destroyed) {
       res.statusCode = err.statusCode || 500
 
       let reqId = req?.id || err.id
@@ -140,16 +144,19 @@ module.exports.request = async function request(ctx, next) {
     } else {
       reqLogger = reqLogger.child({ res, err, responseTime })
       if (req.aborted || err.name === 'AbortError') {
-        reqLogger.debug('request aborted')
+        reqLogger.debug({ err }, 'request aborted')
       } else if (err.statusCode < 500) {
-        reqLogger.warn('request failed')
+        reqLogger.warn({ err }, 'request failed')
       } else {
-        reqLogger.error('request error')
+        reqLogger.error({ err }, 'request error')
       }
 
-      reqLogger.debug('request destroyed')
-
-      res.destroy()
+      if (res.writableEnded) {
+        reqLogger.debug('response completed')
+      } else {
+        reqLogger.debug('response destroyed')
+        res.destroy()
+      }
     }
   }
 }
