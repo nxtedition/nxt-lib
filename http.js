@@ -72,15 +72,7 @@ module.exports.request = async function request(ctx, next) {
           })
           .on('close', function () {
             reqLogger.debug('response closed')
-            if (!this.writableEnded) {
-              reject(
-                Object.assign(new Error('response closed prematurely'), {
-                  code: 'ERR_STREAM_PREMATURE_CLOSE',
-                }),
-              )
-            } else {
-              resolve(null)
-            }
+            resolve(null)
           })
         req
           .on('timeout', function () {
@@ -95,14 +87,15 @@ module.exports.request = async function request(ctx, next) {
       }),
     ])
 
-    assert(res.writableEnded)
-    assert(res.statusCode)
+    assert(req.aborted || res.writableEnded)
 
     const responseTime = Math.round(performance.now() - startTime)
 
     reqLogger = reqLogger.child({ res, responseTime })
 
-    if (res.statusCode >= 500) {
+    if (req.aborted) {
+      reqLogger.debug('request aborted')
+    } else if (res.statusCode >= 500) {
       reqLogger.error('request error')
     } else if (res.statusCode >= 400) {
       reqLogger.warn('request failed')
