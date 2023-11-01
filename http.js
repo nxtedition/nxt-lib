@@ -7,7 +7,6 @@ const compose = require('koa-compose')
 const http = require('http')
 const fp = require('lodash/fp')
 const tp = require('timers/promises')
-const { AbortError } = require('./errors')
 
 const ERR_HEADER_EXPR =
   /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
@@ -60,37 +59,34 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.trace({ req }, 'request started')
     }
 
-    res
-      .on('timeout', function () {
-        this.destroy(new createError.RequestTimeout())
-      })
-      .on('error', (err) => {
-        reqLogger.error({ err }, 'response error')
-        ac.abort(err)
-      })
-      .on('close', () => {
-        reqLogger.debug('response closed')
-        if (!ac.signal.aborted) {
-          queueMicrotask(() => ac.abort())
-        }
-      })
+    await Promise.all([
+      next(),
+      new Promise((resolve, reject) => {
+        res
+          .on('timeout', function () {
+            this.destroy(new createError.RequestTimeout())
+          })
+          .on('error', (err) => {
+            reqLogger.error({ err }, 'response error')
+            reject(err)
+          })
+          .on('close', () => {
+            reqLogger.debug('response closed')
+            resolve(null)
+          })
 
-    req
-      .on('timeout', function () {
-        this.destroy(new createError.RequestTimeout())
-      })
-      .on('error', (err) => {
-        reqLogger.error({ err }, 'request error')
-      })
-      .on('close', () => {
-        reqLogger.debug('request closed')
-      })
-
-    await next()
-
-    if (!res.writableEnded && res.destroyed) {
-      throw new AbortError()
-    }
+        req
+          .on('timeout', function () {
+            this.destroy(new createError.RequestTimeout())
+          })
+          .on('error', (err) => {
+            reqLogger.error({ err }, 'request error')
+          })
+          .on('close', () => {
+            reqLogger.debug('request closed')
+          })
+      }),
+    ])
 
     assert(res.writableEnded)
     assert(res.statusCode)
@@ -108,6 +104,8 @@ module.exports.request = async function request(ctx, next) {
     } else {
       reqLogger.trace('request completed')
     }
+
+    ac.abort()
   } catch (err) {
     const reason = ac.signal.reason
     const responseTime = Math.round(performance.now() - startTime)
@@ -179,6 +177,8 @@ module.exports.request = async function request(ctx, next) {
         res.destroy()
       }
     }
+
+    ac.abort(err)
   }
 }
 
