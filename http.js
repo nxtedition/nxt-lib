@@ -91,6 +91,7 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.trace('request completed')
     }
   } catch (err) {
+    const reason = ac.signal.reason
     const responseTime = Math.round(performance.now() - startTime)
 
     req.on('error', (err) => {
@@ -131,7 +132,8 @@ module.exports.request = async function request(ctx, next) {
         res.write(JSON.stringify(err.body))
       }
 
-      reqLogger = reqLogger.child({ res, err, responseTime })
+      reqLogger = reqLogger.child({ res, err, reason, responseTime })
+
       if (res.statusCode < 500) {
         reqLogger.warn('request failed')
       } else {
@@ -142,13 +144,14 @@ module.exports.request = async function request(ctx, next) {
 
       res.end()
     } else {
-      reqLogger = reqLogger.child({ res, err, responseTime })
+      reqLogger = reqLogger.child({ res, err, reason, responseTime })
+
       if (req.aborted || err.name === 'AbortError') {
-        reqLogger.debug({ err }, 'request aborted')
+        reqLogger.debug('request aborted')
       } else if (err.statusCode < 500) {
-        reqLogger.warn({ err }, 'request failed')
+        reqLogger.warn('request failed')
       } else {
-        reqLogger.error({ err }, 'request error')
+        reqLogger.error('request error')
       }
 
       if (res.writableEnded) {
