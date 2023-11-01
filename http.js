@@ -66,7 +66,7 @@ module.exports.request = async function request(ctx, next) {
           .on('timeout', function () {
             this.destroy(new createError.RequestTimeout())
           })
-          .on('error', (err) => {
+          .on('error', function (err) {
             reqLogger.error({ err }, 'response error')
             reject(err)
           })
@@ -86,10 +86,10 @@ module.exports.request = async function request(ctx, next) {
           .on('timeout', function () {
             this.destroy(new createError.RequestTimeout())
           })
-          .on('error', (err) => {
+          .on('error', function (err) {
             reqLogger.error({ err }, 'request error')
           })
-          .on('close', () => {
+          .on('close', function () {
             reqLogger.debug('request closed')
           })
       }),
