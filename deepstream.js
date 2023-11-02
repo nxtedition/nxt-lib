@@ -141,6 +141,7 @@ function init(ds) {
 async function* changes(
   ds,
   {
+    origin = ds._url,
     since = 'now',
     live = true,
     batched = false,
@@ -151,7 +152,7 @@ async function* changes(
     retry,
   },
 ) {
-  const url = new URL('/_record/changes', ds._url)
+  const url = new URL('/_record/changes', origin)
 
   url.protocol = url.protocol === 'ws:' ? 'http:' : 'https:'
   url.port = '6100'
