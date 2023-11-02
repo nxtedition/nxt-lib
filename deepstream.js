@@ -168,7 +168,7 @@ async function* changes(
   signal?.addEventListener('abort', abort)
 
   try {
-    for (let retryCount = 0; retryCount < retry; retryCount++) {
+    for (let retryCount = 0; true; retryCount++) {
       ac = new AbortController()
       try {
         // TODO (fix): Use nxt-undici
