@@ -1,5 +1,9 @@
 const qs = require('qs')
 const cached = require('./util/cached')
+const undici = require('undici')
+const stream = require('node:stream')
+const split2 = require('split2')
+const { delay } = require('./http')
 
 function provide(ds, domain, callback, options) {
   if (domain instanceof RegExp) {
@@ -23,7 +27,7 @@ function provide(ds, domain, callback, options) {
     callback = cached(
       callback,
       cachedOptions,
-      cachedOptions.keySelector ? cachedOptions.keySelector : (id, options, key) => key
+      cachedOptions.keySelector ? cachedOptions.keySelector : (id, options, key) => key,
     )
   } else if (options.minAge) {
     // Backwards compat
@@ -43,13 +47,13 @@ function provide(ds, domain, callback, options) {
       const [id, options] = parseKey(key)
       return callback(id, options, key)
     },
-    { recursive: options.recursive, mode: options.mode, stringify: options.stringify }
+    { recursive: options.recursive, mode: options.mode, stringify: options.stringify },
   )
 }
 
 function parseKey(key) {
   const { json, id, query } = key.match(
-    /^(?:(?<json>\{.*\}):|(?<id>.*):)?[^?]*(?:\?(?<query>.*))?$/
+    /^(?:(?<json>\{.*\}):|(?<id>.*):)?[^?]*(?:\?(?<query>.*))?$/,
   ).groups
   return [
     id || '',
@@ -75,7 +79,7 @@ function observe(ds, name, ...args) {
         ? `${name.endsWith('?') ? '' : '?'}${qs.stringify(query, { skipNulls: true })}`
         : ''
     }`,
-    ...args
+    ...args,
   )
 }
 
@@ -94,7 +98,7 @@ function observe2(ds, name, ...args) {
         ? `${name.endsWith('?') ? '' : '?'}${qs.stringify(query, { skipNulls: true })}`
         : ''
     }`,
-    ...args
+    ...args,
   )
 }
 
@@ -113,7 +117,7 @@ function get(ds, name, ...args) {
         ? `${name.endsWith('?') ? '' : '?'}${qs.stringify(query, { skipNulls: true })}`
         : ''
     }`,
-    ...args
+    ...args,
   )
 }
 
@@ -127,18 +131,119 @@ function init(ds) {
       set: (...args) => ds.record.set(...args),
       get: (...args) => get(ds, ...args),
       update: (...args) => ds.record.update(...args),
+      changes: (...args) => changes(ds, ...args),
     },
   }
   ds.nxt = nxt
   return nxt
 }
 
+async function* changes(
+  ds,
+  {
+    since = 'now',
+    live = true,
+    batched = false,
+    includeDocs = false,
+    highWaterMark = 256 * 1024,
+    heartbeat = 60e3,
+    retry,
+  },
+) {
+  const url = new URL('/_record/changes', ds._url)
+
+  url.protocol = url.protocol === 'ws:' ? 'http:' : 'https:'
+  url.port = '6100'
+  url.searchParams.set('since', since || '0')
+  url.searchParams.set('live', String(live))
+  url.searchParams.set('include_docs', String(includeDocs))
+
+  for (let retryCount = 0; retryCount < retry; retryCount++) {
+    const ac = new AbortController()
+    const signal = ac.signal
+    try {
+      // TODO (fix): Use nxt-undici
+      const res = await undici.request(url, {
+        idempotent: false,
+        blocking: true,
+        method: 'GET',
+        signal,
+        throwOnError: true,
+        highWaterMark,
+        bodyTimeout: 2 * heartbeat,
+      })
+
+      const src = stream.pipeline(res.body, split2(), () => {})
+
+      let error
+      let ended = false
+      let resume = () => {}
+
+      src
+        .on('error', (err) => {
+          error = err
+        })
+        .on('readable', () => {
+          resume()
+        })
+        .on('end', () => {
+          ended = true
+          resume()
+        })
+
+      const batch = batched ? [] : null
+      while (true) {
+        const line = src.read()
+
+        if (line === '') {
+          continue
+        } else if (line !== null) {
+          const change = JSON.parse(line)
+
+          retryCount = 0
+
+          if (change.seq) {
+            since = change.seq
+          }
+          if (batch) {
+            batch.push(change)
+          } else {
+            yield change
+          }
+        } else if (batch?.length) {
+          yield batch.splice(0)
+        } else if (error) {
+          throw error
+        } else if (ended) {
+          return
+        } else {
+          await new Promise((resolve) => {
+            resume = resolve
+          })
+        }
+      }
+    } catch (err) {
+      if (typeof retry === 'function') {
+        const retryState = { since }
+        await retry(err, retryCount, retryState, { signal })
+        url.searchParams.set('since', since || '0')
+      } else {
+        await delay(err, retryCount, { signal })
+      }
+    } finally {
+      ac.abort()
+    }
+  }
+}
+
 module.exports = Object.assign(init, {
+  changes,
   provide,
   observe,
   observe2,
   get,
   record: {
+    changes,
     provide,
     observe,
     observe2,
