@@ -141,7 +141,7 @@ function init(ds) {
 async function* changes(
   ds,
   {
-    origin = ds._url,
+    origin,
     since = 'now',
     live = true,
     batched = false,
@@ -154,8 +154,6 @@ async function* changes(
 ) {
   const url = new URL('/_record/changes', origin)
 
-  url.protocol = url.protocol === 'ws:' ? 'http:' : 'https:'
-  url.port = '6100'
   url.searchParams.set('since', since || '0')
   url.searchParams.set('live', String(live))
   url.searchParams.set('include_docs', String(includeDocs))
