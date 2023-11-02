@@ -1,9 +1,7 @@
-const stream = require('node:stream')
-const tp = require('node:timers/promises')
 const createError = require('http-errors')
 const makeWeak = require('./weakCache')
+const tp = require('timers/promises')
 const { delay } = require('./http')
-const split2 = require('split2')
 
 // https://github.com/fastify/fastify/blob/main/lib/reqIdGenFactory.js
 // 2,147,483,647 (2^31 − 1) stands for max SMI value (an internal optimization of V8).
@@ -133,7 +131,7 @@ module.exports = function (opts) {
     })
   }
 
-  async function* changes({ client = defaultClient, signal, highWaterMark, ...options } = {}) {
+  async function* changes({ client = defaultClient, signal, ...options } = {}) {
     const params = {}
 
     let body
@@ -244,59 +242,42 @@ module.exports = function (opts) {
           ...(body ? { 'content-type': 'application/json' } : {}),
         },
         throwOnError: true,
-        highWaterMark: highWaterMark ?? 256 * 1024,
+        highWaterMark: 256 * 1024, // TODO (fix): Needs support in undici...
         bodyTimeout: 2 * (params.heartbeat || 60e3),
       }
 
-      const res = await client.request(req)
+      try {
+        const res = await client.request(req)
 
-      retryCount = 0
+        retryCount = 0
 
-      const src = stream.pipeline(res.body, split2(), () => {})
+        let str = ''
+        for await (const chunk of res.body) {
+          const lines = (str + chunk).split('\n')
+          str = lines.pop() ?? ''
 
-      let error
-      let ended = false
-      let resume = () => {}
-
-      src
-        .on('error', (err) => {
-          error = err
-        })
-        .on('readable', () => {
-          resume()
-        })
-        .on('end', () => {
-          ended = true
-          resume()
-        })
-
-      const batch = batched ? [] : null
-      while (true) {
-        const line = src.read()
-
-        if (line === '') {
-          continue
-        } else if (line !== null) {
-          const change = JSON.parse(line)
-          if (change.seq) {
-            params.since = change.seq
+          const results = batched ? [] : null
+          for (const line of lines) {
+            if (line) {
+              const change = JSON.parse(line)
+              if (change.seq) {
+                params.since = change.seq
+              }
+              if (results) {
+                results.push(change)
+              } else {
+                yield change
+              }
+            }
           }
-          if (batch) {
-            batch.push(change)
-          } else {
-            yield change
+
+          if (results?.length) {
+            yield results
           }
-        } else if (batch?.length) {
-          yield batch.splice(0)
-        } else if (error) {
-          throw Object.assign(error, { data: req })
-        } else if (ended) {
-          return
-        } else {
-          await new Promise((resolve) => {
-            resume = resolve
-          })
         }
+      } catch (err) {
+        Object.assign(err, { data: req })
+        throw err
       }
     }
 

@@ -89,7 +89,6 @@
     "request-target": "^1.0.2",
     "smpte-timecode": "^1.3.3",
     "split-string": "^6.0.0",
-    "split2": "^4.2.0",
     "toobusy-js": "^0.5.1",
     "undici": "^5.25.4",
     "url-join": "^4.0.0"
