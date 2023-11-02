@@ -190,6 +190,7 @@ async function* changes(
         src
           .on('error', (err) => {
             error = err
+            resume()
           })
           .on('readable', () => {
             resume()
