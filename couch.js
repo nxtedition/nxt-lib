@@ -62,7 +62,7 @@ module.exports = function (opts) {
   }
 
   const { origin: dbOrigin, pathname: dbPathname } = new URL(
-    Array.isArray(config.url) ? config.url[0] : config.url
+    Array.isArray(config.url) ? config.url[0] : config.url,
   )
 
   const defaultClientOpts = {
@@ -83,7 +83,7 @@ module.exports = function (opts) {
           ...defaultClientOpts,
           connections: 4, // TODO (fix): Global limit?
           pipelining: 2,
-        })
+        }),
     )
 
   function makeError(req, res) {
@@ -242,7 +242,7 @@ module.exports = function (opts) {
           ...(body ? { 'content-type': 'application/json' } : {}),
         },
         throwOnError: true,
-        highWaterMark: 128 * 1024, // TODO (fix): Needs support in undici...
+        highWaterMark: 256 * 1024, // TODO (fix): Needs support in undici...
         bodyTimeout: 2 * (params.heartbeat || 60e3),
       }
 
@@ -416,7 +416,7 @@ module.exports = function (opts) {
 
   function _request(
     url,
-    { params, client = defaultClient, idempotent, body, method, headers, signal }
+    { params, client = defaultClient, idempotent, body, method, headers, signal },
   ) {
     if (Array.isArray(headers)) {
       // Do nothing...
@@ -445,7 +445,7 @@ module.exports = function (opts) {
         url
           .split('/')
           .map((part) => encodeURIComponent(part))
-          .join('/')
+          .join('/'),
       )
     }
 
@@ -515,7 +515,7 @@ module.exports = function (opts) {
                 status: this.status,
                 headers: this.headers,
                 data: this.data,
-              })
+              }),
             )
           } else {
             this.resolve({
@@ -536,7 +536,7 @@ module.exports = function (opts) {
 
           this.reject(err)
         },
-      })
+      }),
     )
   }
 
@@ -721,7 +721,7 @@ module.exports = function (opts) {
     pathname,
     params,
     body,
-    { client = getClient('_all_docs'), signal, idempotent = true, headers } = {}
+    { client = getClient('_all_docs'), signal, idempotent = true, headers } = {},
   ) {
     const req = {
       pathname,
@@ -746,7 +746,7 @@ module.exports = function (opts) {
     pathname,
     params,
     body,
-    { client, signal, idempotent = true, headers } = {}
+    { client, signal, idempotent = true, headers } = {},
   ) {
     const req = {
       pathname,
