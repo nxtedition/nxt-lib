@@ -147,6 +147,7 @@ async function* changes(
     includeDocs = false,
     highWaterMark = 256 * 1024,
     heartbeat = 60e3,
+    signal,
     retry,
   },
 ) {
@@ -158,81 +159,93 @@ async function* changes(
   url.searchParams.set('live', String(live))
   url.searchParams.set('include_docs', String(includeDocs))
 
-  for (let retryCount = 0; retryCount < retry; retryCount++) {
-    const ac = new AbortController()
-    const signal = ac.signal
-    try {
-      // TODO (fix): Use nxt-undici
-      const res = await undici.request(url, {
-        idempotent: false,
-        blocking: true,
-        method: 'GET',
-        signal,
-        throwOnError: true,
-        highWaterMark,
-        bodyTimeout: 2 * heartbeat,
-      })
+  let ac
 
-      const src = stream.pipeline(res.body, split2(), () => {})
+  const abort = () => {
+    ac?.abort(signal.reason)
+  }
 
-      let error
-      let ended = false
-      let resume = () => {}
+  signal?.addEventListener('abort', abort)
 
-      src
-        .on('error', (err) => {
-          error = err
-        })
-        .on('readable', () => {
-          resume()
-        })
-        .on('end', () => {
-          ended = true
-          resume()
+  try {
+    for (let retryCount = 0; retryCount < retry; retryCount++) {
+      ac = new AbortController()
+      try {
+        // TODO (fix): Use nxt-undici
+        const res = await undici.request(url, {
+          idempotent: false,
+          blocking: true,
+          method: 'GET',
+          signal: ac.signal,
+          throwOnError: true,
+          highWaterMark,
+          bodyTimeout: 2 * heartbeat,
         })
 
-      const batch = batched ? [] : null
-      while (true) {
-        const line = src.read()
+        const src = stream.pipeline(res.body, split2(), () => {})
 
-        if (line === '') {
-          continue
-        } else if (line !== null) {
-          const change = JSON.parse(line)
+        let error
+        let ended = false
+        let resume = () => {}
 
-          retryCount = 0
-
-          if (change.seq) {
-            since = change.seq
-          }
-          if (batch) {
-            batch.push(change)
-          } else {
-            yield change
-          }
-        } else if (batch?.length) {
-          yield batch.splice(0)
-        } else if (error) {
-          throw error
-        } else if (ended) {
-          return
-        } else {
-          await new Promise((resolve) => {
-            resume = resolve
+        src
+          .on('error', (err) => {
+            error = err
           })
+          .on('readable', () => {
+            resume()
+          })
+          .on('end', () => {
+            ended = true
+            resume()
+          })
+
+        const batch = batched ? [] : null
+        while (true) {
+          const line = src.read()
+
+          if (line === '') {
+            continue
+          } else if (line !== null) {
+            const change = JSON.parse(line)
+
+            retryCount = 0
+
+            if (change.seq) {
+              since = change.seq
+            }
+            if (batch) {
+              batch.push(change)
+            } else {
+              yield change
+            }
+          } else if (batch?.length) {
+            yield batch.splice(0)
+          } else if (error) {
+            throw error
+          } else if (ended) {
+            return
+          } else {
+            await new Promise((resolve) => {
+              resume = resolve
+            })
+          }
         }
+      } catch (err) {
+        if (typeof retry === 'function') {
+          const retryState = { since }
+          await retry(err, retryCount, retryState, { signal: ac.signal })
+          url.searchParams.set('since', since || '0')
+        } else {
+          await delay(err, retryCount, { signal: ac.signal })
+        }
+      } finally {
+        ac.abort()
+        ac = null
       }
-    } catch (err) {
-      if (typeof retry === 'function') {
-        const retryState = { since }
-        await retry(err, retryCount, retryState, { signal })
-        url.searchParams.set('since', since || '0')
-      } else {
-        await delay(err, retryCount, { signal })
-      }
-    } finally {
-      ac.abort()
     }
+  } finally {
+    signal?.removeEventListener('abort', abort)
   }
 }
 
