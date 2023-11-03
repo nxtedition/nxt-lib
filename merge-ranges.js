@@ -1,19 +1,34 @@
+const EMPTY_ARR = Object.freeze([])
+
 module.exports = function mergeRanges(ranges) {
   if (!Array.isArray(ranges)) {
-    return []
+    return EMPTY_ARR
   }
+
+  if (ranges.length === 1) {
+    const range = ranges[0]
+    return Array.isArray(range) && range.length === 2 && range[1] > range[0] ? ranges : EMPTY_ARR
+  }
+
+  {
+    // Make sure ranges are valid and copied for mutation.
+    const tmp = []
+    for (let n = 0, len = ranges.length; n < len; n++) {
+      const range = ranges[n]
+      if (Array.isArray(range) && range.length === 2 && range[1] > range[0]) {
+        tmp.push([range[0], range[1]])
+      }
+    }
+    ranges = tmp
+  }
+
+  if (ranges.length <= 1) {
+    return ranges
+  }
+
+  ranges.sort((a, b) => a[0] - b[0])
 
   const stack = []
-
-  ranges = ranges
-    .filter((range) => range && range.length > 0 && range[1] > range[0])
-    .sort((a, b) => a[0] - b[0])
-
-  if (!ranges.length) {
-    return []
-  }
-
-  ranges = JSON.parse(JSON.stringify(ranges))
 
   // Add first range to stack
   stack.push(ranges[0])
