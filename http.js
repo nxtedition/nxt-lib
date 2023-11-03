@@ -62,7 +62,7 @@ module.exports.request = async function request(ctx, next) {
     }
 
     ctx.id = req.id = req.headers['request-id'] || genReqId()
-    ctx.logger = req.log = res.log = logger.child({ req })
+    ctx.logger = req.log = res.log = logger.child({ req: { id: req.id, url: req.url } })
     ctx.signal = signal
     ctx.method = req.method
     ctx.query = ctx.url.search.length > 1 ? querystring.parse(ctx.url.search.slice(1)) : {}
@@ -77,9 +77,9 @@ module.exports.request = async function request(ctx, next) {
 
     reqLogger = ctx.logger
     if (!isHealthcheck) {
-      reqLogger.debug('request started')
+      reqLogger.debug({ req }, 'request started')
     } else {
-      reqLogger.trace('request started')
+      reqLogger.trace({ req }, 'request started')
     }
 
     await Promise.all([
