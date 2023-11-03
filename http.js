@@ -75,11 +75,11 @@ module.exports.request = async function request(ctx, next) {
 
     const isHealthcheck = ctx.url.pathname === '/healthcheck'
 
-    reqLogger = ctx.logger
+    reqLogger = ctx.logger.child({ req })
     if (!isHealthcheck) {
-      reqLogger.debug({ req }, 'request started')
+      reqLogger.debug('request started')
     } else {
-      reqLogger.trace({ req }, 'request started')
+      reqLogger.trace('request started')
     }
 
     await Promise.all([
