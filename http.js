@@ -2,7 +2,6 @@ const createError = require('http-errors')
 const { performance } = require('perf_hooks')
 const requestTarget = require('request-target')
 const querystring = require('fast-querystring')
-const assert = require('assert')
 const compose = require('koa-compose')
 const http = require('http')
 const fp = require('lodash/fp')
@@ -24,6 +23,31 @@ function genReqId() {
   return `req-${nextReqId.toString(36)}`
 }
 
+const kResolve = Symbol('resolve')
+
+function onTimeout() {
+  this.destroy(new createError.RequestTimeout())
+}
+
+function onRequestError(err) {
+  this.log.error({ err }, 'request error')
+}
+
+function onRequestClose() {
+  this.log.debug('request closed')
+  this[kResolve](null)
+}
+
+function onResponseError(err) {
+  this.log.error({ err }, 'response error')
+  this[kResolve](Promise.reject(err))
+}
+
+function onResponseClose() {
+  this.log.debug('response closed')
+  this[kResolve](null)
+}
+
 module.exports.request = async function request(ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
@@ -39,10 +63,10 @@ module.exports.request = async function request(ctx, next) {
     }
 
     ctx.id = req.id = req.headers['request-id'] || genReqId()
-    ctx.logger = req.log = logger.child({ req })
+    ctx.logger = req.log = res.log = logger.child({ req })
     ctx.signal = signal
     ctx.method = req.method
-    ctx.query = ctx.url.search ? querystring.parse(ctx.url.search.slice(1)) : {}
+    ctx.query = ctx.url.search.length > 1 ? querystring.parse(ctx.url.search.slice(1)) : {}
 
     if (req.method === 'GET' || req.method === 'HEAD') {
       req.resume() // Dump the body if there is one.
@@ -54,55 +78,34 @@ module.exports.request = async function request(ctx, next) {
 
     reqLogger = ctx.logger
     if (!isHealthcheck) {
-      reqLogger.debug({ req }, 'request started')
+      reqLogger.debug('request started')
     } else {
-      reqLogger.trace({ req }, 'request started')
+      reqLogger.trace('request started')
     }
 
     await Promise.all([
       next(),
-      new Promise((resolve, reject) => {
-        res
-          .on('timeout', function () {
-            this.destroy(new createError.RequestTimeout())
-          })
-          .on('error', function (err) {
-            reqLogger.error({ err }, 'response error')
-            reject(err)
-          })
-          .on('close', function () {
-            reqLogger.debug('response closed')
-            resolve(null)
-          })
-        req
-          .on('timeout', function () {
-            this.destroy(new createError.RequestTimeout())
-          })
-          .on('error', function (err) {
-            reqLogger.error({ err }, 'request error')
-          })
-          .on('close', function () {
-            reqLogger.debug('request closed')
-          })
+      new Promise((resolve) => {
+        res[kResolve] = resolve
+
+        res.on('timeout', onTimeout).on('error', onResponseError).on('close', onResponseClose)
+
+        req.on('timeout', onTimeout).on('error', onRequestError).on('close', onRequestClose)
       }),
     ])
 
-    assert(req.aborted || res.writableEnded)
-
     const responseTime = Math.round(performance.now() - startTime)
 
-    reqLogger = reqLogger.child({ res, responseTime })
-
-    if (req.aborted) {
-      reqLogger.debug('request aborted')
+    if (!res.writableEnded) {
+      reqLogger.debug({ res, responseTime }, 'request aborted')
     } else if (res.statusCode >= 500) {
-      reqLogger.error('request error')
+      reqLogger.error({ res, responseTime }, 'request error')
     } else if (res.statusCode >= 400) {
-      reqLogger.warn('request failed')
+      reqLogger.warn({ res, responseTime }, 'request failed')
     } else if (!isHealthcheck) {
-      reqLogger.debug('request completed')
+      reqLogger.debug({ res, responseTime }, 'request completed')
     } else {
-      reqLogger.trace('request completed')
+      reqLogger.trace({ res, responseTime }, 'request completed')
     }
 
     ac.abort()
@@ -162,7 +165,7 @@ module.exports.request = async function request(ctx, next) {
     } else {
       reqLogger = reqLogger.child({ res, err, reason, responseTime })
 
-      if (req.aborted || err.name === 'AbortError') {
+      if (req.aborted || !res.writableEnded || err.name === 'AbortError') {
         reqLogger.debug('request aborted')
       } else if (err.statusCode < 500) {
         reqLogger.warn('request failed')
@@ -179,6 +182,8 @@ module.exports.request = async function request(ctx, next) {
     }
 
     ac.abort(err)
+  } finally {
+    res.destroy()
   }
 }
 
