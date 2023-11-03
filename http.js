@@ -35,7 +35,6 @@ function onRequestError(err) {
 
 function onRequestClose() {
   this.log.debug('request closed')
-  this[kResolve](null)
 }
 
 function onResponseError(err) {
