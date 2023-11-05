@@ -16,14 +16,22 @@ const ranges1 = [
 ]
 const ranges2 = []
 const ranges3 = [[1, 2]]
+const ranges4 = [
+  [1, 2],
+  [1, 2],
+  [1, 2],
+  [1, 2],
+]
 
 const funcs = {
   new1: () => mergeRanges(ranges1),
   new2: () => mergeRanges(ranges2),
   new3: () => mergeRanges(ranges3),
+  new4: () => mergeRanges(ranges4),
   old1: () => oldMergeRanges(ranges1),
   old2: () => oldMergeRanges(ranges2),
   old3: () => oldMergeRanges(ranges3),
+  old4: () => oldMergeRanges(ranges4),
 }
 
 const nameColWidth = 20
