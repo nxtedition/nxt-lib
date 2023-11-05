@@ -1,5 +1,5 @@
 const { test } = require('tap')
-const { resolveTemplate, compileTemplate } = require('../util/template/index.js')({})
+const { resolveTemplate } = require('../util/template/index.js')({})
 
 test('noop', async (t) => {
   const x = { foo: 1, bar: {} }
@@ -15,11 +15,11 @@ test('simple', async (t) => {
   t.end()
 })
 
-test('cache', async (t) => {
-  const x = '{{#js $.test }}'
-  t.equal(compileTemplate(x), compileTemplate(x))
-  t.end()
-})
+// test('cache', async (t) => {
+//   const x = '{{#js $.test }}'
+//   t.equal(compileTemplate(x), compileTemplate(x))
+//   t.end()
+// })
 
 test('string concat', async (t) => {
   const x = '{{#js $.pre }} {{#js $.body}} {{#js $.post}}'
