@@ -5,6 +5,7 @@ const vm = require('node:vm')
 const objectHash = require('object-hash')
 const datefns = require('date-fns')
 const JSON5 = require('json5')
+const { request } = require('@nxtedition/nxt-undici')
 const undici = require('undici')
 
 const kSuspend = Symbol('kSuspend')
@@ -26,6 +27,11 @@ class TimerEntry {
   }
 }
 
+const fetchClient = new undici.Agent({
+  connections: 128,
+  pipelining: 8,
+})
+
 class FetchEntry {
   constructor(key, refresh, { resource, options }) {
     this.key = key
@@ -38,26 +44,25 @@ class FetchEntry {
     this.status = null
     this.error = null
 
-    // TODO (fix): options.signal
-    // TODO (fix): cache...
-    // TODO (fix): expire...
-
-    undici
-      .fetch(resource, { ...options, signal: this.signal })
+    request(resource, {
+      ...options,
+      signal: this.signal,
+      dispatcher: fetchClient,
+    })
       .then(async (res) => {
-        if (this.refresh) {
+        try {
           // TODO (fix): max size...
-          this.body = Buffer.from(await res.arrayBuffer())
           this.status = res.status
           this.headers = res.headers
-          this.refresh()
+          this.body = await res.text()
+        } catch (err) {
+          this.error = err
         }
+        this.refresh()
       })
       .catch((err) => {
-        if (this.refresh) {
-          this.error = err
-          this.refresh()
-        }
+        this.error = err
+        this.refresh()
       })
   }
 
@@ -143,7 +148,7 @@ class PromiseEntry {
           this.error = err
           this.refresh()
         }
-      }
+      },
     )
   }
 
@@ -342,7 +347,7 @@ module.exports = ({ ds, proxify, compiler }) => {
           Object.assign(new Error('expression failed'), {
             cause: err,
             data: self._expression,
-          })
+          }),
         )
       } finally {
         compiler.current = previous
@@ -518,7 +523,7 @@ module.exports = ({ ds, proxify, compiler }) => {
       const data = this._getRecord(
         id + ':asset.rawTypes?',
         state ?? ds.record.PROVIDER,
-        suspend ?? true
+        suspend ?? true,
       )
       return data && Array.isArray(data.value) && data.value.includes(type) ? id : null
     }
