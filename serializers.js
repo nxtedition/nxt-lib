@@ -40,7 +40,15 @@ module.exports = {
       err = err.length === 1 ? err[0] : new AggregateError(err)
     }
 
+    if (err == null) {
+      return undefined
+    }
+
     const ret = serializers.err(err)
+
+    if (ret == null) {
+      return undefined
+    }
 
     if (ret.data !== null && typeof ret.data === 'object') {
       ret.data = JSON.stringify(ret.data)
