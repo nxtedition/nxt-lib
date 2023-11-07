@@ -15,7 +15,7 @@ const maxInt = 2147483647
 class TimerEntry {
   constructor(key, refresh, delay) {
     this.key = key
-    this.counter = null
+    this.counter = -1
 
     this.timer = setTimeout(refresh, delay)
   }
@@ -35,35 +35,45 @@ const fetchClient = new undici.Agent({
 class FetchEntry {
   constructor(key, refresh, { resource, options }) {
     this.key = key
-    this.counter = null
+    this.counter = -1
+    this.ac = new AbortController()
 
     this.refresh = refresh
-    this.ac = new AbortController()
-    this.signal = this.ac.signal
     this.body = null
     this.status = null
     this.error = null
 
-    request(resource, {
-      ...options,
-      signal: this.signal,
-      dispatcher: fetchClient,
-    })
-      .then(async (res) => {
-        try {
-          // TODO (fix): max size...
-          this.status = res.status
-          this.headers = res.headers
-          this.body = await res.text()
-        } catch (err) {
+    try {
+      request(resource, {
+        ...options,
+        signal: this.ac.signal,
+        dispatcher: fetchClient,
+      })
+        .then(async (res) => {
+          try {
+            // TODO (fix): max size...
+            this.status = res.statusCode
+            this.headers = res.headers
+            this.body = await res.text()
+          } catch (err) {
+            this.error = err
+          }
+
+          if (this.refresh) {
+            this.refresh()
+          }
+        })
+        .catch((err) => {
           this.error = err
-        }
-        this.refresh()
-      })
-      .catch((err) => {
-        this.error = err
-        this.refresh()
-      })
+
+          if (this.refresh) {
+            this.refresh()
+          }
+        })
+    } catch (err) {
+      this.error = err
+      this.refresh()
+    }
   }
 
   dispose() {
@@ -77,7 +87,7 @@ class FetchEntry {
 class RecordEntry {
   constructor(key, refresh, ds) {
     this.key = key
-    this.counter = null
+    this.counter = -1
 
     this.refresh = refresh
     this.record = ds.record.getRecord(key)
@@ -105,7 +115,7 @@ class RecordEntry {
 class ObservableEntry {
   constructor(key, refresh, observable) {
     this.key = key
-    this.counter = null
+    this.counter = -1
     this.value = kEmpty
     this.error = null
     this.refresh = refresh
@@ -131,7 +141,7 @@ class ObservableEntry {
 class PromiseEntry {
   constructor(key, refresh, promise) {
     this.key = key
-    this.counter = null
+    this.counter = -1
     this.value = kEmpty
     this.error = null
     this.refresh = refresh
