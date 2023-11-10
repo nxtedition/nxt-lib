@@ -23,8 +23,6 @@ function genReqId() {
   return `req-${nextReqId.toString(36)}`
 }
 
-const kResolve = Symbol('resolve')
-
 function onTimeout() {
   this.destroy(new createError.RequestTimeout())
 }
@@ -33,18 +31,8 @@ function onRequestError(err) {
   this.log.error({ err }, 'request error')
 }
 
-function onRequestClose() {
-  this.log.debug('request closed')
-}
-
-function onResponseError(err) {
-  this.log.error({ err }, 'response error')
-  this[kResolve](Promise.reject(err))
-}
-
-function onResponseClose() {
-  this.log.debug('response closed')
-  this[kResolve](null)
+function onRequestEnd() {
+  this.log.debug('request end')
 }
 
 module.exports.request = async function request(ctx, next) {
@@ -82,16 +70,30 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.trace('request started')
     }
 
-    await Promise.all([
-      next(),
-      new Promise((resolve) => {
-        res[kResolve] = resolve
+    next()?.catch((err) => res.destroy(err))
 
-        res.on('timeout', onTimeout).on('error', onResponseError).on('close', onResponseClose)
-
-        req.on('timeout', onTimeout).on('error', onRequestError).on('close', onRequestClose)
-      }),
-    ])
+    await new Promise((resolve, reject) => {
+      req.on('timeout', onTimeout).on('error', onRequestError).on('end', onRequestEnd)
+      res
+        .on('timeout', onTimeout)
+        .on('error', function (err) {
+          this.log.error({ err }, 'response error')
+          ac.abort(err)
+          reject(err)
+        })
+        .on('finish', function () {
+          this.log.debug('response finish')
+          ac.abort()
+          resolve(null)
+        })
+        // TODO (fix): Remove this once we can trust that
+        // node always emits error or finish.
+        .on('close', function () {
+          this.log.debug('response close')
+          ac.abort()
+          resolve(null)
+        })
+    })
 
     const responseTime = Math.round(performance.now() - startTime)
 
@@ -179,8 +181,6 @@ module.exports.request = async function request(ctx, next) {
         res.destroy()
       }
     }
-
-    ac.abort(err)
   } finally {
     res.destroy()
   }
