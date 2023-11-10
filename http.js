@@ -181,8 +181,6 @@ module.exports.request = async function request(ctx, next) {
         res.destroy()
       }
     }
-  } finally {
-    res.destroy()
   }
 }
 
