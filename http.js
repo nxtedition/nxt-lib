@@ -68,10 +68,10 @@ module.exports.request = async function request(ctx, next) {
           this.log.error({ err }, 'request error')
         })
         .on('end', function () {
-          this.log.debug('request end')
+          this.log.trace('request end')
         })
         .on('close', function () {
-          this.log.debug('request close')
+          this.log.trace('request close')
         })
       res
         .on('timeout', function () {
@@ -81,10 +81,10 @@ module.exports.request = async function request(ctx, next) {
           this.log.error({ err }, 'response error')
         })
         .on('finish', function () {
-          this.log.debug('response finish')
+          this.log.trace('response finish')
         })
         .on('close', function () {
-          this.log.debug('response close')
+          this.log.trace('response close')
           resolve(this.errored ? Promise.reject(this.errored) : null)
         })
     })
