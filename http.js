@@ -23,24 +23,11 @@ function genReqId() {
   return `req-${nextReqId.toString(36)}`
 }
 
-function onTimeout() {
-  this.destroy(new createError.RequestTimeout())
-}
-
-function onRequestError(err) {
-  this.log.error({ err }, 'request error')
-}
-
-function onRequestEnd() {
-  this.log.debug('request end')
-}
-
 module.exports.request = async function request(ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
 
   const ac = new AbortController()
-  const signal = ac.signal
 
   let reqLogger = logger
   try {
@@ -51,7 +38,7 @@ module.exports.request = async function request(ctx, next) {
 
     ctx.id = req.id = req.headers['request-id'] || genReqId()
     ctx.logger = req.log = res.log = logger.child({ req: { id: req.id, url: req.url } })
-    ctx.signal = signal
+    ctx.signal = ac.signal
     ctx.method = req.method
     ctx.query = ctx.url.search.length > 1 ? querystring.parse(ctx.url.search.slice(1)) : {}
 
@@ -63,7 +50,7 @@ module.exports.request = async function request(ctx, next) {
 
     const isHealthcheck = ctx.url.pathname === '/healthcheck'
 
-    reqLogger = ctx.logger.child({ req })
+    reqLogger = logger.child({ req })
     if (!isHealthcheck) {
       reqLogger.debug('request started')
     } else {
@@ -72,26 +59,33 @@ module.exports.request = async function request(ctx, next) {
 
     next()?.catch((err) => res.destroy(err))
 
-    await new Promise((resolve, reject) => {
-      req.on('timeout', onTimeout).on('error', onRequestError).on('end', onRequestEnd)
+    await new Promise((resolve) => {
+      req
+        .on('timeout', function () {
+          this.destroy(new createError.RequestTimeout())
+        })
+        .on('error', function (err) {
+          this.log.error({ err }, 'request error')
+        })
+        .on('end', function () {
+          this.log.debug('request end')
+        })
+        .on('close', function () {
+          this.log.debug('request close')
+        })
       res
-        .on('timeout', onTimeout)
+        .on('timeout', function () {
+          this.destroy(new createError.RequestTimeout())
+        })
         .on('error', function (err) {
           this.log.error({ err }, 'response error')
-          ac.abort(err)
-          reject(err)
         })
         .on('finish', function () {
           this.log.debug('response finish')
-          ac.abort()
-          resolve(null)
         })
-        // TODO (fix): Remove this once we can trust that
-        // node always emits error or finish.
         .on('close', function () {
           this.log.debug('response close')
-          ac.abort()
-          resolve(null)
+          resolve(this.errored ? Promise.reject(this.errored) : null)
         })
     })
 
@@ -108,8 +102,9 @@ module.exports.request = async function request(ctx, next) {
     } else {
       reqLogger.trace({ res, responseTime }, 'request completed')
     }
+
+    ac.abort()
   } catch (err) {
-    const reason = ac.signal.reason
     const responseTime = Math.round(performance.now() - startTime)
 
     req.on('error', (err) => {
@@ -150,7 +145,7 @@ module.exports.request = async function request(ctx, next) {
         res.write(JSON.stringify(err.body))
       }
 
-      reqLogger = reqLogger.child({ res, err, reason, responseTime })
+      reqLogger = reqLogger.child({ res, err, responseTime })
 
       if (res.statusCode < 500) {
         reqLogger.warn('request failed')
@@ -162,7 +157,7 @@ module.exports.request = async function request(ctx, next) {
 
       res.end()
     } else {
-      reqLogger = reqLogger.child({ res, err, reason, responseTime })
+      reqLogger = reqLogger.child({ res, err, responseTime })
 
       if (req.aborted || !res.writableEnded || err.name === 'AbortError') {
         reqLogger.debug('request aborted')
@@ -179,6 +174,8 @@ module.exports.request = async function request(ctx, next) {
         res.destroy()
       }
     }
+
+    ac.abort(err)
   }
 }
 
