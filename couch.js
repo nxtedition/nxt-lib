@@ -340,7 +340,11 @@ module.exports = function (opts) {
 
         if (seq) {
           params.since = seq
+          if (results.length > 0 && !results.at(-1)?.seq) {
+            results.at(-1).seq = seq
+          }
         }
+
         remaining -= results.length
 
         if (!live && results.length === 0) {
