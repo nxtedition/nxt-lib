@@ -107,16 +107,6 @@ module.exports.request = async function request(ctx, next) {
   } catch (err) {
     const responseTime = Math.round(performance.now() - startTime)
 
-    req.on('error', (err) => {
-      if (res.statusCode > 500 || err.code !== 'ECONNRESET') {
-        reqLogger.warn({ err }, 'request error')
-      }
-    })
-
-    res.on('error', (err) => {
-      reqLogger.warn({ err }, 'request error')
-    })
-
     if (!res.headersSent && !res.destroyed) {
       res.statusCode = err.statusCode || 500
 
