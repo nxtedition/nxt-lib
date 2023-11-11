@@ -57,37 +57,42 @@ module.exports.request = async function request(ctx, next) {
       reqLogger.trace('request started')
     }
 
-    next()?.catch((err) => res.destroy(err))
-
-    await new Promise((resolve) => {
-      req
-        .on('timeout', function () {
-          this.destroy(new createError.RequestTimeout())
-        })
-        .on('error', function (err) {
-          this.log.error({ err }, 'request error')
-        })
-        .on('end', function () {
-          this.log.trace('request end')
-        })
-        .on('close', function () {
-          this.log.trace('request close')
-        })
-      res
-        .on('timeout', function () {
-          this.destroy(new createError.RequestTimeout())
-        })
-        .on('error', function (err) {
-          this.log.error({ err }, 'response error')
-        })
-        .on('finish', function () {
-          this.log.trace('response finish')
-        })
-        .on('close', function () {
-          this.log.trace('response close')
-          resolve(this.errored ? Promise.reject(this.errored) : null)
-        })
-    })
+    await Promise.all([
+      next(),
+      new Promise((resolve, reject) => {
+        req
+          .on('timeout', function () {
+            this.destroy(new createError.RequestTimeout())
+          })
+          .on('error', function (err) {
+            this.log.error({ err }, 'request error')
+          })
+          .on('end', function () {
+            this.log.trace('request end')
+          })
+          .on('close', function () {
+            this.log.trace('request close')
+          })
+        res
+          .on('timeout', function () {
+            this.destroy(new createError.RequestTimeout())
+          })
+          .on('error', function (err) {
+            this.log.error({ err }, 'response error')
+          })
+          .on('finish', function () {
+            this.log.trace('response finish')
+          })
+          .on('close', function () {
+            this.log.trace('response close')
+            if (this.errored) {
+              reject(this.errored)
+            } else {
+              resolve(null)
+            }
+          })
+      }),
+    ])
 
     const responseTime = Math.round(performance.now() - startTime)
 
