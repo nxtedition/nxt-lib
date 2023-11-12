@@ -107,8 +107,6 @@ module.exports.request = async function request(ctx, next) {
     } else {
       reqLogger.trace({ res, responseTime }, 'request completed')
     }
-
-    ac.abort()
   } catch (err) {
     const responseTime = Math.round(performance.now() - startTime)
 
