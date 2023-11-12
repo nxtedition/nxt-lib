@@ -36,7 +36,7 @@ module.exports.request = async function request(ctx, next) {
       throw new createError.BadRequest('invalid url')
     }
 
-    ctx.id = req.id = req.headers['request-id'] || genReqId()
+    ctx.id = req.id = res.id = req.headers['request-id'] || genReqId()
     ctx.logger = req.log = res.log = logger.child({ req: { id: req.id, url: req.url } })
     ctx.signal = ac.signal
     ctx.method = req.method
