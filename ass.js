@@ -1,8 +1,6 @@
-const fp = require('lodash/fp')
+import fp from 'lodash/fp.js'
 
-module.exports = { encodeASS }
-
-function encodeASS(events, { styles = {}, width = 1920, height = 1080 } = {}) {
+export function encodeASS(events, { styles = {}, width = 1920, height = 1080 } = {}) {
   return [encASSHeader({ width, height }), encASSStyles(styles), encASSEvents(events)].join('\n')
 }
 
@@ -79,7 +77,7 @@ const formatStyles = fp.pipe(
       style.encoding +
       '\n'
     )
-  }, '')
+  }, ''),
 )
 
 function encASSStyles(styles) {

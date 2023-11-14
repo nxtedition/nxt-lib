@@ -1,6 +1,6 @@
-const { test } = require('tap')
-const combineMap = require('../../rxjs/combineMap')
-const rxjs = require('rxjs')
+import { test } from 'tap'
+import combineMap from '../../rxjs/combineMap.js'
+import rxjs from 'rxjs'
 
 test('combineMap sync', (t) => {
   t.plan(1)
@@ -40,7 +40,7 @@ test('combineMap throw in resolver', (t) => {
     .pipe(
       combineMap((val) => {
         throw _err
-      })
+      }),
     )
     .subscribe({
       error: (err) => {
@@ -79,7 +79,7 @@ test('combineMap no change no tick', (t) => {
   rxjs
     .concat(
       rxjs.timer(10).pipe(rxjs.map(() => [1, 2, 3])),
-      rxjs.timer(10).pipe(rxjs.map(() => [1, 2, 3]))
+      rxjs.timer(10).pipe(rxjs.map(() => [1, 2, 3])),
     )
     .pipe(combineMap((val) => rxjs.of(val * 2)))
     .subscribe(() => {
@@ -92,7 +92,7 @@ test('combineMap combine in single tick', (t) => {
   rxjs
     .concat(
       rxjs.timer(10).pipe(rxjs.map(() => [1, 2, 3])),
-      rxjs.timer(10).pipe(rxjs.map(() => [4, 5, 6]))
+      rxjs.timer(10).pipe(rxjs.map(() => [4, 5, 6])),
     )
     .pipe(combineMap((val) => rxjs.from([val * 2, val * 2])))
     .subscribe(() => {

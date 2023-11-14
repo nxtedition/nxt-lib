@@ -1,5 +1,5 @@
-const { test } = require('tap')
-const { compareRev } = require('../../util')
+import { test } from 'tap'
+import compareRev from '../../util/compare-rev.js'
 
 const cases = [
   [null, null, 0],

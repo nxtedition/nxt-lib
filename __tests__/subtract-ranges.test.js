@@ -1,7 +1,7 @@
-const { describe, test } = require('node:test')
-const subtractRanges = require('../subtract-ranges')
-const mergeRanges = require('../merge-ranges')
-const assert = require('assert')
+import { describe, test } from 'node:test'
+import assert from 'node:assert'
+import { subtractRanges } from '../subtract-ranges.js'
+import { mergeRanges } from '../merge-ranges.js'
 
 describe('subtractRanges', function () {
   test('should return the positive ranges if nothing is subtracted', function () {
@@ -147,12 +147,12 @@ describe('subtractRanges', function () {
         [
           [15, 40],
           [10, 20],
-        ]
+        ],
       ),
       [
         [0, 10],
         [40, 100],
-      ]
+      ],
     )
   })
 })

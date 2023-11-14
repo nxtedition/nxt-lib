@@ -1,14 +1,15 @@
-const { test } = require('node:test')
-const assert = require('node:assert')
+import { test } from 'node:test'
+import assert from 'node:assert'
+import { makeTemplateCompiler } from '../util/template/index.js'
+import Observable from 'rxjs'
 
-const { resolveTemplate } = require('../util/template')({
+const { resolveTemplate } = makeTemplateCompiler({
   ds: {
     record: {
       observe: () => Observable.of({ foo: 'bar' }),
     },
   },
 })
-const Observable = require('rxjs')
 
 test('hash to int', async () => {
   const val = await resolveTemplate('{{test | hashaint() | mod(128)}}', { test: { foo: '11d1' } })
@@ -20,11 +21,11 @@ test('baseValue', async () => {
   assert.strictEqual(await resolveTemplate('{{test}}', { test: Observable.of('11d1') }), '11d1')
   assert.strictEqual(
     await resolveTemplate('{{test.asd}}', { test: Observable.of({ asd: '11d1' }) }),
-    '11d1'
+    '11d1',
   )
   assert.strictEqual(
     await resolveTemplate('{{test.asd}}', { test: { asd: Observable.of('11d1') } }),
-    '11d1'
+    '11d1',
   )
 })
 
@@ -53,13 +54,13 @@ test('replaces strings', async () => {
   assert.strictEqual(await resolveTemplate('pre{{test}}post', { test: '111' }), 'pre111post')
   assert.strictEqual(
     await resolveTemplate('123{{test}}456{{test}}{{test}}', { test: 'body' }),
-    '123body456bodybody'
+    '123body456bodybody',
   )
   assert.strictEqual(
     await resolveTemplate('test{{test.foo}}test{{test.bar.baz}}test', {
       test: { foo: '111', bar: { baz: '222' } },
     }),
-    'test111test222test'
+    'test111test222test',
   )
   assert.strictEqual(await resolveTemplate('{{ asd | default("te | st")}}', {}), 'te | st')
   assert.strictEqual(await resolveTemplate('{{ asd | default("test\n") }}', {}), 'test\n')
@@ -70,25 +71,25 @@ test('replaces strings', async () => {
 test('nested', async () => {
   assert.strictEqual(
     await resolveTemplate('{{ asd | default("{{foo}}") }}', { foo: '"test"' }),
-    '"test"'
+    '"test"',
   )
   assert.strictEqual(await resolveTemplate('{{{{foo}}}}', { test: '111', foo: 'test' }), '111')
   assert.strictEqual(
     await resolveTemplate('f{{oo}}', { test: '111', foo: 'test', oo: 'oo' }),
-    'foo'
+    'foo',
   )
   assert.strictEqual(
     await resolveTemplate('{{f{{oo}}}}', { test: '111', foo: 'test', oo: 'oo' }),
-    'test'
+    'test',
   )
   assert.strictEqual(await resolveTemplate('{{{{foo}}}}', { test: '111', foo: 'test' }), '111')
   assert.strictEqual(
     await resolveTemplate('{{{{f{{o}}o}}}}', { test: '111', foo: 'test', o: 'o' }),
-    '111'
+    '111',
   )
   assert.strictEqual(
     await resolveTemplate('{{ asd | default("{{test}}")}}', { test: '111', foo: 'test' }),
-    '111'
+    '111',
   )
   assert.strictEqual(
     await resolveTemplate('{{ asd | default("{{t{{es}}t}}")}}', {
@@ -96,19 +97,19 @@ test('nested', async () => {
       foo: 'test',
       es: 'es',
     }),
-    '111'
+    '111',
   )
   assert.strictEqual(
     await resolveTemplate('{{ asd | default("{{test | default("test\n")}}")}}', {}),
-    'test\n'
+    'test\n',
   )
   assert.strictEqual(
     await resolveTemplate('{{ asd | default("{{test | default("test\n\n")}}")}}', {}),
-    'test\n\n'
+    'test\n\n',
   )
   assert.strictEqual(
     await resolveTemplate('{{ asd | default("{{test | default("test\r\n")}}")}}', {}),
-    'test\r\n'
+    'test\r\n',
   )
 })
 
@@ -124,7 +125,7 @@ test('object', async () => {
 test('ds', async () => {
   assert.strictEqual(
     await resolveTemplate("{{test | ds() | pluck('foo')}}", { test: 'foo' }),
-    'bar'
+    'bar',
   )
 })
 
@@ -133,20 +134,20 @@ test('replace array', async () => {
     await resolveTemplate('{{test | join("#") | replace("foo", "bar") | split("#")}}', {
       test: ['foo', 'bar'],
     }),
-    ['bar', 'bar']
+    ['bar', 'bar'],
   )
   assert.deepStrictEqual(
     await resolveTemplate('{{test | join(",") | replace("foo", "bar") | split(",")}}', {
       test: ['foo', 'bar'],
     }),
-    ['bar', 'bar']
+    ['bar', 'bar'],
   )
 })
 
 test('You Do Not Know Me', async () => {
   assert.deepStrictEqual(
     await resolveTemplate('{{id | default("You Do Not Know", true)}} -', {}),
-    'You Do Not Know -'
+    'You Do Not Know -',
   )
 })
 
@@ -159,6 +160,6 @@ test('object 1', async () => {
 test('empty arg', async () => {
   assert.deepStrictEqual(
     await resolveTemplate('{{source.value | includes("salami") | ternary([], )}}', {}),
-    undefined
+    undefined,
   )
 })

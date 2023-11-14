@@ -1,10 +1,10 @@
-const { Pool } = require('undici')
+import { Pool } from 'undici'
 
 function sleep(n) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n)
 }
 
-module.exports = function ({
+export function makeTrace({
   url,
   stringify = JSON.stringify,
   index,

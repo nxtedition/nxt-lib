@@ -1,8 +1,8 @@
-const rxjs = require('rxjs')
+import rxjs from 'rxjs'
 
 const EMPTY = Object.freeze([])
 
-function combineMap(project, equals = (a, b) => a === b) {
+function combineMapImpl(project, equals = (a, b) => a === b) {
   const self = this
   return new rxjs.Observable((o) => {
     let curr = EMPTY
@@ -146,6 +146,8 @@ function combineMap(project, equals = (a, b) => a === b) {
   })
 }
 
-rxjs.Observable.prototype.combineMap = combineMap
+rxjs.Observable.prototype.combineMap = combineMapImpl
 
-module.exports = (project, equals) => (o) => combineMap.call(o, project, equals)
+export default function combineMap(project, equals) {
+  return (o) => combineMapImpl.call(o, project, equals)
+}

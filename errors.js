@@ -1,9 +1,10 @@
-const objectHash = require('object-hash')
-const fp = require('lodash/fp.js')
-const { toString } = Object.prototype
-const { SIGNALS } = require('./platform.js')
+import objectHash from 'object-hash'
+import fp from 'lodash/fp.js'
+import { SIGNALS } from './platform.js'
 
-module.exports.AbortError = class AbortError extends Error {
+const { toString } = Object.prototype
+
+export class AbortError extends Error {
   constructor(message) {
     super(message ?? 'The operation was aborted')
     this.code = 'ABORT_ERR'
@@ -11,7 +12,7 @@ module.exports.AbortError = class AbortError extends Error {
   }
 }
 
-module.exports.parseError = function parseError(error) {
+export function parseError(error) {
   if (!error) {
     return null
   }
@@ -41,7 +42,7 @@ module.exports.parseError = function parseError(error) {
 
 const kSeen = Symbol('kSeen')
 
-module.exports.serializeError = function serializeError(error) {
+export function serializeError(error) {
   if (!error) {
     return null
   }
@@ -117,7 +118,7 @@ module.exports.serializeError = function serializeError(error) {
 }
 
 // TODO (fix): Recursion guard?
-module.exports.makeMessages = function makeMessages(error, options) {
+export function makeMessages(error, options) {
   if (!error) {
     return []
   }
@@ -163,12 +164,12 @@ module.exports.makeMessages = function makeMessages(error, options) {
           error.index === null || error.index === false
             ? null
             : typeof error.index === 'object'
-            ? error.index
-            : error.index === undefined || error.index === true
-            ? options?.index === true
-              ? { message: msg }
-              : null
-            : null,
+              ? error.index
+              : error.index === undefined || error.index === true
+                ? options?.index === true
+                  ? { message: msg }
+                  : null
+                : null,
       }
     } else {
       err = {
@@ -196,7 +197,7 @@ module.exports.makeMessages = function makeMessages(error, options) {
   }
 }
 
-module.exports.makeErrorString = function makeErrorString(err) {
+export function makeErrorString(err) {
   err = module.exports.parseError(err)
 
   let msg = err?.message || 'error'

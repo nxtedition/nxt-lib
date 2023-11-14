@@ -1,8 +1,8 @@
-const fs = require('fs')
-const fsp = require('fs/promises')
-const path = require('path')
+import fs from 'fs'
+import fsp from 'fs/promises'
+import path from 'path'
 
-function getDockerSecretsSync({ dir = '/run/secrets' } = {}) {
+export function getDockerSecretsSync({ dir = '/run/secrets' } = {}) {
   let files
   try {
     files = fs.readdirSync(dir)
@@ -22,7 +22,7 @@ function getDockerSecretsSync({ dir = '/run/secrets' } = {}) {
   return secrets
 }
 
-function getDockerSecretSync(file, { dir = '/run/secrets', signal } = {}) {
+export function getDockerSecretSync(file, { dir = '/run/secrets', signal } = {}) {
   try {
     const [, ext] = file.split('.')
     const content = fs.readFileSync(path.join(dir, file), { encoding: 'utf8', signal })
@@ -35,7 +35,7 @@ function getDockerSecretSync(file, { dir = '/run/secrets', signal } = {}) {
   }
 }
 
-async function getDockerSecret(file, { dir = '/run/secrets', signal } = {}) {
+export async function getDockerSecret(file, { dir = '/run/secrets', signal } = {}) {
   try {
     const [, ext] = file.split('.')
     const content = await fsp.readFile(path.join(dir, file), { encoding: 'utf8', signal })
@@ -46,10 +46,4 @@ async function getDockerSecret(file, { dir = '/run/secrets', signal } = {}) {
     }
     throw err
   }
-}
-
-module.exports = {
-  getDockerSecretsSync,
-  getDockerSecretSync,
-  getDockerSecret,
 }

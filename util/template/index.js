@@ -1,14 +1,14 @@
-const rx = require('rxjs/operators')
-const rxjs = require('rxjs')
-const fp = require('lodash/fp')
-const getNxtpressionsCompiler = require('./nextpressions')
-const getJavascriptCompiler = require('./javascript')
-const JSON5 = require('json5')
-const objectHash = require('object-hash')
-const weakCache = require('../../weakCache')
-const firstValueFrom = require('../../rxjs/firstValueFrom')
+import rx from 'rxjs/operators'
+import rxjs from 'rxjs'
+import fp from 'lodash/fp.js'
+import getNxtpressionsCompiler from './nextpressions.js'
+import getJavascriptCompiler from './javascript.js'
+import JSON5 from 'json5'
+import objectHash from 'object-hash'
+import { makeWeakCache } from '../../weakCache.js'
+import firstValueFrom from '../../rxjs/firstValueFrom.js'
 
-module.exports = ({ ds, proxify }) => {
+export function makeTemplateCompiler({ ds, proxify }) {
   const compiler = {
     current: null,
     resolveTemplate,
@@ -207,7 +207,7 @@ module.exports = ({ ds, proxify }) => {
     return typeof val === 'string' && val.indexOf('{{') !== -1
   }
 
-  const _compileTemplateCache = weakCache(
+  const _compileTemplateCache = makeWeakCache(
     (template) => {
       if (fp.isPlainObject(template)) {
         return compileObjectTemplate(template)

@@ -1,13 +1,14 @@
-const moment = require('moment-timezone')
-const rx = require('rxjs/operators')
-const Observable = require('rxjs')
-const JSON5 = require('json5')
-const fp = require('lodash/fp')
-const NestedError = require('nested-error-stacks')
-const hasha = require('hasha')
-const split = require('split-string')
+import moment from 'moment-timezone'
+import rx from 'rxjs/operators'
+import Observable from 'rxjs'
+import JSON5 from 'json5'
+import fp from 'lodash/fp.js'
+import NestedError from 'nested-error-stacks'
+import { hashSync } from 'hasha'
+import split from 'split-string'
+import { makeWeakCache } from '../../weakCache.js'
+
 const RETURN = {}
-const weakCache = require('../../weakCache')
 
 function asFilter(transform, predicate, obj) {
   return fp.mapValues(
@@ -23,11 +24,11 @@ function asFilter(transform, predicate, obj) {
           }
         }
       },
-    obj
+    obj,
   )
 }
 
-module.exports = ({ ds } = {}) => {
+export default function ({ ds } = {}) {
   const FILTERS = {
     // any
     ...asFilter(null, null, {
@@ -52,7 +53,7 @@ module.exports = ({ ds } = {}) => {
         }
         return Number(value)
       },
-      date: (tz) => (value) => tz ? moment.tz(value, tz) : moment(value),
+      date: (tz) => (value) => (tz ? moment.tz(value, tz) : moment(value)),
       array: () => (value) => [value],
       value: (value) => () => value,
       int:
@@ -85,11 +86,11 @@ module.exports = ({ ds } = {}) => {
       isNil: () => (value) => value == null,
       isNumber: () => (value) => Number.isFinite(value),
       isString: () => (value) => fp.isString(value),
-      ternary: (a, b) => (value) => value ? a : b,
-      cond: (a, b) => (value) => value ? a : b,
-      hasha: (options) => (value) => hasha(JSON.stringify(value), options || {}),
+      ternary: (a, b) => (value) => (value ? a : b),
+      cond: (a, b) => (value) => (value ? a : b),
+      hasha: (options) => (value) => hashSync(JSON.stringify(value), options || {}),
       hashaint: (options) => (value) =>
-        parseInt(hasha(JSON.stringify(value), options || {}).slice(-13), 16),
+        parseInt(hashSync(JSON.stringify(value), options || {}).slice(-13), 16),
       return: () => (value) => value || RETURN,
       add:
         (...args) =>
@@ -131,7 +132,7 @@ module.exports = ({ ds } = {}) => {
         floor: () => (value) => Math.floor(value),
         ceil: () => (value) => Math.ceil(value),
         clamp: (min, max) => (value) => Math.max(min, Math.min(max, value)),
-      }
+      },
     ),
     ...asFilter(
       (value) =>
@@ -148,7 +149,7 @@ module.exports = ({ ds } = {}) => {
           (...args) =>
           (value) =>
             Math.max(...value, ...args),
-      }
+      },
     ),
     // date
     ...asFilter(
@@ -172,7 +173,7 @@ module.exports = ({ ds } = {}) => {
           // TODO (fix): Validate arguments...
           return (value) => value.endOf(endOf)
         },
-      }
+      },
     ),
     // ds
     ...asFilter(null, (value) => value && (typeof value === 'string' || Array.isArray(value)), {
@@ -224,8 +225,8 @@ module.exports = ({ ds } = {}) => {
         value == null || fp.isPlainObject(value) || Array.isArray(value) ? '' : String(value),
       (value) => typeof value === 'string',
       {
-        fromJSON: () => (value) => value ? JSON.parse(value) : null,
-        fromJSON5: () => (value) => value ? JSON5.parse(value) : null,
+        fromJSON: () => (value) => (value ? JSON.parse(value) : null),
+        fromJSON5: () => (value) => (value ? JSON5.parse(value) : null),
         toSlate: () => (value) => ({
           object: 'value',
           document: {
@@ -268,7 +269,7 @@ module.exports = ({ ds } = {}) => {
                   rx.filter(({ state, data }) => data || state >= ds.record.PROVIDER),
                   rx.pluck('data'),
                   rx.distinctUntilChanged(),
-                  rx.map((isType) => (isType ? value : _return ? RETURN : null))
+                  rx.map((isType) => (isType ? value : _return ? RETURN : null)),
                 )
               : null
         },
@@ -371,7 +372,7 @@ module.exports = ({ ds } = {}) => {
           },
         wordcount: () => (value) => fp.words(value).length,
         words: () => (value) => fp.words(value),
-      }
+      },
     ),
     ...asFilter(
       (value) => (Array.isArray(value) || typeof value === 'string' ? value : []),
@@ -381,7 +382,7 @@ module.exports = ({ ds } = {}) => {
           (...args) =>
           (value) =>
             value.includes(...args),
-      }
+      },
     ),
     // array
     ...asFilter(
@@ -443,7 +444,7 @@ module.exports = ({ ds } = {}) => {
           (...args) =>
           (value) =>
             fp.pull(args[0], value),
-      }
+      },
     ),
     // object
     ...asFilter(
@@ -452,7 +453,7 @@ module.exports = ({ ds } = {}) => {
       {
         merge: (value) => fp.merge(value),
         set: (path, value) => fp.set(path, value),
-      }
+      },
     ),
     // collection
     ...asFilter(
@@ -467,7 +468,7 @@ module.exports = ({ ds } = {}) => {
         keys: () => (value) => fp.keys(value),
         size: () => (value) => fp.size(value),
         entries: () => (value) => fp.entries(value),
-      }
+      },
     ),
     // misc
     ...asFilter(null, null, {
@@ -491,13 +492,13 @@ module.exports = ({ ds } = {}) => {
 
         return Observable.timer(dueTime, period).pipe(
           rx.map(() => moment()),
-          rx.startWith(null)
+          rx.startWith(null),
         )
       },
     }),
   }
 
-  const getFilter = weakCache((filterStr) => {
+  const getFilter = makeWeakCache((filterStr) => {
     const [, filterName, argsStr] =
       filterStr
         .replace(/\n/g, '\\n')
@@ -541,7 +542,7 @@ module.exports = ({ ds } = {}) => {
       return Observable.isObservable(value)
         ? value.pipe(
             rx.switchMap((value) => getValue(value[path], rest)),
-            rx.distinctUntilChanged()
+            rx.distinctUntilChanged(),
           )
         : getValue(value[path], rest)
     }
@@ -564,7 +565,7 @@ module.exports = ({ ds } = {}) => {
           rx.switchMap((value) => reduceValue(value, index, filters, options)),
           rx.distinctUntilChanged(),
           // TODO (fix): better error handling...
-          rx.catchError(() => Observable.of(null))
+          rx.catchError(() => Observable.of(null)),
         )
       }
     }
@@ -572,7 +573,7 @@ module.exports = ({ ds } = {}) => {
     return Observable.of(value)
   }
 
-  return weakCache((expression) => {
+  return makeWeakCache((expression) => {
     try {
       const [basePathStr, ...tokens] = split(expression, {
         separator: '|',
@@ -589,10 +590,10 @@ module.exports = ({ ds } = {}) => {
           rx.catchError((err) => {
             options?.logger?.error(
               { err, expression: { expression, context: JSON.stringify(context) } },
-              'expression failed'
+              'expression failed',
             )
             return Observable.of(null)
-          })
+          }),
         )
     } catch (err) {
       throw new NestedError(`failed to parse expression ${expression}`, err)

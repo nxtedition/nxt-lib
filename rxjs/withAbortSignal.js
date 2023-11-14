@@ -1,7 +1,7 @@
-const rxjs = require('rxjs')
-const { AbortError } = require('../errors')
+import rxjs from 'rxjs'
+import { AbortError } from '../errors.js'
 
-function withAbortSignal(signal) {
+function withAbortSignalImpl(signal) {
   return new rxjs.Observable((o) => {
     o.add(this.subscribe(o))
 
@@ -24,6 +24,8 @@ function withAbortSignal(signal) {
   })
 }
 
-rxjs.Observable.prototype.withAbortSignal = withAbortSignal
+rxjs.Observable.prototype.withAbortSignal = withAbortSignalImpl
 
-module.exports = (signal) => (o) => withAbortSignal.call(o, signal)
+export default function withAbortSignal(signal) {
+  return (o) => withAbortSignalImpl.call(o, signal)
+}

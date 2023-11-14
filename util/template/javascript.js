@@ -1,12 +1,12 @@
-const assert = require('node:assert')
-const weakCache = require('../../weakCache')
-const rxjs = require('rxjs')
-const vm = require('node:vm')
-const objectHash = require('object-hash')
-const datefns = require('date-fns')
-const JSON5 = require('json5')
-const { request } = require('@nxtedition/nxt-undici')
-const undici = require('undici')
+import assert from 'node:assert'
+import { makeWeakCache } from '../../weakCache.js'
+import rxjs from 'rxjs'
+import vm from 'node:vm'
+import objectHash from 'object-hash'
+import datefns from 'date-fns'
+import JSON5 from 'json5'
+import { request } from '@nxtedition/nxt-undici'
+import undici from 'undici'
 
 const kSuspend = Symbol('kSuspend')
 const kEmpty = Symbol('kEmpty')
@@ -178,10 +178,10 @@ function pipe(value, ...fns) {
 }
 
 const globals = {
-  fp: require('lodash/fp'),
-  _: require('lodash'),
-  moment: require('moment-timezone'),
-  Timecode: require('smpte-timecode'),
+  fp: await import('lodash/fp.js'),
+  _: await import('lodash'),
+  moment: await import('moment-timezone'),
+  Timecode: await import('smpte-timecode'),
   datefns,
   JSON5,
   pipe,
@@ -215,7 +215,7 @@ function makeWrapper(expression) {
   return (value, suspend = true) => proxify(value, expression, handler, suspend)
 }
 
-module.exports = ({ ds, proxify, compiler }) => {
+export default function ({ ds, proxify, compiler }) {
   class Expression {
     constructor(context, script, expression, args, observer) {
       this._context = context
@@ -539,7 +539,7 @@ module.exports = ({ ds, proxify, compiler }) => {
     }
   }
 
-  return weakCache((expression) => {
+  return makeWeakCache((expression) => {
     let script
     try {
       script = new vm.Script(`

@@ -1,9 +1,9 @@
-const qs = require('qs')
-const cached = require('./util/cached')
-const undici = require('undici')
-const stream = require('node:stream')
-const split2 = require('split2')
-const { delay } = require('./http')
+import qs from 'qs'
+import cached from './util/cached'
+import undici from 'undici'
+import stream from 'node:stream'
+import split2 from 'split2'
+import { defaultDelay as delay } from './http'
 
 function provide(ds, domain, callback, options) {
   if (domain instanceof RegExp) {
@@ -121,7 +121,7 @@ function get(ds, name, ...args) {
   )
 }
 
-function init(ds) {
+export function makeDeepstream(ds) {
   const nxt = {
     ds,
     record: {
@@ -249,7 +249,7 @@ async function* changes(
   }
 }
 
-module.exports = Object.assign(init, {
+Object.assign(makeDeepstream, {
   changes,
   provide,
   observe,

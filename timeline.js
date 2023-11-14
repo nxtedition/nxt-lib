@@ -1,10 +1,10 @@
-const fp = require('lodash/fp')
+import fp from 'lodash/fp.js'
 
 const STOP_TIME = 5
 const PRELOAD_TIME = 5
 
 // Events must have start/end/source/data, and should be sorted by start
-function eventsToTimeline(events) {
+export function eventsToTimeline(events) {
   const timeline = []
   events = [...events]
   let active = []
@@ -52,7 +52,7 @@ function eventsToTimeline(events) {
   return timeline
 }
 
-function timelineToCommands(timeline) {
+export function timelineToCommands(timeline) {
   const commands = []
   let current = { time: -Infinity }
   for (let i = 0; i < timeline.length; i++) {
@@ -70,7 +70,7 @@ function timelineToCommands(timeline) {
         {
           command: 'play',
           ...fp.omit(['source', 'data'], next),
-        }
+        },
       )
     } else if (next.source) {
       if (next.source !== current.source || !current.data) {
@@ -96,7 +96,7 @@ function timelineToCommands(timeline) {
   return commands
 }
 
-function pickLayer(source, min = 11, max = 99999) {
+export function pickLayer(source, min = 11, max = 99999) {
   if (!source) {
     return min
   }
@@ -112,10 +112,4 @@ function pickLayer(source, min = 11, max = 99999) {
   hash = hash < 0 ? -hash : hash
 
   return min + (hash % (max - min + 1))
-}
-
-module.exports = {
-  eventsToTimeline,
-  timelineToCommands,
-  pickLayer,
 }

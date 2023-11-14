@@ -1,4 +1,4 @@
-function isReadableNodeStream(obj, strict = false) {
+export function isReadableNodeStream(obj, strict = false) {
   return !!(
     (
       obj &&
@@ -11,13 +11,13 @@ function isReadableNodeStream(obj, strict = false) {
   )
 }
 
-function isStream(obj) {
+export function isStream(obj) {
   return (
     obj && typeof obj === 'object' && typeof obj.pipe === 'function' && typeof obj.on === 'function'
   )
 }
 
-function readableStreamLength(stream) {
+export function readableStreamLength(stream) {
   if (!isReadableNodeStream(stream)) {
     return null
   }
@@ -28,10 +28,4 @@ function readableStreamLength(stream) {
 
   const state = stream._readableState
   return state && state.ended === true && Number.isFinite(state.length) ? state.length : null
-}
-
-module.exports = {
-  isStream,
-  isReadableNodeStream,
-  readableStreamLength,
 }

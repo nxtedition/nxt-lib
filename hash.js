@@ -1,5 +1,5 @@
 // https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript
-module.exports = function hash(str, seed = 0) {
+export default function hash(str, seed = 0) {
   if (typeof str !== 'string') {
     throw new Error(`invalid argument "str" (${str}). Expected string but received ${typeof str}`)
   }

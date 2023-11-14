@@ -1,6 +1,6 @@
-const mime = require('mime')
+import mime from 'mime'
 
-function lookup(name) {
+export function lookup(name) {
   if (typeof name !== 'string' || name.length === 0) {
     return null
   }
@@ -29,7 +29,7 @@ function lookup(name) {
   return mime.getType(name)
 }
 
-function extension(type, name) {
+export function extension(type, name) {
   if (typeof type !== 'string' || type.length === 0) {
     return null
   }
@@ -56,11 +56,4 @@ function extension(type, name) {
   }
 
   return extension
-}
-
-module.exports = {
-  extension,
-  getExtension: extension,
-  lookup,
-  getType: lookup,
 }

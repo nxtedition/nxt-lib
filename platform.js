@@ -1,4 +1,4 @@
-module.exports.SIGNALS =
+export const SIGNALS =
   {
     linux: {
       129: 'SIGHUP', //  1

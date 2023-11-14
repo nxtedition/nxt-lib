@@ -1,6 +1,6 @@
-const rxjs = require('rxjs')
+import rxjs from 'rxjs'
 
-function auditMap(project) {
+function auditMapImpl(project) {
   return new rxjs.Observable((o) => {
     let pendingValue = null
     let hasPendingValue = false
@@ -78,6 +78,8 @@ function auditMap(project) {
   })
 }
 
-rxjs.Observable.prototype.auditMap = auditMap
+rxjs.Observable.prototype.auditMap = auditMapImpl
 
-module.exports = (project) => (o) => auditMap.call(o, project)
+export default function auditMap(project) {
+  return (o) => auditMapImpl.call(o, project)
+}

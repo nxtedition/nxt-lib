@@ -1,12 +1,12 @@
-const EE = require('events')
+import { once } from 'node:events'
 
-module.exports.terminate = async function terminate(worker, { logger, timeout = 10e3 } = {}) {
+export async function terminate(worker, { logger = null, timeout = 10e3 } = {}) {
   try {
     worker.postMessage({ type: 'nxt:worker:terminate' })
     await Promise.race([
-      EE.once(worker, 'exit'),
+      once(worker, 'exit'),
       new Promise((resolve, reject) =>
-        setTimeout(() => reject(new Error('worker close timeout')), timeout)
+        setTimeout(() => reject(new Error('worker close timeout')), timeout),
       ),
     ])
   } catch (err) {

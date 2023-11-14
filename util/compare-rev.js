@@ -197,7 +197,7 @@ const compareRevBufferString = (a, b) => {
   return lenA - lenB
 }
 
-module.exports = function (a, b) {
+export default function compareRev(a, b) {
   // Handle null and undefined
   if (!a || !a.length) {
     return !b || !b.length ? 0 : -1
@@ -213,6 +213,6 @@ module.exports = function (a, b) {
       ? compareRevStringString(a, b)
       : -compareRevBufferString(b, a)
     : isStringB
-    ? compareRevBufferString(a, b)
-    : compareRevBufferBuffer(a, b)
+      ? compareRevBufferString(a, b)
+      : compareRevBufferBuffer(a, b)
 }

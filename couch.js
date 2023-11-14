@@ -1,7 +1,7 @@
-const createError = require('http-errors')
-const makeWeak = require('./weakCache')
-const tp = require('timers/promises')
-const { delay } = require('./http')
+import createError from 'http-errors'
+import makeWeak from './weakCache'
+import tp from 'timers/promises'
+import { defaultDelay as delay } from './http'
 
 // https://github.com/fastify/fastify/blob/main/lib/reqIdGenFactory.js
 // 2,147,483,647 (2^31 − 1) stands for max SMI value (an internal optimization of V8).
@@ -33,7 +33,7 @@ function parseHeaders(headers, obj = {}) {
   return obj
 }
 
-module.exports = function (opts) {
+export function makeCouch(opts) {
   const querystring = require('querystring')
   const urljoin = require('url-join')
   const undici = require('undici')

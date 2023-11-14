@@ -1,10 +1,10 @@
-const { isMainThread } = require('node:worker_threads')
-const serializers = require('./serializers')
-const pino = require('pino')
+import { isMainThread } from 'node:worker_threads'
+import serializers from './serializers.js'
+import pino from 'pino'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
-module.exports.createLogger = function (
+export function createLogger(
   { level = isProduction ? 'debug' : 'trace', flushInterval = 1e3, stream = null, ...options } = {},
   onTerminate,
 ) {

@@ -28,7 +28,7 @@ function getHeaders(obj) {
   )
 }
 
-module.exports = {
+export default {
   err: (err) => {
     // TODO (fix): Merge with errors/serializeError?
 
@@ -108,14 +108,14 @@ module.exports = {
     const url = ureq.url?.href
       ? ureq.url.href
       : typeof ureq.url === 'string'
-      ? ureq.url
-      : ureq.origin
-      ? `${ureq.origin}${ureq.path || ''}`
-      : ureq.hostname
-      ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${
-          ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]
-        }${ureq.path || ''}`
-      : ureq.path || ureq.pathname
+        ? ureq.url
+        : ureq.origin
+          ? `${ureq.origin}${ureq.path || ''}`
+          : ureq.hostname
+            ? `${ureq.protocol || 'http:'}//${ureq.hostname}:${
+                ureq.port || { 'http:': 80, 'https:': 443 }[ureq.protocol]
+              }${ureq.path || ''}`
+            : ureq.path || ureq.pathname
 
     return {
       id: ureq.id || getHeader(ureq, 'request-id'),

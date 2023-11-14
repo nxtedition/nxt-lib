@@ -1,6 +1,6 @@
 /* globals WeakRef FinalizationRegistry */
 
-module.exports = function weakCache(valueSelector, keySelector) {
+export function makeWeakCache(valueSelector, keySelector) {
   const cache = new Map()
   const finalizationRegistry = new FinalizationRegistry((key) => {
     const ref = cache.get(key)

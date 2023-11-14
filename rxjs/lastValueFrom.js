@@ -1,8 +1,8 @@
-const rxjs = require('rxjs')
-const rx = require('rxjs/operators')
-const { AbortError } = require('../errors')
+import rxjs from 'rxjs'
+import rx from 'rxjs/operators'
+import { AbortError } from '../errors'
 
-module.exports = function lastValueFrom(x$, config) {
+export default function lastValueFrom(x$, config) {
   const hasConfig = config && typeof config === 'object'
   const signal = hasConfig ? config.signal : undefined
 

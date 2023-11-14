@@ -1,5 +1,7 @@
-const { test } = require('tap')
-const { resolveTemplate } = require('../util/template/index.js')({})
+import { test } from 'tap'
+import { makeTemplateCompiler } from '../util/template/index.js'
+
+const { resolveTemplate } = makeTemplateCompiler({})
 
 test('noop', async (t) => {
   const x = { foo: 1, bar: {} }

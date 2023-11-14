@@ -1,4 +1,4 @@
-const { Observable, ReplaySubject, Subject } = require('rxjs')
+import { Observable, ReplaySubject, Subject } from 'rxjs'
 
 const registry = new FinalizationRegistry(({ interval, array }) => {
   clearInterval(interval)
@@ -7,7 +7,7 @@ const registry = new FinalizationRegistry(({ interval, array }) => {
   }
 })
 
-module.exports = function cached(fn, options, keySelector) {
+export default function cached(fn, options, keySelector) {
   if (Number.isFinite(options)) {
     options = { maxAge: options }
   } else if (options == null) {

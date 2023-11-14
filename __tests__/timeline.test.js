@@ -1,6 +1,6 @@
-const test = require('node:test')
-const assert = require('node:assert')
-const { eventsToTimeline, timelineToCommands } = require('../timeline.js')
+import test from 'node:test'
+import assert from 'node:assert'
+import { eventsToTimeline, timelineToCommands } from '../timeline.js'
 
 const evt = (start, end, source, prop, value = 1) => ({
   start,
@@ -43,7 +43,7 @@ test('eventsToTimeline', async (t) => {
         { layer: 123, time: 1, source: 'a', data: { x: 1 } },
         { layer: 123, time: 2, source: 'a' },
         { layer: 123, time: 7 },
-      ]
+      ],
     )
   })
 
@@ -58,7 +58,7 @@ test('eventsToTimeline', async (t) => {
         { layer: 123, time: 4, source: 'a', data: { x: 1 } },
         { layer: 123, time: 5, source: 'a' },
         { layer: 123, time: 10 },
-      ]
+      ],
     )
   })
 
@@ -84,7 +84,7 @@ test('eventsToTimeline', async (t) => {
         { layer: 123, time: 4, source: 'a', data: { x: 1 } },
         { layer: 123, time: 5, source: 'a' },
         { layer: 123, time: 10 },
-      ]
+      ],
     )
   })
 })
@@ -116,7 +116,7 @@ test('timelineToCommands', async (t) => {
         { layer: 123, command: 'play', time: 1, source: 'b', data: { x: 1, y: 1 } },
         { layer: 123, command: 'play', time: 2, source: 'a', data: { x: 1 } },
         { layer: 123, command: 'clear', time: Infinity },
-      ]
+      ],
     )
   })
 
@@ -129,7 +129,7 @@ test('timelineToCommands', async (t) => {
         { layer: 123, command: 'update', time: 1, data: { x: 1, y: 1 } },
         { layer: 123, command: 'update', time: 2, data: { x: 1 } },
         { layer: 123, command: 'clear', time: Infinity },
-      ]
+      ],
     )
   })
 
@@ -143,7 +143,7 @@ test('timelineToCommands', async (t) => {
         { layer: 123, command: 'play', time: 3, source: 'b', data: { y: 1 } },
         { layer: 123, command: 'stop', time: 4 },
         { layer: 123, command: 'clear', time: 9 },
-      ]
+      ],
     )
   })
 
@@ -159,7 +159,7 @@ test('timelineToCommands', async (t) => {
         { layer: 123, command: 'play', time: 8 },
         { layer: 123, command: 'stop', time: 9 },
         { layer: 123, command: 'clear', time: 14 },
-      ]
+      ],
     )
   })
 
@@ -175,7 +175,7 @@ test('timelineToCommands', async (t) => {
         { layer: 123, command: 'play', time: 20 },
         { layer: 123, command: 'stop', time: 21 },
         { layer: 123, command: 'clear', time: 26 },
-      ]
+      ],
     )
   })
 
@@ -187,7 +187,7 @@ test('timelineToCommands', async (t) => {
           evt(1, 3, 'b', 'x'),
           evt(2, 4, 'a', 'y'),
           evt(7, 8, 'a', 'y'),
-        ])
+        ]),
       ),
       [
         { layer: 123, command: 'load', time: -5, source: 'a', data: { x: 1 } },
@@ -199,7 +199,7 @@ test('timelineToCommands', async (t) => {
         { layer: 123, command: 'play', time: 7, source: 'a', data: { y: 1 } },
         { layer: 123, command: 'stop', time: 8 },
         { layer: 123, command: 'clear', time: 13 },
-      ]
+      ],
     )
   })
 
@@ -211,7 +211,7 @@ test('timelineToCommands', async (t) => {
           evt(10, 30, 'b', 'x', 2),
           evt(20, 40, 'a', 'y'),
           evt(70, 80, 'a', 'y'),
-        ])
+        ]),
       ),
       [
         { layer: 123, command: 'load', time: -5, source: 'a', data: { x: 1 } },
@@ -226,7 +226,7 @@ test('timelineToCommands', async (t) => {
         { layer: 123, command: 'play', time: 70 },
         { layer: 123, command: 'stop', time: 80 },
         { layer: 123, command: 'clear', time: 85 },
-      ]
+      ],
     )
   })
 })

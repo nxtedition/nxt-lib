@@ -1,15 +1,30 @@
-const os = require('node:os')
-const net = require('node:net')
-const stream = require('node:stream')
-const { Buffer } = require('node:buffer')
-const { getDockerSecretsSync } = require('./docker-secrets')
-const { getGlobalDispatcher } = require('undici')
-const fp = require('lodash/fp.js')
+import os from 'node:os'
+import net from 'node:net'
+import stream from 'node:stream'
+import { Buffer } from 'node:buffer'
+import { getDockerSecretsSync } from './docker-secrets'
+import { getGlobalDispatcher } from 'undici'
+import fp from 'lodash/fp.js'
+import { isMainThread, parentPort } from 'node:worker_threads'
+import toobusy from 'toobusy-js'
+import deepstream from '@nxtedition/deepstream.io-client-js'
+import { createLogger } from './logger.js'
+import nconf from 'nconf'
+import { makeCouch } from './couch.js'
+import { makeTemplateCompiler } from './util/template/index.js'
+import { makeDeepstream } from './deepstream.js'
+import v8 from 'v8'
+import rxjs from 'rxjs'
+import rx from 'rxjs/operators'
+import { performance } from 'perf_hooks'
+import hashString from './hash.js'
+import { makeTrace } from './trace'
+import compose from 'koa-compose'
+import { createServer } from './http.js'
 
 module.exports = function (appConfig, onTerminate) {
   let ds
   let nxt
-  let toobusy
   let couch
   let server
   let compiler
@@ -41,8 +56,6 @@ module.exports = function (appConfig, onTerminate) {
     logger?.warn({ err }, 'warning')
   })
 
-  const { createLogger } = require('./logger')
-
   const cleanAppConfig = ({
     status,
     stats,
@@ -59,8 +72,6 @@ module.exports = function (appConfig, onTerminate) {
   }) => values
 
   if (appConfig.config) {
-    const nconf = require('nconf')
-
     config = nconf
       .argv()
       .env({
@@ -152,56 +163,15 @@ module.exports = function (appConfig, onTerminate) {
 
   logger.debug({ data: JSON.stringify(config, null, 2) }, 'config')
 
-  {
-    const { isMainThread, parentPort } = require('node:worker_threads')
-    if (!isMainThread && parentPort) {
-      parentPort.on('message', ({ type }) => {
-        if (type === 'nxt:worker:terminate') {
-          terminate(null, true)
-        }
-      })
-    }
-  }
-
-  if (appConfig.niceIncrement) {
-    try {
-      if (appConfig.niceIncrement !== 0 && process.platform === 'linux') {
-        const nice = require('nice-napi')
-        nice(appConfig.niceIncrement)
+  if (!isMainThread && parentPort) {
+    parentPort.on('message', ({ type }) => {
+      if (type === 'nxt:worker:terminate') {
+        terminate(null)
       }
-    } catch {}
-  }
-
-  if (appConfig.perf && process.platform === 'linux') {
-    const perfName = typeof appConfig.perf === 'string' ? appConfig.perf : serviceInstanceId
-
-    try {
-      const linuxPerf = require('linux-perf')
-
-      let started = false
-      ds.rpc.provide(`${perfName}:perf.start`, () => {
-        if (started) {
-          return false
-        }
-        linuxPerf.start()
-        started = true
-        return true
-      })
-      ds.rpc.provide(`${perfName}:perf.stop`, () => {
-        if (!started) {
-          return false
-        }
-        linuxPerf.stop()
-        started = false
-        return true
-      })
-    } catch (err) {
-      logger.error('could not initialize linux perf')
-    }
+    })
   }
 
   if (appConfig.toobusy) {
-    toobusy = require('toobusy-js')
     toobusy.onLag((currentLag) => {
       if (currentLag > 1e3) {
         logger.error({ currentLag }, 'lag')
@@ -231,7 +201,6 @@ module.exports = function (appConfig, onTerminate) {
     )
 
     if (couchConfig.url) {
-      const makeCouch = require('./couch')
       couch = makeCouch(couchConfig)
       destroyers.push(() => couch.close())
     } else {
@@ -240,8 +209,6 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.deepstream) {
-    const deepstream = require('@nxtedition/deepstream.io-client-js')
-
     let dsConfig = fp.mergeAll(
       [
         { userAgent, url: isProduction ? null : 'ws://127.0.0.1:6020/deepstream' },
@@ -322,7 +289,7 @@ module.exports = function (appConfig, onTerminate) {
         }
       })
 
-    nxt = require('./deepstream')(ds)
+    nxt = makeDeepstream(ds)
 
     globalThis.ds = ds
 
@@ -330,19 +297,13 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (appConfig.compiler) {
-    const createTemplateCompiler = require('./util/template')
-    compiler = createTemplateCompiler({ ds, ...appConfig.compiler })
+    compiler = makeTemplateCompiler({ ds, ...appConfig.compiler })
   }
 
   const monitorProviders = {}
 
   let stats$
   if (appConfig.stats) {
-    const v8 = require('v8')
-    const rxjs = require('rxjs')
-    const rx = require('rxjs/operators')
-    const { eventLoopUtilization } = require('perf_hooks').performance
-
     if (typeof appConfig.stats.subscribe === 'function') {
       stats$ = appConfig.stats
     } else if (typeof appConfig.stats === 'function') {
@@ -378,17 +339,17 @@ module.exports = function (appConfig, onTerminate) {
 
     monitorProviders.stats$ = stats$
 
-    let elu1 = eventLoopUtilization?.()
+    let elu1 = performance.eventLoopUtilization?.()
     const subscription = stats$.pipe(rx.auditTime(10e3)).subscribe((stats) => {
       if (process.env.NODE_ENV === 'production') {
-        const elu2 = eventLoopUtilization?.()
+        const elu2 = performance.eventLoopUtilization?.()
         logger.debug(
           {
             ds: ds?.stats,
             couch: couch?.stats,
             lag: toobusy?.lag(),
             memory: process.memoryUsage(),
-            utilization: eventLoopUtilization?.(elu2, elu1),
+            utilization: performance.eventLoopUtilization?.(elu2, elu1),
             heap: v8.getHeapStatistics(),
             ...stats,
           },
@@ -405,11 +366,6 @@ module.exports = function (appConfig, onTerminate) {
 
   let status$
   if (appConfig.status) {
-    const rxjs = require('rxjs')
-    const rx = require('rxjs/operators')
-    const fp = require('lodash/fp')
-    const hashString = require('./hash')
-
     if (appConfig.status.subscribe) {
       status$ = appConfig.status
     } else if (typeof appConfig.status === 'function') {
@@ -639,8 +595,6 @@ module.exports = function (appConfig, onTerminate) {
   }
 
   if (ds && Object.keys(monitorProviders).length && appConfig.monitor !== false) {
-    const { isMainThread } = require('node:worker_threads')
-
     if (isMainThread) {
       const unprovide = ds.record.provide(`^([^:]+):monitor\\.([^?]+)[?]?`, (key) => {
         const [, id, prop] = key.match(/^([^:]+):monitor\.([^?]+)[?]?/)
@@ -666,54 +620,26 @@ module.exports = function (appConfig, onTerminate) {
   if (appConfig.trace) {
     const traceConfig = { ...appConfig.trace, ...config.trace }
     if (traceConfig.url) {
-      const makeTrace = require('./trace')
       trace = makeTrace({ ...traceConfig, destroyers, logger, serviceName })
     }
   }
 
   if (appConfig.http) {
-    // const undici = require('undici')
-    const compose = require('koa-compose')
-    const { createServer } = require('./http')
-
     const httpConfig = { ...appConfig.http, ...config.http }
 
     const port = httpConfig.port
       ? httpConfig.port
       : typeof httpConfig === 'number'
-      ? httpConfig
-      : process.env.NODE_ENV === 'production'
-      ? 8000
-      : null
+        ? httpConfig
+        : process.env.NODE_ENV === 'production'
+          ? 8000
+          : null
 
     if (port != null) {
       const middleware = compose(
         [
           async ({ req, res }, next) => {
             if (req.url.startsWith('/healthcheck')) {
-              // if (ds._url || ds.url) {
-              //   try {
-              //     const { host } = new URL(ds._url || ds.url)
-              //     await undici.request(`http://${host}/healthcheck`)
-              //   } catch (err) {
-              //     logger.warn({ err }, 'deepstream healthcheck failed')
-              //     if (err.code === 'ENOTFOUND' || err.code === 'EHOSTUNREACH') {
-              //       throw err
-              //     }
-              //   }
-              // }
-
-              // if (couch) {
-              //   try {
-              //     await couch.info()
-              //   } catch (err) {
-              //     logger.warn({ err }, 'couch healthcheck failed')
-              //     if (err.code === 'ENOTFOUND' || err.code === 'EHOSTUNREACH') {
-              //       throw err
-              //     }
-              //   }
-              // }
-
               res.statusCode = 200
               res.end()
             } else {
@@ -723,8 +649,8 @@ module.exports = function (appConfig, onTerminate) {
           appConfig.http.request
             ? appConfig.http.request
             : typeof appConfig.http === 'function'
-            ? appConfig.http
-            : null,
+              ? appConfig.http
+              : null,
           ({ res }) => {
             res.statusCode = 404
             res.end()

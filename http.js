@@ -1,11 +1,11 @@
-const createError = require('http-errors')
-const { performance } = require('perf_hooks')
-const requestTarget = require('request-target')
-const querystring = require('fast-querystring')
-const compose = require('koa-compose')
-const http = require('http')
-const fp = require('lodash/fp')
-const tp = require('timers/promises')
+import createError from 'http-errors'
+import { performance } from 'perf_hooks'
+import requestTarget from 'request-target'
+import querystring from 'fast-querystring'
+import compose from 'koa-compose'
+import http from 'http'
+import fp from 'lodash/fp.js'
+import tp from 'timers/promises'
 
 const ERR_HEADER_EXPR =
   /^(content-length|content-type|te|host|upgrade|trailers|connection|keep-alive|http2-settings|transfer-encoding|proxy-connection|proxy-authenticate|proxy-authorization)$/i
@@ -23,7 +23,7 @@ function genReqId() {
   return `req-${nextReqId.toString(36)}`
 }
 
-module.exports.request = async function request(ctx, next) {
+export async function request(ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
 
@@ -172,7 +172,7 @@ module.exports.request = async function request(ctx, next) {
   }
 }
 
-class ServerResponse extends http.ServerResponse {
+export class ServerResponse extends http.ServerResponse {
   constructor(req) {
     super(req)
     this.startTime = performance.now()
@@ -210,9 +210,7 @@ class ServerResponse extends http.ServerResponse {
   }
 }
 
-module.exports.ServerResponse = ServerResponse
-
-module.exports.createServer = function (options, ctx, middleware) {
+export function createServer(options, ctx, middleware) {
   middleware = Array.isArray(middleware) ? middleware : [middleware]
   middleware = fp.values(middleware)
   middleware = middleware.flat().filter(Boolean)
@@ -242,7 +240,7 @@ module.exports.createServer = function (options, ctx, middleware) {
   return server
 }
 
-module.exports.upgrade = async function upgrade(ctx, next) {
+export async function upgrade(ctx, next) {
   const { req, res, socket = res, logger } = ctx
 
   const ac = new AbortController()
@@ -316,7 +314,7 @@ module.exports.upgrade = async function upgrade(ctx, next) {
   }
 }
 
-function isConnectionError(err) {
+export function isConnectionError(err) {
   // AWS compat.
   const statusCode = err?.statusCode ?? err?.$metadata?.httpStatusCode
   return err
@@ -337,7 +335,7 @@ function isConnectionError(err) {
     : false
 }
 
-function defaultDelay(err, retryCount, options) {
+export function defaultDelay(err, retryCount, options) {
   const { signal, logger = null } = options ?? {}
   if (isConnectionError(err)) {
     const delay =
@@ -349,10 +347,7 @@ function defaultDelay(err, retryCount, options) {
   }
 }
 
-module.exports.delay = defaultDelay
-module.exports.isConnectionError = isConnectionError
-
-module.exports.retry = async function _retry(fn, options) {
+export async function retry(fn, options) {
   const { maxRetries = 8, count = maxRetries, delay = defaultDelay, signal } = options ?? {}
 
   for (let retryCount = 0; true; ++retryCount) {
@@ -372,7 +367,7 @@ module.exports.retry = async function _retry(fn, options) {
   }
 }
 
-module.exports.parseHeaders = function parseHeaders(rawHeaders, obj = {}) {
+export function parseHeaders(rawHeaders, obj = {}) {
   for (let i = 0; i < rawHeaders.length; i += 2) {
     const key = rawHeaders[i].toString().toLowerCase()
     let val = obj[key]

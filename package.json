@@ -3,6 +3,7 @@
   "version": "15.1.7",
   "license": "MIT",
   "author": "Robert Nagy <robert.nagy@boffins.se>",
+  "type": "module",
   "files": [
     "hash.js",
     "ass.js",
@@ -72,10 +73,12 @@
     "/__tests__"
   ],
   "dependencies": {
-    "@nxtedition/nxt-undici": "^1.4.3",
+    "@elastic/elasticsearch": "^8.10.0",
+    "@elastic/transport": "^8.3.4",
+    "@nxtedition/nxt-undici": "^1.4.4",
     "date-fns": "^2.29.3",
     "fast-querystring": "^1.1.1",
-    "hasha": "^5.2.2",
+    "hasha": "^6.0.0",
     "http-errors": "^2.0.0",
     "json5": "^2.2.3",
     "koa-compose": "^4.1.0",
@@ -90,26 +93,29 @@
     "request-target": "^1.0.2",
     "smpte-timecode": "^1.3.3",
     "split-string": "^6.0.0",
+    "split2": "^4.2.0",
     "toobusy-js": "^0.5.1",
     "undici": "^5.27.2",
-    "url-join": "^4.0.0"
+    "url-join": "^5.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.8.10",
+    "@nxtedition/deepstream.io-client-js": ">=14.1.0",
+    "@types/lodash": "^4.14.201",
+    "@types/node": "^20.9.0",
     "eslint": "^8.53.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.29.0",
-    "eslint-plugin-n": "^16.3.0",
+    "eslint-plugin-n": "^16.3.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.0.0",
     "husky": "^8.0.3",
-    "lint-staged": "^15.0.2",
+    "lint-staged": "^15.1.0",
     "pinst": "^3.0.0",
-    "prettier": "^3.0.3",
+    "prettier": "^3.1.0",
     "rxjs": "^7.5.6",
     "send": "^0.18.0",
-    "tap": "^18.5.7"
+    "tap": "^18.5.8"
   },
   "peerDependencies": {
     "@elastic/elasticsearch": "^8.6.0",
@@ -117,9 +123,5 @@
     "@nxtedition/deepstream.io-client-js": ">=14.1.0",
     "pino": ">=7.0.0",
     "rxjs": ">=6.0.0"
-  },
-  "optionalDependencies": {
-    "linux-perf": "^0.3.1",
-    "nice-napi": ">=1.0.0"
   }
 }

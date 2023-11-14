@@ -1,7 +1,7 @@
-const rx = require('rxjs/operators')
-const withAbortSignal = require('./withAbortSignal')
+import rx from 'rxjs/operators'
+import withAbortSignal from './withAbortSignal.js'
 
-module.exports = function firstValueFrom(x$, config) {
+export default function firstValueFrom(x$, config) {
   const hasConfig = config && typeof config === 'object'
   const signal = hasConfig ? config.signal : undefined
   const timeout = hasConfig ? config.timeout : undefined
