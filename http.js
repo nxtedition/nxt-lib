@@ -214,7 +214,7 @@ export function createServer(options, ctx, middleware) {
   middleware = Array.isArray(middleware) ? middleware : [middleware]
   middleware = fp.values(middleware)
   middleware = middleware.flat().filter(Boolean)
-  middleware = compose([module.exports.request, ...middleware])
+  middleware = compose([request, ...middleware])
 
   const factory = typeof ctx === 'function' ? ctx : () => ctx
 

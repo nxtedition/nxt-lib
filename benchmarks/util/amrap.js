@@ -1,4 +1,4 @@
-module.exports = function (fnIterate, timeLimit, options = {}) {
+export default function (fnIterate, timeLimit, options = {}) {
   const startTime = performance.now()
 
   const { initial = 1, scaling = 10, safety = 1 } = options
