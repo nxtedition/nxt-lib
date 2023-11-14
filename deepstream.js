@@ -1,9 +1,9 @@
 import qs from 'qs'
-import cached from './util/cached'
+import cached from './util/cached.js'
 import undici from 'undici'
 import stream from 'node:stream'
 import split2 from 'split2'
-import { defaultDelay as delay } from './http'
+import { defaultDelay as delay } from './http.js'
 
 function provide(ds, domain, callback, options) {
   if (domain instanceof RegExp) {

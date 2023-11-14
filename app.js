@@ -2,7 +2,7 @@ import os from 'node:os'
 import net from 'node:net'
 import stream from 'node:stream'
 import { Buffer } from 'node:buffer'
-import { getDockerSecretsSync } from './docker-secrets'
+import { getDockerSecretsSync } from './docker-secrets.js'
 import { getGlobalDispatcher } from 'undici'
 import fp from 'lodash/fp.js'
 import { isMainThread, parentPort } from 'node:worker_threads'
@@ -18,11 +18,11 @@ import rxjs from 'rxjs'
 import rx from 'rxjs/operators'
 import { performance } from 'perf_hooks'
 import hashString from './hash.js'
-import { makeTrace } from './trace'
+import { makeTrace } from './trace.js'
 import compose from 'koa-compose'
 import { createServer } from './http.js'
 
-module.exports = function (appConfig, onTerminate) {
+export function makeApp(appConfig, onTerminate) {
   let ds
   let nxt
   let couch
@@ -41,7 +41,7 @@ module.exports = function (appConfig, onTerminate) {
   Buffer.poolSize = 128 * 1024
 
   if (stream.setDefaultHighWaterMark) {
-    stream.setDefaultHighWaterMark(false, 64 * 1024)
+    stream.setDefaultHighWaterMark(false, 128 * 1024)
   }
 
   const isProduction = process.env.NODE_ENV === 'production'

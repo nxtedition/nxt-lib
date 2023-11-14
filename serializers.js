@@ -1,5 +1,5 @@
-const serializers = require('pino-std-serializers')
-const { SIGNALS } = require('./platform.js')
+import serializers from 'pino-std-serializers'
+import { SIGNALS } from './platform.js'
 
 function getHeader(obj, key) {
   return obj?.headers?.get?.(key) || obj?.getHeader?.(key) || obj?.headers?.[key]
