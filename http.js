@@ -67,29 +67,17 @@ export async function request(ctx, next) {
           .on('error', function (err) {
             this.log.error({ err }, 'request error')
           })
-          .on('end', function () {
-            this.log.trace('request end')
-          })
-          .on('close', function () {
-            this.log.trace('request close')
-          })
         res
           .on('timeout', function () {
             this.destroy(new createError.RequestTimeout())
           })
           .on('error', function (err) {
-            this.log.error({ err }, 'response error')
+            reject(err)
           })
-          .on('finish', function () {
-            this.log.trace('response finish')
-          })
+          // TODO (fix): Use 'end' once we can trust that
+          // 'end' or 'error' will always be emitted.
           .on('close', function () {
-            this.log.trace('response close')
-            if (this.errored) {
-              reject(this.errored)
-            } else {
-              resolve(null)
-            }
+            resolve(null)
           })
       }),
     ])
