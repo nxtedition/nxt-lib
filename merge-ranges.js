@@ -1,6 +1,6 @@
 const EMPTY_ARR = Object.freeze([])
 
-export function mergeRanges(ranges) {
+export default function mergeRanges(ranges) {
   if (!Array.isArray(ranges) || ranges.length === 0) {
     return EMPTY_ARR
   }

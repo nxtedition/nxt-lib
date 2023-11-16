@@ -1,4 +1,4 @@
-export function subtractRanges(a, b) {
+export default function subtractRanges(a, b) {
   a = a.slice(0)
 
   const c = []
