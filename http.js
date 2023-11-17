@@ -96,10 +96,11 @@ export async function request(ctx, next) {
       reqLogger.trace({ res, responseTime }, 'request completed')
     }
   } catch (err) {
+    const statusCode = err.statusCode || err.$metadata?.httpStatusCode || 500
     const responseTime = Math.round(performance.now() - startTime)
 
     if (!res.headersSent && !res.destroyed) {
-      res.statusCode = err.statusCode || 500
+      res.statusCode = statusCode
 
       let reqId = req?.id || err.id
       for (const name of res.getHeaderNames()) {
@@ -128,7 +129,7 @@ export async function request(ctx, next) {
 
       reqLogger = reqLogger.child({ res, err, responseTime })
 
-      if (res.statusCode < 500) {
+      if (statusCode < 500) {
         reqLogger.warn('request failed')
       } else {
         reqLogger.error('request error')
@@ -142,7 +143,7 @@ export async function request(ctx, next) {
 
       if (req.aborted || !res.writableEnded || err.name === 'AbortError') {
         reqLogger.debug('request aborted')
-      } else if (err.statusCode < 500) {
+      } else if (statusCode < 500) {
         reqLogger.warn('request failed')
       } else {
         reqLogger.error('request error')
