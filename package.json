@@ -75,7 +75,7 @@
   "dependencies": {
     "@elastic/elasticsearch": "^8.10.0",
     "@elastic/transport": "^8.3.4",
-    "@nxtedition/nxt-undici": "^2.0.5",
+    "@nxtedition/nxt-undici": "^2.0.7",
     "date-fns": "^2.29.3",
     "fast-querystring": "^1.1.1",
     "hasha": "^6.0.0",
@@ -99,9 +99,9 @@
     "url-join": "^5.0.0"
   },
   "devDependencies": {
-    "@nxtedition/deepstream.io-client-js": ">=14.1.0",
-    "@types/lodash": "^4.14.201",
-    "@types/node": "^20.9.0",
+    "@nxtedition/deepstream.io-client-js": ">=24.1.0",
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^20.9.4",
     "eslint": "^8.53.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-config-standard": "^17.0.0",
