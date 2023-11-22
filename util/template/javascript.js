@@ -7,6 +7,10 @@ import datefns from 'date-fns'
 import JSON5 from 'json5'
 import { request } from '@nxtedition/nxt-undici'
 import undici from 'undici'
+import fp from 'lodash/fp.js'
+import _ from 'lodash'
+import moment from 'moment-timezone'
+import Timecode from 'smpte-timecode'
 
 const kSuspend = Symbol('kSuspend')
 const kEmpty = Symbol('kEmpty')
@@ -178,10 +182,10 @@ function pipe(value, ...fns) {
 }
 
 const globals = {
-  fp: await import('lodash/fp.js'),
-  _: await import('lodash'),
-  moment: await import('moment-timezone'),
-  Timecode: await import('smpte-timecode'),
+  fp,
+  _,
+  moment,
+  Timecode,
   datefns,
   JSON5,
   pipe,
