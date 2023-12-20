@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import util from 'node:util'
 import { isMainThread } from 'node:worker_threads'
 import serializers from './serializers.js'
 import pino from 'pino'
@@ -62,7 +63,7 @@ export function createLogger(
     called = true
 
     try {
-      fs.writeFileSync(`/tmp/${new Date()}-${xuid()}`, JSON.stringify(err, undefined, 2), 'utf8')
+      fs.writeFileSync(`/tmp/${new Date()}-${xuid()}`, util.inspect(err), 'utf8')
     } catch {
       // Do nothing...
     }
