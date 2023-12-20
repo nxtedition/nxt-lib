@@ -1,6 +1,8 @@
+import fs from 'node:fs'
 import { isMainThread } from 'node:worker_threads'
 import serializers from './serializers.js'
 import pino from 'pino'
+import xuid from 'xuid'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -59,6 +61,12 @@ export function createLogger(
     }
     called = true
 
+    try {
+      fs.writeFileSync(`/tmp/${new Date()}-${xuid()}`, JSON.stringify(err, undefined, 2), 'utf8')
+    } catch {
+      // Do nothing...
+    }
+
     if (err) {
       if (!(err instanceof Error)) {
         err = new Error(err)
@@ -66,10 +74,9 @@ export function createLogger(
       logger.fatal({ err }, evt || 'error caused exit')
 
       logger.flush()
-
-      process.exit(1)
     } else {
       logger.info(`${evt} caught`)
+
       let exitSignal
       try {
         exitSignal = onTerminate ? await onTerminate(logger) : null
@@ -78,10 +85,9 @@ export function createLogger(
         logger.warn({ err })
       }
 
-      logger.flush()
-
       logger.info({ exitSignal }, 'exit')
-      process.exit(!exitSignal ? 0 : exitSignal)
+
+      logger.flush()
     }
   }
 
