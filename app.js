@@ -118,6 +118,10 @@ export function makeApp(appConfig, onTerminate) {
   {
     const loggerConfig = { ...appConfig.logger, ...config.logger }
 
+    process.on('uncaughtExceptionMonitor', (err) => {
+      logger.fatal({ err }, 'uncaught exception')
+    })
+
     logger = createLogger({
       ...loggerConfig,
       name: serviceName,
@@ -160,11 +164,15 @@ export function makeApp(appConfig, onTerminate) {
     }
 
     setTimeout(() => {
-      process.exit(0)
+      process.abort()
     }, 10e3).unref()
   }
 
-  process.on('beforeExit', terminate).on('SIGINT', terminate).on('SIGTERM', terminate)
+  process
+    .on('beforeExit', terminate)
+    .on('SIGINT', terminate)
+    .on('SIGTERM', terminate)
+    .on('uncaughtExceptionMonitor', terminate)
 
   logger.debug({ data: JSON.stringify(config, null, 2) }, 'config')
 
