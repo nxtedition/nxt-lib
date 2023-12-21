@@ -1,9 +1,7 @@
-import fs from 'node:fs'
-import util from 'node:util'
+import assert from 'node:assert'
 import { isMainThread } from 'node:worker_threads'
 import serializers from './serializers.js'
 import pino from 'pino'
-import xuid from 'xuid'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -11,6 +9,8 @@ export function createLogger(
   { level = isProduction ? 'debug' : 'trace', flushInterval = 1e3, stream = null, ...options } = {},
   onTerminate,
 ) {
+  assert(!onTerminate)
+
   if (!stream) {
     if (
       process.stdout.write !== process.stdout.constructor.prototype.write ||
@@ -54,50 +54,6 @@ export function createLogger(
     },
     stream,
   )
-
-  let called = false
-  const finalHandler = async (err, evt) => {
-    if (called) {
-      return
-    }
-    called = true
-
-    try {
-      fs.writeFileSync(`/tmp/${new Date()}-${xuid()}`, util.inspect(err), 'utf8')
-    } catch {
-      // Do nothing...
-    }
-
-    if (err) {
-      if (!(err instanceof Error)) {
-        err = new Error(err)
-      }
-      logger.fatal({ err }, evt || 'error caused exit')
-
-      logger.flush()
-    } else {
-      logger.info(`${evt} caught`)
-
-      let exitSignal
-      try {
-        exitSignal = onTerminate ? await onTerminate(logger) : null
-      } catch (err) {
-        exitSignal = err.exitSignal || 1
-        logger.warn({ err })
-      }
-
-      logger.info({ exitSignal }, 'exit')
-
-      logger.flush()
-    }
-  }
-
-  process.on('exit', () => finalHandler(null, 'exit'))
-  process.on('beforeExit', () => finalHandler(null, 'beforeExit'))
-  process.on('SIGINT', () => finalHandler(null, 'SIGINT'))
-  process.on('SIGQUIT', () => finalHandler(null, 'SIGQUIT'))
-  process.on('SIGTERM', () => finalHandler(null, 'SIGTERM'))
-  process.on('uncaughtException', (err, origin) => finalHandler(err, origin))
 
   return logger
 }

@@ -3,7 +3,6 @@ import net from 'node:net'
 import stream from 'node:stream'
 import { Buffer } from 'node:buffer'
 import { getDockerSecretsSync } from './docker-secrets.js'
-import { getGlobalDispatcher } from 'undici'
 import fp from 'lodash/fp.js'
 import { isMainThread, parentPort } from 'node:worker_threads'
 import toobusy from 'toobusy-js'
@@ -116,57 +115,63 @@ export function makeApp(appConfig, onTerminate) {
       } (module:${serviceModule}; instance:${serviceInstanceId}) Node/${process.version}`) ??
     null)
 
-  const terminate = async (finalLogger) => {
-    finalLogger ??= logger
-
-    ac.abort()
-
-    try {
-      if (onTerminate) {
-        try {
-          await onTerminate(finalLogger)
-        } catch (err) {
-          finalLogger.error({ err }, 'terminate error')
-        }
-      }
-
-      const dispatcher = getGlobalDispatcher()
-      if (dispatcher?.close) {
-        destroyers.push(async () => {
-          const timeout = setTimeout(() => {
-            dispatcher.destroy()
-          }, 4e3)
-          await dispatcher.close()
-          clearTimeout(timeout)
-        })
-      }
-
-      await Promise.all(destroyers.filter(Boolean).map((fn) => fn(finalLogger)))
-    } catch (err) {
-      finalLogger.error({ err }, 'shutdown error')
-    }
-  }
-
   {
     const loggerConfig = { ...appConfig.logger, ...config.logger }
 
-    logger = createLogger(
-      {
-        ...loggerConfig,
-        name: serviceName,
-        module: serviceModule,
-        base: loggerConfig?.base ? { ...loggerConfig.base } : {},
-      },
-      terminate,
+    logger = createLogger({
+      ...loggerConfig,
+      name: serviceName,
+      module: serviceModule,
+      base: loggerConfig?.base ? { ...loggerConfig.base } : {},
+    })
+
+    destroyers.push(
+      () =>
+        new Promise((resolve, reject) =>
+          logger.flush((err) => (err ? reject(err) : resolve(null))),
+        ),
     )
   }
+
+  let terminated = false
+  const terminate = async () => {
+    if (terminated) {
+      return
+    }
+
+    terminated = true
+
+    ac.abort()
+
+    if (onTerminate) {
+      try {
+        await onTerminate(logger)
+      } catch (err) {
+        logger.error({ err }, 'terminate error')
+      }
+    }
+
+    for (const { reason } of await Promise.allSettled(
+      destroyers.filter(Boolean).map((fn) => fn(logger)),
+    )) {
+      if (reason) {
+        logger.error({ err: reason }, 'shutdown error')
+      }
+    }
+
+    setTimeout(() => {
+      process.exit(0)
+    }, 10e3).unref()
+  }
+
+  process.on('beforeExit', terminate).on('SIGINT', terminate).on('SIGTERM', terminate)
 
   logger.debug({ data: JSON.stringify(config, null, 2) }, 'config')
 
   if (!isMainThread && parentPort) {
     parentPort.on('message', ({ type }) => {
       if (type === 'nxt:worker:terminate') {
-        terminate(null)
+        terminate()
       }
     })
   }
