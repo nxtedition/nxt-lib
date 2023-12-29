@@ -145,6 +145,8 @@ export function makeApp(appConfig, onTerminate) {
 
     terminated = true
 
+    logger.info('terminate')
+
     ac.abort()
 
     if (onTerminate) {
