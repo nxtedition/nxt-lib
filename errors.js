@@ -83,17 +83,23 @@ export function serializeError(error) {
     message = msg,
     errors,
     code,
+    exitCode = code,
     signal,
+    signalCode = signal,
     cause,
     body,
-    statusCode,
-    status = statusCode,
+    status,
+    statusCode = status,
     headers,
     ...properties
   } = error
 
   if (typeof signal === 'number') {
     signal = SIGNALS[signal] ?? signal
+  }
+
+  if (typeof signalCode === 'number') {
+    signalCode = SIGNALS[signalCode] ?? signalCode
   }
 
   errors = Array.isArray(errors) ? errors.map(serializeError) : undefined
@@ -106,9 +112,9 @@ export function serializeError(error) {
       ...properties,
       message,
       type,
-      code,
-      signal,
-      status,
+      exitCode,
+      signalCode,
+      statusCode,
       headers,
       data,
       cause,
