@@ -60,7 +60,7 @@ class FetchEntry {
             this.headers = res.headers
             this.body = await res.text()
           } catch (err) {
-            this.error = err
+            this.error = Object.assign(err, { data: resource })
           }
 
           if (this.refresh) {
@@ -68,14 +68,14 @@ class FetchEntry {
           }
         })
         .catch((err) => {
-          this.error = err
+          this.error = Object.assign(err, { data: resource })
 
           if (this.refresh) {
             this.refresh()
           }
         })
     } catch (err) {
-      this.error = err
+      this.error = Object.assign(err, { data: resource })
       this.refresh()
     }
   }
@@ -416,6 +416,10 @@ export default function ({ ds, proxify, compiler }) {
       const key = JSON.stringify({ resource, options })
       const entry = this._getEntry(key, FetchEntry, { resource, options })
 
+      if (entry.refresh === null) {
+        return null
+      }
+
       if (entry.error) {
         throw entry.error
       }
@@ -438,6 +442,10 @@ export default function ({ ds, proxify, compiler }) {
 
       const entry = this._getEntry(observable, ObservableEntry, observable)
 
+      if (entry.refresh === null) {
+        return null
+      }
+
       if (entry.error) {
         throw entry.error
       }
@@ -459,6 +467,10 @@ export default function ({ ds, proxify, compiler }) {
       }
 
       const entry = this._getEntry(promise, PromiseEntry, promise)
+
+      if (entry.refresh === null) {
+        return null
+      }
 
       if (entry.error) {
         throw entry.error
