@@ -33,7 +33,6 @@ class TimerEntry {
 
 const fetchClient = new undici.Agent({
   connections: 128,
-  pipelining: 8,
 })
 
 class FetchEntry {
@@ -54,23 +53,23 @@ class FetchEntry {
         dispatcher: fetchClient,
       })
         .then(async (res) => {
-          try {
-            // TODO (fix): max size...
-            this.status = res.statusCode
-            this.headers = res.headers
-            this.body = await res.text()
-          } catch (err) {
-            this.error = Object.assign(err, { data: resource })
-          }
-
           if (this.refresh) {
+            try {
+              // TODO (fix): max size...
+              this.status = res.statusCode
+              this.headers = res.headers
+              this.body = await res.text()
+            } catch (err) {
+              this.error = Object.assign(err, { data: resource })
+            }
             this.refresh()
+          } else {
+            res.dump()
           }
         })
         .catch((err) => {
-          this.error = Object.assign(err, { data: resource })
-
           if (this.refresh) {
+            this.error = Object.assign(err, { data: resource })
             this.refresh()
           }
         })
