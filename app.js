@@ -166,7 +166,12 @@ export function makeApp(appConfig, onTerminate) {
     }
 
     setTimeout(() => {
-      process.abort()
+      logger.error('aborting')
+      if (isMainThread) {
+        process.abort()
+      } else {
+        // TODO (fix): What to do here?
+      }
     }, 10e3).unref()
   }
 
