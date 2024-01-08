@@ -205,8 +205,6 @@ export function createServer(options, ctx, middleware) {
   middleware = middleware.flat().filter(Boolean)
   middleware = compose([request, ...middleware])
 
-  const factory = typeof ctx === 'function' ? ctx : () => ctx
-
   const server = http.createServer(
     {
       ServerResponse,
@@ -215,7 +213,7 @@ export function createServer(options, ctx, middleware) {
       requestTimeout: 0,
       ...options,
     },
-    (req, res) => middleware({ req, res, ...factory() }),
+    (req, res) => middleware(ctx ? { req, res, ...ctx } : { req, res }),
   )
 
   server.setTimeout(options.socketTimeout ?? 2 * 60e3)
