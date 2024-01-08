@@ -686,22 +686,6 @@ export function makeApp(appConfig, onTerminate) {
         middleware,
       )
 
-      if (httpConfig.keepAlive != null) {
-        server.keepAliveTimeout = httpConfig.keepAlive
-      }
-
-      if (httpConfig.timeout != null) {
-        server.setTimeout(httpConfig.timeout)
-      }
-
-      if (httpConfig.headersTimeout == null) {
-        server.headersTimeout = 2 * 60e3
-      }
-
-      if (httpConfig.headersTimeout == null) {
-        server.requestTimeout = 0
-      }
-
       server.listen(port)
 
       destroyers.push(() => new Promise((resolve) => server.close(resolve)))

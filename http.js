@@ -216,7 +216,7 @@ export function createServer(options, ctx, middleware) {
     (req, res) => middleware(ctx ? { req, res, ...ctx } : { req, res }),
   )
 
-  server.setTimeout(options.socketTimeout ?? 2 * 60e3)
+  server.setTimeout(options.socketTimeout ?? options.timeout ?? 2 * 60e3)
 
   if (options?.signal?.aborted) {
     queueMicrotask(() => server.close())
