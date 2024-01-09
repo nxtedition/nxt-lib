@@ -138,14 +138,14 @@ export function makeApp(appConfig, onTerminate) {
   }
 
   let terminated = false
-  const terminate = async () => {
+  const terminate = async (reason) => {
     if (terminated) {
       return
     }
 
     terminated = true
 
-    logger.info('terminate')
+    logger.info({ reason }, 'terminate')
 
     ac.abort()
 
@@ -157,11 +157,11 @@ export function makeApp(appConfig, onTerminate) {
       }
     }
 
-    for (const { reason } of await Promise.allSettled(
+    for (const { reason: err } of await Promise.allSettled(
       destroyers.filter(Boolean).map((fn) => fn(logger)),
     )) {
-      if (reason) {
-        logger.error({ err: reason }, 'shutdown error')
+      if (err) {
+        logger.error({ err }, 'shutdown error')
       }
     }
 
@@ -176,17 +176,17 @@ export function makeApp(appConfig, onTerminate) {
   }
 
   process
-    .on('beforeExit', terminate)
-    .on('SIGINT', terminate)
-    .on('SIGTERM', terminate)
-    .on('uncaughtExceptionMonitor', terminate)
+    .on('beforeExit', () => terminate('beforeExit'))
+    .on('SIGINT', () => terminate('SIGINT'))
+    .on('SIGTERM', () => terminate('SIGTERM'))
+    .on('uncaughtExceptionMonitor', () => terminate('uncaughtExceptionMonitor'))
 
   logger.debug({ data: JSON.stringify(config, null, 2) }, 'config')
 
   if (!isMainThread && parentPort) {
     parentPort.on('message', ({ type }) => {
       if (type === 'nxt:worker:terminate') {
-        terminate()
+        terminate('nxt:worker:terminate')
       }
     })
   }
