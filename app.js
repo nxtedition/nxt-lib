@@ -129,12 +129,13 @@ export function makeApp(appConfig, onTerminate) {
       base: loggerConfig?.base ? { ...loggerConfig.base } : {},
     })
 
-    destroyers.push(
-      () =>
-        new Promise((resolve, reject) =>
-          logger.flush((err) => (err ? reject(err) : resolve(null))),
-        ),
-    )
+    destroyers.push(() => {
+      try {
+        logger.flushSync()
+      } catch (err) {
+        console.error(err)
+      }
+    })
   }
 
   let terminated = false

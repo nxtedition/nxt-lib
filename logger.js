@@ -32,8 +32,12 @@ export function createLogger(
     let flushing = 0
     setInterval(() => {
       if (flushing > 60) {
-        logger.warn('logger is flushing too slow')
-        stream.flushSync()
+        try {
+          logger.warn('logger is flushing too slow')
+          stream.flushSync()
+        } catch (err) {
+          console.error(err)
+        }
       } else {
         flushing++
         stream.flush(() => {
