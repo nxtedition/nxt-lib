@@ -539,16 +539,23 @@ module.exports = ({ ds, proxify, compiler }) => {
       }
     `)
     } catch (err) {
-      throw Object.assign(new Error(`failed to parse expression ${expression}`), { cause: err })
+      return () =>
+        rxjs.throwError(
+          Object.assign(new Error(`failed to parse expression ${expression}`), { cause: err }),
+        )
     }
 
     const context = vm.createContext({ ...globals })
 
     return (args) =>
       new rxjs.Observable((o) => {
-        const exp = new Expression(context, script, expression, args, o)
-        return () => {
-          exp._destroy()
+        try {
+          const exp = new Expression(context, script, expression, args, o)
+          return () => {
+            exp._destroy()
+          }
+        } catch (err) {
+          o.error(err)
         }
       })
   })
