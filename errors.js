@@ -180,7 +180,7 @@ export function makeMessages(error, options) {
     } else {
       err = {
         msg: 'Unknown Error',
-        titlte: 'UnknownError',
+        title: 'UnknownError',
         id: 'unknown_error',
         level: 50,
         code: 'NXT_UNKNOWN_ERROR',
