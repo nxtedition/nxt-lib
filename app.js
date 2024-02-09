@@ -48,7 +48,9 @@ export function makeApp(appConfig, onTerminate) {
   const isProduction = process.env.NODE_ENV === 'production'
   const ac = new AbortController()
 
-  const dnsCache = new CacheableLookup()
+  const dnsCache = new CacheableLookup({
+    maxTtl: 10e3,
+  })
   undici.setGlobalDispatcher(
     new undici.Agent({
       connect: {
