@@ -20,8 +20,6 @@ import hashString from './hash.js'
 import { makeTrace } from './trace.js'
 import compose from 'koa-compose'
 import { createServer } from './http.js'
-import CacheableLookup from 'cacheable-lookup'
-import undici from 'undici'
 
 export function makeApp(appConfig, onTerminate) {
   let ds
@@ -47,15 +45,6 @@ export function makeApp(appConfig, onTerminate) {
 
   const isProduction = process.env.NODE_ENV === 'production'
   const ac = new AbortController()
-
-  const dnsCache = new CacheableLookup()
-  undici.setGlobalDispatcher(
-    new undici.Agent({
-      connect: {
-        lookup: dnsCache.lookup,
-      },
-    }),
-  )
 
   // Crash on unhandledRejection
   process.on('unhandledRejection', (err) => {
