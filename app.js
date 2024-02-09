@@ -185,7 +185,7 @@ export function makeApp(appConfig, onTerminate) {
     setTimeout(() => {
       logger.error('aborting')
       if (isMainThread) {
-        process.abort()
+        process.exit(1)
       } else {
         // TODO (fix): What to do here?
       }
