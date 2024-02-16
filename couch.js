@@ -116,6 +116,7 @@ export function makeCouch(opts) {
       body: req.body ? JSON.stringify(req.body).slice(0, 4096) : null,
       data: {
         req: {
+          origin: dbOrigin,
           path,
           method: req.method,
           headers: req.headers,
