@@ -846,6 +846,9 @@ export function makeCouch(opts) {
   }
 
   return {
+    get url() {
+      return config.url
+    },
     request,
     bulkDocs,
     allDocs,
