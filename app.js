@@ -33,6 +33,8 @@ export function makeApp(appConfig, onTerminate) {
   let logger
   let trace
 
+  const destroyers = []
+
   if (net.setDefaultAutoSelectFamily) {
     net.setDefaultAutoSelectFamily(false)
   }
@@ -111,7 +113,7 @@ export function makeApp(appConfig, onTerminate) {
     }
   }
 
-  const destroyers = []
+  const appDestroyers = []
 
   const serviceName = appConfig.name
   const serviceModule = appConfig.module ?? 'main'
@@ -142,7 +144,7 @@ export function makeApp(appConfig, onTerminate) {
       base: loggerConfig?.base ? { ...loggerConfig.base } : {},
     })
 
-    destroyers.push(
+    appDestroyers.push(
       () =>
         new Promise((resolve, reject) => {
           try {
@@ -176,6 +178,14 @@ export function makeApp(appConfig, onTerminate) {
 
     for (const { reason: err } of await Promise.allSettled(
       destroyers.filter(Boolean).map((fn) => fn(logger)),
+    )) {
+      if (err) {
+        logger.error({ err }, 'shutdown error')
+      }
+    }
+
+    for (const { reason: err } of await Promise.allSettled(
+      appDestroyers.filter(Boolean).map((fn) => fn(logger)),
     )) {
       if (err) {
         logger.error({ err }, 'shutdown error')
@@ -239,7 +249,7 @@ export function makeApp(appConfig, onTerminate) {
 
     if (couchConfig.url) {
       couch = makeCouch(couchConfig)
-      destroyers.push(() => couch.close())
+      appDestroyers.push(() => couch.close())
     } else {
       throw new Error('invalid couch config')
     }
@@ -330,7 +340,7 @@ export function makeApp(appConfig, onTerminate) {
 
     globalThis.ds = ds
 
-    destroyers.push(() => ds.close())
+    appDestroyers.push(() => ds.close())
   }
 
   if (appConfig.compiler) {
@@ -396,7 +406,7 @@ export function makeApp(appConfig, onTerminate) {
       }
     })
 
-    destroyers.push(() => {
+    appDestroyers.push(() => {
       subscription.unsubscribe()
     })
   }
@@ -633,7 +643,7 @@ export function makeApp(appConfig, onTerminate) {
 
     monitorProviders.status$ = status$
 
-    destroyers.push(() => {
+    appDestroyers.push(() => {
       loggerSubscription.unsubscribe()
     })
   }
@@ -653,7 +663,7 @@ export function makeApp(appConfig, onTerminate) {
         }
       })
 
-      destroyers.push(() => {
+      appDestroyers.push(() => {
         if (unprovide) {
           unprovide()
         }
@@ -664,7 +674,7 @@ export function makeApp(appConfig, onTerminate) {
   if (appConfig.trace) {
     const traceConfig = { ...appConfig.trace, ...config.trace }
     if (traceConfig.url) {
-      trace = makeTrace({ ...traceConfig, destroyers, logger, serviceName })
+      trace = makeTrace({ ...traceConfig, appDestroyers, logger, serviceName })
     }
   }
 
@@ -712,7 +722,7 @@ export function makeApp(appConfig, onTerminate) {
 
       server.listen(port)
 
-      destroyers.push(() => new Promise((resolve) => server.close(resolve)))
+      appDestroyers.push(() => new Promise((resolve) => server.close(resolve)))
     }
   }
 
@@ -721,6 +731,7 @@ export function makeApp(appConfig, onTerminate) {
     nxt,
     logger,
     toobusy,
+    destroyers,
     couch,
     server,
     config,
