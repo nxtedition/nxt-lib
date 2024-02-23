@@ -791,6 +791,15 @@ export function makeCouch(opts) {
     return res.data
   }
 
+  async function up(params, body, { client = defaultClient, signal } = {}) {
+    const res = await client.request({
+      path: '/_up',
+      method: 'GET',
+      signal,
+      throwOnError: true,
+    })
+    return await res.body.json()
+  }
   async function upsert(pathname, diffFun, { client, signal } = {}) {
     while (true) {
       let doc
@@ -848,5 +857,6 @@ export function makeCouch(opts) {
     info,
     changes,
     close,
+    up,
   }
 }

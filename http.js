@@ -48,7 +48,7 @@ export async function request(ctx, next) {
 
     res.setHeader('request-id', req.id)
 
-    const isHealthcheck = ctx.url.pathname === '/healthcheck'
+    const isHealthcheck = ctx.url.pathname === '/healthcheck' || ctx.url.pathname === '/_up'
 
     reqLogger = logger.child({ req })
     if (!isHealthcheck) {

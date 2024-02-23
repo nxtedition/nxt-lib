@@ -463,7 +463,7 @@ export function makeApp(appConfig, onTerminate) {
             ? rxjs.timer(0, 10e3).pipe(
                 rx.exhaustMap(async () => {
                   try {
-                    await couch.info()
+                    await couch.up()
                   } catch (err) {
                     return [
                       {
