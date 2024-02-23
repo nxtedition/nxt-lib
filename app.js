@@ -464,6 +464,13 @@ export function makeApp(appConfig, onTerminate) {
                 rx.exhaustMap(async () => {
                   try {
                     await couch.up()
+                    return [
+                      {
+                        id: 'app:couch',
+                        level: 30,
+                        msg: 'couch: connected',
+                      },
+                    ]
                   } catch (err) {
                     return [
                       {
