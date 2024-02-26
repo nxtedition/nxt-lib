@@ -283,7 +283,7 @@ export function makeCouch(opts) {
 
     async function* normal() {
       const batchSize =
-        options.batch_size ?? options.batchSize ?? (params.include_docs ? 256 : 1024)
+        options.batch_size ?? options.batchSize ?? (params.include_docs ? 512 : 4096)
       let remaining = parseInt(options.limit) || Infinity
 
       const next = async () => {
