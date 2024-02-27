@@ -157,6 +157,10 @@ export function makeCouch(opts) {
       params.since = options.since
     }
 
+    if (options.until != null) {
+      params.until = options.until
+    }
+
     if (options.style != null) {
       params.style = options.style
     }
