@@ -72,7 +72,7 @@ export function makeCouch(opts) {
     connections: 256,
   }
 
-  const userAgent = config.userAgent
+  const userAgent = config.userAgent ?? globalThis.userAgent
   const defaultClient = new undici.Pool(dbOrigin, defaultClientOpts)
 
   const getClient =
