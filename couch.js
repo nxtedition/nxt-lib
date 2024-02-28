@@ -272,6 +272,9 @@ export function makeCouch(opts) {
 
           const changes = []
           for (const line of lines) {
+            if (line === '') {
+              continue
+            }
             if (live) {
               const data = JSON.parse(line)
               if (data.last_seq) {
