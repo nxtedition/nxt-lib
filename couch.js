@@ -313,7 +313,11 @@ export function makeCouch(opts) {
           }
 
           if (changes.length > 0) {
-            yield changes
+            if (batched) {
+              yield changes
+            } else {
+              yield* changes
+            }
           }
 
           remaining -= changes.length
@@ -328,13 +332,7 @@ export function makeCouch(opts) {
     try {
       while (true) {
         try {
-          if (batched) {
-            yield* parse(live)
-          } else {
-            for await (const changes of parse(live)) {
-              yield* changes
-            }
-          }
+          yield* parse(live)
           return
         } catch (err) {
           if (err.name === 'AbortError') {
