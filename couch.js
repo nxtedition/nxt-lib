@@ -216,7 +216,7 @@ export function makeCouch(opts) {
 
     if (signal) {
       if (signal.aborted) {
-        ac.abort()
+        ac.abort(signal.reason)
       } else {
         if (signal.on) {
           signal.on('abort', onAbort)
