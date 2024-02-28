@@ -5,7 +5,6 @@ import { defaultDelay as delay } from './http.js'
 import querystring from 'querystring'
 import urljoin from 'url-join'
 import undici from 'undici'
-import assert from 'node:assert'
 
 // https://github.com/fastify/fastify/blob/main/lib/reqIdGenFactory.js
 // 2,147,483,647 (2^31 − 1) stands for max SMI value (an internal optimization of V8).
@@ -72,7 +71,7 @@ export function makeCouch(opts) {
     connections: 256,
   }
 
-  const userAgent = config.userAgent ?? globalThis.userAgent
+  const userAgent = config.userAgent
   const defaultClient = new undici.Pool(dbOrigin, defaultClientOpts)
 
   const getClient =
@@ -216,7 +215,7 @@ export function makeCouch(opts) {
 
     if (signal) {
       if (signal.aborted) {
-        ac.abort(signal.reason)
+        ac.abort()
       } else {
         if (signal.on) {
           signal.on('abort', onAbort)
@@ -226,21 +225,16 @@ export function makeCouch(opts) {
       }
     }
 
-    async function* parse(live) {
-      let remaining = Number(options.limit) || Infinity
-
-      const params2 = {
-        ...params,
-        ...options.query,
-        feed: live ? 'continuous' : 'normal',
-      }
-
-      if (Number.isFinite(remaining)) {
-        params.limit = remaining
-      }
-
+    async function* continuous() {
       const req = {
-        path: `${dbPathname}/_changes?${new URLSearchParams(params2)}`,
+        path:
+          dbPathname +
+          '/_changes' +
+          `?${new URLSearchParams({
+            ...params,
+            ...options.query,
+            feed: 'continuous',
+          })}`,
         idempotent: false,
         blocking: true,
         method,
@@ -256,72 +250,34 @@ export function makeCouch(opts) {
         bodyTimeout: 2 * (params.heartbeat || 60e3),
       }
 
-      const HEAD = '{"results":['
-      const TAIL = '],'
-
       try {
         const res = await client.request(req)
 
         retryCount = 0
 
         let str = ''
-        let state = 0
         for await (const chunk of res.body) {
           const lines = (str + chunk).split('\n')
           str = lines.pop() ?? ''
 
-          const changes = []
+          const results = batched ? [] : null
           for (const line of lines) {
-            if (line === '') {
-              continue
-            }
-            if (live) {
-              const data = JSON.parse(line)
-              if (data.last_seq) {
-                params.since = data.last_seq
-                assert(params.since, 'invalid last_seq: ' + params.since)
-              } else {
-                params.since = data.seq || params.since
-                changes.push(data)
+            if (line) {
+              const change = JSON.parse(line)
+              if (change.seq) {
+                params.since = change.seq
               }
-            } else {
-              // NOTE: This makes some assumptions about the format of the JSON.
-              if (state === 0) {
-                if (line === HEAD) {
-                  state = 1
-                } else {
-                  assert(line.length < HEAD.length, 'invalid line: ' + line)
-                }
-              } else if (state === 1) {
-                if (line === TAIL) {
-                  state = 2
-                } else {
-                  const idx = line.lastIndexOf('}') + 1
-                  assert(idx > 0, 'invalid line; ' + line)
-                  const data = JSON.parse(line.slice(0, idx))
-                  params.since = data.seq || params.since
-                  changes.push(data)
-                }
-              } else if (state === 2) {
-                state = 3
-                params.since = JSON.parse('{' + line).last_seq
-                assert(params.since, 'invalid last_seq: ' + params.since)
+              if (results) {
+                results.push(change)
               } else {
-                assert(false, 'invalid state: ' + state)
+                yield change
               }
             }
           }
 
-          if (changes.length > 0) {
-            if (batched) {
-              yield changes
-            } else {
-              yield* changes
-            }
+          if (results?.length) {
+            yield results
           }
-
-          remaining -= changes.length
-          assert(remaining >= 0, 'invalid remaining: ' + remaining)
         }
       } catch (err) {
         Object.assign(err, { data: req })
@@ -329,10 +285,94 @@ export function makeCouch(opts) {
       }
     }
 
+    async function* normal() {
+      const batchSize =
+        options.batch_size ?? options.batchSize ?? (params.include_docs ? 512 : 4096)
+      let remaining = parseInt(options.limit) || Infinity
+
+      const next = async () => {
+        const req = {
+          path:
+            dbPathname +
+            '/_changes' +
+            `?${new URLSearchParams({
+              ...params,
+              ...options.query,
+              limit: Math.min(remaining, batchSize),
+              feed: live ? 'longpoll' : 'normal',
+            })}`,
+          idempotent: true,
+          blocking: live,
+          method,
+          body: JSON.stringify(body),
+          signal: ac.signal,
+          headers: {
+            'user-agent': userAgent,
+            'request-id': genReqId(),
+            ...(body ? { 'content-type': 'application/json' } : {}),
+          },
+        }
+
+        try {
+          const res = await client.request(req)
+
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            throw makeError(req, {
+              status: res.statusCode,
+              headers: res.headers,
+              data: await res.body.text(),
+            })
+          }
+
+          return await res.body.json()
+        } catch (err) {
+          Object.assign(err, { data: req })
+          return { err }
+        }
+      }
+
+      let promise
+      while (remaining) {
+        const { last_seq: seq, results, err } = await (promise ?? next())
+        promise = null
+
+        if (err) {
+          throw err
+        }
+
+        retryCount = 0
+
+        if (seq) {
+          params.since = seq
+          if (results.length > 0 && !results.at(-1)?.seq) {
+            results.at(-1).seq = seq
+          }
+        }
+
+        remaining -= results.length
+
+        if (!live && results.length === 0) {
+          return
+        }
+
+        promise = next()
+
+        if (batched) {
+          yield results
+        } else {
+          yield* results
+        }
+      }
+    }
+
     try {
       while (true) {
         try {
-          yield* parse(live)
+          if (live && !options.batchSize && !options.batch_size) {
+            yield* continuous()
+          } else {
+            yield* normal()
+          }
           return
         } catch (err) {
           if (err.name === 'AbortError') {
