@@ -309,10 +309,10 @@ export function makeCouch(opts) {
             }
           }
 
-          remaining -= changes.length
           yield changes
 
-          assert(remaining > 0, 'remaining is negative')
+          remaining -= changes.length
+          assert(remaining >= 0, 'invalid remaining: ' + remaining)
         }
       } catch (err) {
         Object.assign(err, { data: req })
