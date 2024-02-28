@@ -473,7 +473,11 @@ export function makeApp(appConfig, onTerminate) {
             ? rxjs.timer(0, 10e3).pipe(
                 rx.exhaustMap(async () => {
                   try {
-                    await couch.up()
+                    try {
+                      await couch.up()
+                    } catch {
+                      await couch.info()
+                    }
                     return [
                       {
                         id: 'app:couch',
