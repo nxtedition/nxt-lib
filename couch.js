@@ -312,7 +312,9 @@ export function makeCouch(opts) {
             }
           }
 
-          yield changes
+          if (changes.length > 0) {
+            yield changes
+          }
 
           remaining -= changes.length
           assert(remaining >= 0, 'invalid remaining: ' + remaining)
