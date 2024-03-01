@@ -379,8 +379,11 @@ export function makeCouch(opts) {
             throw err
           } else if (typeof retry === 'function') {
             const retryState = { since: params.since }
-            Object.assign(retryState, await retry(err, retryCount++, retryState, { signal }), () =>
-              delay(err, retryCount, { signal }),
+            Object.assign(
+              retryState,
+              await retry(err, retryCount++, retryState, { signal }, () =>
+                delay(err, retryCount, { signal }),
+              ),
             )
             params.since = retryState.since ?? 0
           } else {
