@@ -375,7 +375,7 @@ export function makeCouch(opts) {
           }
           return
         } catch (err) {
-          if (err.name === 'AbortError') {
+          if (err.name === 'AbortError' || client.destroyed) {
             throw err
           } else if (typeof retry === 'function') {
             const retryState = { since: params.since }
