@@ -376,6 +376,7 @@ export function makeCouch(opts) {
           }
           return
         } catch (err) {
+          err.reason ??= err.body?.reason
           if (err.name === 'AbortError' || client.destroyed) {
             throw err
           } else if (typeof retry === 'function') {
