@@ -304,6 +304,7 @@ export function makeCouch(opts) {
           idempotent: true,
           blocking: live,
           method,
+          maxRedirects: 4,
           body: JSON.stringify(body),
           signal: ac.signal,
           headers: {
