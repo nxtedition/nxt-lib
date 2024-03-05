@@ -245,13 +245,20 @@ export function makeCouch(opts) {
           'request-id': genReqId(),
           ...(body ? { 'content-type': 'application/json' } : {}),
         },
-        throwOnError: true,
         highWaterMark: 256 * 1024, // TODO (fix): Needs support in undici...
         bodyTimeout: 2 * (params.heartbeat || 60e3),
       }
 
       try {
         const res = await client.request(req)
+
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          throw makeError(req, {
+            status: res.statusCode,
+            headers: res.headers,
+            data: await res.body.text(),
+          })
+        }
 
         retryCount = 0
 
@@ -328,7 +335,7 @@ export function makeCouch(opts) {
           return await res.body.json()
         } catch (err) {
           Object.assign(err, { data: req })
-          return { err }
+          throw err
         }
       }
 
@@ -356,7 +363,7 @@ export function makeCouch(opts) {
           return
         }
 
-        promise = next()
+        promise = next().catch((err) => ({ err }))
 
         if (batched) {
           yield results
