@@ -83,7 +83,7 @@ export function serializeError(error) {
     message = msg,
     errors,
     code,
-    exitCode = /^([A-Z]+|[a-z]+|[0-9]+)$/.test(code) ? code : null,
+    exitCode = /^([A-Z]+|[a-z]+|[0-9]+)$/.test(code) ? code : undefined,
     signal,
     signalCode = signal,
     cause,
