@@ -290,8 +290,8 @@ export function makeCouch(opts) {
             if (live) {
               const data = JSON.parse(line)
               if (data.last_seq) {
+                assert(data.last_seq, 'invalid last_seq: ' + data.last_seq)
                 params.since = data.last_seq
-                assert(params.since, 'invalid last_seq: ' + params.since)
               } else {
                 params.since = data.seq || params.since
                 changes.push(data)
