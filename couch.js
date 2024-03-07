@@ -6,6 +6,7 @@ import { defaultDelay as delay } from './http.js'
 import querystring from 'querystring'
 import urljoin from 'url-join'
 import undici from 'undici'
+import { AbortError } from './errors.js'
 
 // https://github.com/fastify/fastify/blob/main/lib/reqIdGenFactory.js
 // 2,147,483,647 (2^31 − 1) stands for max SMI value (an internal optimization of V8).
@@ -216,13 +217,13 @@ export function makeCouch(opts) {
 
     if (signal) {
       if (signal.aborted) {
-        ac.abort()
-      } else {
-        if (signal.on) {
-          signal.on('abort', onAbort)
-        } else if (signal.addEventListener) {
-          signal.addEventListener('abort', onAbort)
-        }
+        throw signal.reason ?? new AbortError()
+      }
+
+      if (signal.on) {
+        signal.on('abort', onAbort)
+      } else if (signal.addEventListener) {
+        signal.addEventListener('abort', onAbort)
       }
     }
 
