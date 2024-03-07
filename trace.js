@@ -1,8 +1,5 @@
 import { Pool } from 'undici'
-
-function sleep(n) {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n)
-}
+import fp from 'lodash/fp.js'
 
 export function makeTrace({
   url,
@@ -43,17 +40,6 @@ export function makeTrace({
     const data = traceData
     traceData = ''
 
-    if (pending > limit / 4) {
-      logger.warn('throttling tracing')
-      if (pending > limit) {
-        sleep(1000)
-      } else if (pending > limit / 2) {
-        sleep(100)
-      } else {
-        sleep(10)
-      }
-    }
-
     try {
       pending += data.length
       await client
@@ -74,6 +60,10 @@ export function makeTrace({
     }
   }
 
+  const warnDrop = fp.throttle(10e3, () => {
+    logger.warn('trace dropped')
+  })
+
   const prefix = `{ "create": { "_index": "trace-${index}" } }\n{ "serviceName": "${serviceName}", "op": "`
 
   function trace(obj, op) {
@@ -88,11 +78,14 @@ export function makeTrace({
       throw new Error('invalid property `@timestamp`')
     }
 
-    const doc = (typeof obj === 'string' ? obj : stringify(obj)).slice(1, -1)
-
-    traceData += prefix + `${op}", "@timestamp": ${Date.now()}, ${doc} }\n`
-    if (traceData.length > batch) {
-      flushTraces()
+    if (pending > limit) {
+      warnDrop()
+    } else {
+      const doc = (typeof obj === 'string' ? obj : stringify(obj)).slice(1, -1)
+      traceData += prefix + `${op}", "@timestamp": ${Date.now()}, ${doc} }\n`
+      if (traceData.length > batch) {
+        flushTraces()
+      }
     }
   }
 
