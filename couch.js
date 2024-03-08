@@ -115,7 +115,6 @@ export function makeCouch(opts) {
     return createError(res.status, {
       reason,
       error,
-      body: req.body ? JSON.stringify(req.body).slice(0, 4096) : null,
       data: {
         req: {
           origin: dbOrigin,
@@ -252,7 +251,6 @@ export function makeCouch(opts) {
           'request-id': genReqId(),
           ...(body ? { 'content-type': 'application/json' } : {}),
         },
-        throwOnError: true,
         highWaterMark: 256 * 1024, // TODO (fix): Needs support in undici...
         bodyTimeout: 2 * (params.heartbeat || 60e3),
       }
