@@ -74,7 +74,6 @@ export function makeTrace({
     if (obj.op) {
       throw new Error('invalid property `op`')
     }
-
     if (obj['@timestamp']) {
       throw new Error('invalid property `@timestamp`')
     }
