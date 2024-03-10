@@ -6,7 +6,7 @@ export function makeTrace({
   stringify = JSON.stringify,
   index,
   batch = 128e3,
-  limit = 32e6,
+  limit = 16e6,
   destroyers,
   logger,
   serviceName,
