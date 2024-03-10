@@ -49,7 +49,8 @@ export function makeTrace({
           method: 'POST',
           idempotent: true,
           headers: HEADERS,
-          headersTimeout: 2 * 60e3,
+          headersTimeout: 60e3,
+          bodyTimeout: 60e3,
           body: data,
         })
         .then(({ body }) => body.dump())
