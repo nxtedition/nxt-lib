@@ -29,6 +29,8 @@ function getHeaders(obj) {
 }
 
 export default {
+  data: (data) =>
+    data != null && typeof data === 'object' ? JSON.stringify(data, undefined, 2) : data,
   err: (err) => {
     // TODO (fix): Merge with errors/serializeError?
 
