@@ -336,6 +336,7 @@ export function makeCouch(opts) {
         }
 
         assert(live || state === 3, 'invalid state: ' + state)
+        assert(!str, 'invalid str: ' + str)
       } catch (err) {
         Object.assign(err, { data: req })
         throw err
