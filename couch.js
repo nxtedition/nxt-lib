@@ -7,6 +7,8 @@ import querystring from 'querystring'
 import urljoin from 'url-join'
 import undici from 'undici'
 import { AbortError } from './errors.js'
+import split2 from 'split2'
+import stream from 'node:stream'
 
 // https://github.com/fastify/fastify/blob/main/lib/reqIdGenFactory.js
 // 2,147,483,647 (2^31 − 1) stands for max SMI value (an internal optimization of V8).
@@ -226,21 +228,9 @@ export function makeCouch(opts) {
       }
     }
 
-    async function* parse(live) {
-      let remaining = Number(options.limit) || Infinity
-
-      const params2 = {
-        ...params,
-        ...options.query,
-        feed: live ? 'continuous' : 'normal',
-      }
-
-      if (Number.isFinite(remaining)) {
-        params.limit = remaining
-      }
-
+    async function parse(live, params) {
       const req = {
-        path: `${dbPathname}/_changes?${new URLSearchParams(params2)}`,
+        path: `${dbPathname}/_changes?${new URLSearchParams(params)}`,
         idempotent: false,
         blocking: true,
         method,
@@ -258,96 +248,138 @@ export function makeCouch(opts) {
       const HEAD = '{"results":['
       const TAIL = '],'
 
-      try {
-        const res = await client.request(req)
+      const res = await client.request(req)
 
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          throw makeError(req, {
-            status: res.statusCode,
-            headers: res.headers,
-            data: await res.body.text(),
-          })
-        }
-
-        retryCount = 0
-
-        const decoder = new TextDecoder()
-
-        let str = ''
-        let state = 0
-        for await (const chunk of res.body) {
-          str += decoder.decode(chunk, { stream: true })
-
-          const lines = str.split('\n')
-          str = lines.pop() ?? ''
-
-          const changes = []
-          for (const line of lines) {
-            if (line === '') {
-              continue
-            }
-            if (live) {
-              const data = JSON.parse(line)
-              if (data.last_seq) {
-                assert(data.last_seq, 'invalid last_seq: ' + data.last_seq)
-                params.since = data.last_seq
-              } else {
-                params.since = data.seq || params.since
-                changes.push(data)
-              }
-            } else {
-              // NOTE: This makes some assumptions about the format of the JSON.
-              if (state === 0) {
-                if (line === HEAD) {
-                  state = 1
-                } else {
-                  assert(line.length < HEAD.length, 'invalid line: ' + line)
-                }
-              } else if (state === 1) {
-                if (line === TAIL) {
-                  state = 2
-                } else {
-                  const idx = line.lastIndexOf('}') + 1
-                  assert(idx > 0, 'invalid line; ' + line)
-                  const data = JSON.parse(line.slice(0, idx))
-                  params.since = data.seq || params.since
-                  changes.push(data)
-                }
-              } else if (state === 2) {
-                state = 3
-                params.since = JSON.parse('{' + line).last_seq
-                assert(params.since, 'invalid last_seq: ' + params.since)
-              } else {
-                assert(false, 'invalid state: ' + state)
-              }
-            }
-          }
-
-          if (changes.length > 0) {
-            if (batched) {
-              yield changes
-            } else {
-              yield* changes
-            }
-          }
-
-          remaining -= changes.length
-          assert(remaining >= 0, 'invalid remaining: ' + remaining)
-        }
-
-        assert(live || state === 3, 'invalid state: ' + state)
-        assert(!str, 'invalid str: ' + str)
-      } catch (err) {
-        Object.assign(err, { data: req })
-        throw err
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw makeError(req, {
+          status: res.statusCode,
+          headers: res.headers,
+          data: await res.body.text(),
+        })
       }
+
+      return stream.pipeline(
+        res.body,
+        split2(),
+        new stream.Transform({
+          objectMode: true,
+          construct(callback) {
+            this.state = 0
+            callback(null)
+          },
+          transform(line, encoding, callback) {
+            assert(typeof line === 'string', 'invalid line: ' + line)
+            if (line) {
+              if (live) {
+                const data = JSON.parse(line)
+                if (data.last_seq) {
+                  assert(data.last_seq, 'invalid last_seq: ' + data.last_seq)
+                  params.since = data.last_seq
+                } else {
+                  params.since = data.seq || params.since
+                  this.push(data)
+                }
+              } else {
+                // NOTE: This makes some assumptions about the format of the JSON.
+                if (this.state === 0) {
+                  if (line === HEAD) {
+                    this.state = 1
+                  } else {
+                    assert(line.length < HEAD.length, 'invalid line: ' + line)
+                  }
+                } else if (this.state === 1) {
+                  if (line === TAIL) {
+                    this.state = 2
+                  } else {
+                    const idx = line.lastIndexOf('}') + 1
+                    assert(idx > 0, 'invalid line; ' + line)
+                    const data = JSON.parse(line.slice(0, idx))
+                    params.since = data.seq || params.since
+                    this.push(data)
+                  }
+                } else if (this.state === 2) {
+                  this.state = 3
+                  params.since = JSON.parse('{' + line).last_seq
+                  assert(params.since, 'invalid last_seq: ' + params.since)
+                } else {
+                  assert(false, 'invalid state: ' + this.state)
+                }
+              }
+            }
+            callback(null)
+          },
+          flush(callback) {
+            assert(live || this.state === 3, 'invalid state: ' + this.state)
+            callback(null)
+          },
+        }),
+        () => {},
+      )
     }
 
+    let remaining = Number(options.limit) || Infinity
     try {
       while (true) {
         try {
-          yield* parse(live)
-          return
+          const params2 = {
+            ...params,
+            ...options.query,
+            feed: live ? 'continuous' : 'normal',
+          }
+
+          if (Number.isFinite(remaining)) {
+            params.limit = remaining
+          }
+
+          const src = await parse(live, params2)
+          const changes = []
+
+          let resume = null
+          let error = null
+          let ended = false
+
+          src
+            .on('readable', () => {
+              if (resume) {
+                resume()
+                resume = null
+              }
+            })
+            .on('error', (err) => {
+              error = err
+
+              if (resume) {
+                resume()
+                resume = null
+              }
+            })
+            .on('end', () => {
+              ended = true
+            })
+
+          while (true) {
+            const change = src.read()
+            if (change) {
+              changes.push(change)
+            } else if (changes.length) {
+              remaining -= changes.length
+              assert(remaining >= 0, 'invalid remaining: ' + remaining)
+
+              if (batched) {
+                yield changes.splice(0)
+              } else {
+                yield* changes.splice(0)
+              }
+            } else if (error) {
+              throw error
+            } else if (!ended) {
+              await new Promise((resolve) => {
+                resume = resolve
+              })
+            } else {
+              return
+            }
+          }
         } catch (err) {
           if (err.name === 'AbortError') {
             throw err
