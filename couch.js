@@ -334,6 +334,8 @@ export function makeCouch(opts) {
           remaining -= changes.length
           assert(remaining >= 0, 'invalid remaining: ' + remaining)
         }
+
+        assert(live || state === 3, 'invalid state: ' + state)
       } catch (err) {
         Object.assign(err, { data: req })
         throw err
