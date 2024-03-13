@@ -145,7 +145,7 @@ export function makeMessages(error, options) {
     } else if (typeof error === 'object') {
       const level = parseInt(error.level) || options?.level || 50
       const code =
-        [error?.code, options?.codes?.[error?.code]].find(
+        [error?.code, options?.codes?.[error?.code], options?.code].find(
           (x) => typeof x === 'string' && x.length > 0,
         ) ?? undefined
       const msg =
