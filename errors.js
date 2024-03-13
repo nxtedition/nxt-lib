@@ -133,11 +133,11 @@ export function makeMessages(error, options) {
   if (Array.isArray(error)) {
     return fp.pipe(
       fp.flattenDeep,
-      fp.flatMap((x) => makeMessages(x, null)),
+      fp.flatMap((x) => makeMessages(x, options)),
       fp.uniqBy('id'),
     )(error)
   } else if (Array.isArray(error.messages)) {
-    return makeMessages(error.messages, null)
+    return makeMessages(error.messages, options)
   } else if (error) {
     let err
     if (typeof error === 'string' && error) {
