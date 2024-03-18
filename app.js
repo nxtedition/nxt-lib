@@ -127,8 +127,7 @@ export function makeApp(appConfig, onTerminate) {
     logger = createLogger({
       ...loggerConfig,
       name: serviceName,
-      module: serviceModule,
-      base: loggerConfig?.base ? { ...loggerConfig.base } : {},
+      base: loggerConfig?.base ? { module: serviceModule, ...loggerConfig.base } : {},
     })
 
     appDestroyers.push(
