@@ -258,11 +258,13 @@ export function makeCouch(opts) {
         })
       }
 
+      // TODO (perf): Avoid stream pipeline
       return stream.pipeline(
         res.body,
         split2(),
         new stream.Transform({
           objectMode: true,
+          readableHighWaterMark: 256, // TODO (fix): We would like to limit this to bytes and not elements...
           construct(callback) {
             this.state = 0
             callback(null)
