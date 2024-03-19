@@ -1,4 +1,4 @@
-import rx from 'rxjs/operators'
+import { first, timeout as rxTimeout } from 'rxjs'
 import withAbortSignal from './withAbortSignal.js'
 
 export default function firstValueFrom(x$, config) {
@@ -11,8 +11,8 @@ export default function firstValueFrom(x$, config) {
   }
 
   if (timeout) {
-    x$ = x$.pipe(rx.timeout(timeout))
+    x$ = x$.pipe(rxTimeout(timeout))
   }
 
-  return x$.pipe(rx.first(hasConfig ? config.defaultValue : undefined)).toPromise()
+  return x$.pipe(first(hasConfig ? config.defaultValue : undefined)).toPromise()
 }

@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
-import { subtractRanges } from '../subtract-ranges.js'
-import { mergeRanges } from '../merge-ranges.js'
+import subtractRanges from '../subtract-ranges.js'
+import mergeRanges from '../merge-ranges.js'
 
 describe('subtractRanges', function () {
   test('should return the positive ranges if nothing is subtracted', function () {

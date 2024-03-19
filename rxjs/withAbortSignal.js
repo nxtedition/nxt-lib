@@ -1,8 +1,8 @@
-import rxjs from 'rxjs'
+import { Observable } from 'rxjs'
 import { AbortError } from '../errors.js'
 
 function withAbortSignalImpl(signal) {
-  return new rxjs.Observable((o) => {
+  return new Observable((o) => {
     o.add(this.subscribe(o))
 
     if (!signal) {
@@ -24,7 +24,7 @@ function withAbortSignalImpl(signal) {
   })
 }
 
-rxjs.Observable.prototype.withAbortSignal = withAbortSignalImpl
+Observable.prototype.withAbortSignal = withAbortSignalImpl
 
 export default function withAbortSignal(signal) {
   return (o) => withAbortSignalImpl.call(o, signal)

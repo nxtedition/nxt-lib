@@ -1,10 +1,10 @@
-import rxjs from 'rxjs'
+import { Observable, from, throwError } from 'rxjs'
 
 const EMPTY = Object.freeze([])
 
 function combineMapImpl(project, equals = (a, b) => a === b) {
   const self = this
-  return new rxjs.Observable((o) => {
+  return new Observable((o) => {
     let curr = EMPTY
     let scheduled = false
     let disposed = false
@@ -75,9 +75,9 @@ function combineMapImpl(project, equals = (a, b) => a === b) {
           } else {
             let observable
             try {
-              observable = rxjs.from(project(keys[n]))
+              observable = from(project(keys[n]))
             } catch (err) {
-              observable = rxjs.throwError(() => err)
+              observable = throwError(() => err)
             }
 
             const entry = {
@@ -146,7 +146,7 @@ function combineMapImpl(project, equals = (a, b) => a === b) {
   })
 }
 
-rxjs.Observable.prototype.combineMap = combineMapImpl
+Observable.prototype.combineMap = combineMapImpl
 
 export default function combineMap(project, equals) {
   return (o) => combineMapImpl.call(o, project, equals)

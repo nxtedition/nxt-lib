@@ -1,5 +1,4 @@
-import rx from 'rxjs/operators'
-import rxjs from 'rxjs'
+import * as rxjs from 'rxjs'
 import fp from 'lodash/fp.js'
 import getNxtpressionsCompiler from './nextpressions.js'
 import getJavascriptCompiler from './javascript.js'
@@ -102,7 +101,7 @@ export function makeTemplateCompiler({ ds, proxify }) {
           }
 
           return rxjs.combineLatest(values).pipe(
-            rx.map((values) => {
+            rxjs.map((values) => {
               const ret = [...arr]
               for (let n = 0; n < values.length; n++) {
                 ret[indices[n]] = values[n]
@@ -139,7 +138,7 @@ export function makeTemplateCompiler({ ds, proxify }) {
           }
 
           return rxjs.combineLatest(values).pipe(
-            rx.map((values) => {
+            rxjs.map((values) => {
               const ret = { ...obj }
               for (let n = 0; n < values.length; n++) {
                 ret[indices[n]] = values[n]
@@ -174,7 +173,9 @@ export function makeTemplateCompiler({ ds, proxify }) {
             compileStringTemplate(post)?.(str, args$) ?? rxjs.of(post),
           ])
           .pipe(
-            rx.map(([pre, body, post]) => (pre || post ? `${pre}${stringify(body)}${post}` : body)),
+            rxjs.map(([pre, body, post]) =>
+              pre || post ? `${pre}${stringify(body)}${post}` : body,
+            ),
           )
     } else if (type === 'nxt') {
       const expr = compilers.nxt(body)
@@ -185,7 +186,9 @@ export function makeTemplateCompiler({ ds, proxify }) {
 
       return (str, args$) =>
         expr(args$).pipe(
-          rx.switchMap((body) => onResolveTemplate(`${pre}${stringify(body, true)}${post}`, args$)),
+          rxjs.switchMap((body) =>
+            onResolveTemplate(`${pre}${stringify(body, true)}${post}`, args$),
+          ),
         )
     } else {
       throw new Error('unknown expression type: ' + type)

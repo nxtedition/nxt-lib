@@ -1,6 +1,6 @@
 import assert from 'node:assert'
 import { makeWeakCache } from '../../weakCache.js'
-import rxjs from 'rxjs'
+import * as rxjs from 'rxjs'
 import vm from 'node:vm'
 import objectHash from 'object-hash'
 import * as datefns from 'date-fns'

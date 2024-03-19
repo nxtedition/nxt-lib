@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
-import { mergeRanges } from '../merge-ranges.js'
+import mergeRanges from '../merge-ranges.js'
 
 // Note that subtract ranges expects merged ranges as input.
 

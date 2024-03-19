@@ -1,6 +1,6 @@
 import { test } from 'tap'
 import combineMap from '../../rxjs/combineMap.js'
-import rxjs from 'rxjs'
+import * as rxjs from 'rxjs'
 
 test('combineMap sync', (t) => {
   t.plan(1)
