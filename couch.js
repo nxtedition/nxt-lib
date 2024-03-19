@@ -134,7 +134,7 @@ export function makeCouch(opts) {
     })
   }
 
-  async function* changes({ client = defaultClient, signal, ...options } = {}) {
+  async function* changes({ client = defaultClient, signal, highWaterMark, ...options } = {}) {
     const params = {}
 
     let body
@@ -245,9 +245,6 @@ export function makeCouch(opts) {
         bodyTimeout: 2 * (params.heartbeat || 60e3),
       }
 
-      const HEAD = '{"results":['
-      const TAIL = '],'
-
       const res = await client.request(req)
 
       if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -258,63 +255,9 @@ export function makeCouch(opts) {
         })
       }
 
-      // TODO (perf): Avoid stream pipeline
       return stream.pipeline(
         res.body,
-        split2(),
-        new stream.Transform({
-          objectMode: true,
-          readableHighWaterMark: 256, // TODO (fix): We would like to limit this to bytes and not elements...
-          construct(callback) {
-            this.state = 0
-            callback(null)
-          },
-          transform(line, encoding, callback) {
-            assert(typeof line === 'string', 'invalid line: ' + line)
-            if (line) {
-              if (live) {
-                const data = JSON.parse(line)
-                if (data.last_seq) {
-                  assert(data.last_seq, 'invalid last_seq: ' + data.last_seq)
-                  params.since = data.last_seq
-                } else {
-                  params.since = data.seq || params.since
-                  this.push(data)
-                }
-              } else {
-                // NOTE: This makes some assumptions about the format of the JSON.
-                if (this.state === 0) {
-                  if (line === HEAD) {
-                    this.state = 1
-                  } else {
-                    assert(line.length < HEAD.length, 'invalid line: ' + line)
-                  }
-                } else if (this.state === 1) {
-                  if (line === TAIL) {
-                    this.state = 2
-                  } else {
-                    const idx = line.lastIndexOf('}') + 1
-                    assert(idx > 0, 'invalid line; ' + line)
-                    const data = JSON.parse(line.slice(0, idx))
-                    params.since = data.seq || params.since
-                    this.push(data)
-                  }
-                } else if (this.state === 2) {
-                  this.state = 3
-                  params.since = JSON.parse('{' + line).last_seq
-                  assert(params.since, 'invalid last_seq: ' + params.since)
-                } else {
-                  assert(false, 'invalid state: ' + this.state)
-                }
-              }
-            }
-            callback(null)
-          },
-          flush(callback) {
-            assert(live || this.state === 3, 'invalid state: ' + this.state)
-            callback(null)
-          },
-        }),
+        split2({ writableHighWaterMark: highWaterMark ?? 128 * 1024 }),
         () => {},
       )
     }
@@ -339,6 +282,7 @@ export function makeCouch(opts) {
           let resume = null
           let error = null
           let ended = false
+          let state = 0
 
           src
             .on('readable', () => {
@@ -360,9 +304,40 @@ export function makeCouch(opts) {
             })
 
           while (true) {
-            const change = src.read()
-            if (change) {
-              changes.push(change)
+            const line = src.read()
+            if (line) {
+              if (live) {
+                const data = JSON.parse(line)
+                if (data.last_seq) {
+                  params.since = data.last_seq
+                } else {
+                  params.since = data.seq || params.since
+                  this.push(data)
+                }
+              } else {
+                // NOTE: This makes some assumptions about the format of the JSON.
+                if (state === 0) {
+                  if (line.endsWith('[')) {
+                    state = 1
+                  } else {
+                    assert(false, 'invalid head: ' + line)
+                  }
+                } else if (state === 1) {
+                  if (line.startsWith(']')) {
+                    state = 2
+                  } else {
+                    const idx = line.lastIndexOf('}') + 1
+                    assert(idx > 0, 'invalid row: ' + line)
+                    const change = JSON.parse(line.slice(0, idx))
+                    params.since = change.seq || params.since
+                    changes.push(change)
+                  }
+                } else if (state === 2) {
+                  state = 3
+                  params.since = JSON.parse('{' + line).last_seq
+                  assert(params.since, 'invalid trailer: ' + line)
+                }
+              }
             } else if (changes.length) {
               remaining -= changes.length
               assert(remaining >= 0, 'invalid remaining: ' + remaining)
