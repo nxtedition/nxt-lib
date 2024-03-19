@@ -1,5 +1,4 @@
-import rxjs from 'rxjs'
-import rx from 'rxjs/operators'
+import { EMPTY, fromEvent, takeUntil, throwIfEmpty, last } from 'rxjs'
 import { AbortError } from '../errors'
 
 export default function lastValueFrom(x$, config) {
@@ -7,9 +6,9 @@ export default function lastValueFrom(x$, config) {
   const signal = hasConfig ? config.signal : undefined
 
   if (signal) {
-    x$ = signal.aborted ? rxjs.EMPTY : x$.pipe(rx.takeUntil(rxjs.fromEvent(signal, 'abort')))
-    x$ = x$.pipe(rx.throwIfEmpty(() => new AbortError()))
+    x$ = signal.aborted ? EMPTY : x$.pipe(takeUntil(fromEvent(signal, 'abort')))
+    x$ = x$.pipe(throwIfEmpty(() => new AbortError()))
   }
 
-  return x$.pipe(rx.last(hasConfig ? config.defaultValue : undefined)).toPromise()
+  return x$.pipe(last(hasConfig ? config.defaultValue : undefined)).toPromise()
 }

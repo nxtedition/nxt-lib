@@ -1,6 +1,5 @@
 import moment from 'moment-timezone'
-import rx from 'rxjs/operators'
-import Observable from 'rxjs'
+import * as rxjs from 'rxjs'
 import JSON5 from 'json5'
 import fp from 'lodash/fp.js'
 import NestedError from 'nested-error-stacks'
@@ -189,7 +188,7 @@ export default function ({ ds } = {}) {
 
         function observe(id, options) {
           if (id == null) {
-            return Observable.of(path ? undefined : {})
+            return rxjs.of(path ? undefined : {})
           }
 
           const name = (id || '') + (postfix || '')
@@ -211,8 +210,8 @@ export default function ({ ds } = {}) {
           if (Array.isArray(value)) {
             value = value.filter((x) => x && fp.isString(x))
             return value.length
-              ? Observable.combineLatest(value.map((id) => observe(id, options)))
-              : Observable.of([])
+              ? rxjs.combineLatest(value.map((id) => observe(id, options)))
+              : rxjs.of([])
           }
 
           return null
@@ -262,14 +261,14 @@ export default function ({ ds } = {}) {
           return (value) =>
             value
               ? ds.record.observe2(`${value}:asset.rawTypes?`).pipe(
-                  rx.map(({ state, data }) => ({
+                  rxjs.map(({ state, data }) => ({
                     state,
                     data: fp.includes(type, data.value),
                   })),
-                  rx.filter(({ state, data }) => data || state >= ds.record.PROVIDER),
-                  rx.pluck('data'),
-                  rx.distinctUntilChanged(),
-                  rx.map((isType) => (isType ? value : _return ? RETURN : null)),
+                  rxjs.filter(({ state, data }) => data || state >= ds.record.PROVIDER),
+                  rxjs.pluck('data'),
+                  rxjs.distinctUntilChanged(),
+                  rxjs.map((isType) => (isType ? value : _return ? RETURN : null)),
                 )
               : null
         },
@@ -490,9 +489,9 @@ export default function ({ ds } = {}) {
           return null
         }
 
-        return Observable.timer(dueTime, period).pipe(
-          rx.map(() => moment()),
-          rx.startWith(null),
+        return rxjs.timer(dueTime, period).pipe(
+          rxjs.map(() => moment()),
+          rxjs.startWith(null),
         )
       },
     }),
@@ -537,12 +536,12 @@ export default function ({ ds } = {}) {
 
   const getValue = (value, [path, ...rest]) => {
     if (!path || !value || typeof value !== 'object') {
-      return Observable.isObservable(value) ? value : Observable.of(value)
+      return rxjs.isObservable(value) ? value : rxjs.of(value)
     } else {
-      return Observable.isObservable(value)
+      return rxjs.isObservable(value)
         ? value.pipe(
-            rx.switchMap((value) => getValue(value[path], rest)),
-            rx.distinctUntilChanged(),
+            rxjs.switchMap((value) => getValue(value[path], rest)),
+            rxjs.distinctUntilChanged(),
           )
         : getValue(value[path], rest)
     }
@@ -550,27 +549,27 @@ export default function ({ ds } = {}) {
 
   const reduceValue = (value, index, filters, options) => {
     if (value === RETURN) {
-      return Observable.of(null)
+      return rxjs.of(null)
     }
 
     while (index < filters.length) {
       value = filters[index++](value, options)
 
       if (value === RETURN) {
-        return Observable.of(null)
+        return rxjs.of(null)
       }
 
-      if (Observable.isObservable(value)) {
+      if (rxjs.isObservable(value)) {
         return value.pipe(
-          rx.switchMap((value) => reduceValue(value, index, filters, options)),
-          rx.distinctUntilChanged(),
+          rxjs.switchMap((value) => reduceValue(value, index, filters, options)),
+          rxjs.distinctUntilChanged(),
           // TODO (fix): better error handling...
-          rx.catchError(() => Observable.of(null)),
+          rxjs.catchError(() => rxjs.of(null)),
         )
       }
     }
 
-    return Observable.of(value)
+    return rxjs.of(value)
   }
 
   return makeWeakCache((expression) => {
@@ -585,14 +584,14 @@ export default function ({ ds } = {}) {
 
       return (context, options) =>
         getValue(context, basePath).pipe(
-          rx.switchMap((value) => reduceValue(value, 0, filters, options)),
-          rx.distinctUntilChanged(),
-          rx.catchError((err) => {
+          rxjs.switchMap((value) => reduceValue(value, 0, filters, options)),
+          rxjs.distinctUntilChanged(),
+          rxjs.catchError((err) => {
             options?.logger?.error(
               { err, expression: { expression, context: JSON.stringify(context) } },
               'expression failed',
             )
-            return Observable.of(null)
+            return rxjs.of(null)
           }),
         )
     } catch (err) {

@@ -1,7 +1,7 @@
-import rxjs from 'rxjs'
+import { Observable, from } from 'rxjs'
 
 function auditMapImpl(project) {
-  return new rxjs.Observable((o) => {
+  return new Observable((o) => {
     let pendingValue = null
     let hasPendingValue = false
     let isComplete = false
@@ -33,7 +33,7 @@ function auditMapImpl(project) {
     function _tryNext(value) {
       try {
         const result = project(value)
-        const observable = typeof result.then === 'function' ? rxjs.from(result) : result
+        const observable = typeof result.then === 'function' ? from(result) : result
         innerSubscription = observable.subscribe({
           next: _innerNext,
           error: _error,
@@ -78,7 +78,7 @@ function auditMapImpl(project) {
   })
 }
 
-rxjs.Observable.prototype.auditMap = auditMapImpl
+Observable.prototype.auditMap = auditMapImpl
 
 export default function auditMap(project) {
   return (o) => auditMapImpl.call(o, project)

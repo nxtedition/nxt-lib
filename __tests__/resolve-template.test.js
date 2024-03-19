@@ -1,12 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
 import { makeTemplateCompiler } from '../util/template/index.js'
-import Observable from 'rxjs'
+import * as rxjs from 'rxjs'
 
 const { resolveTemplate } = makeTemplateCompiler({
   ds: {
     record: {
-      observe: () => Observable.of({ foo: 'bar' }),
+      observe: () => rxjs.of({ foo: 'bar' }),
     },
   },
 })
@@ -18,13 +18,13 @@ test('hash to int', async () => {
 
 test('baseValue', async () => {
   assert.strictEqual(await resolveTemplate('{{test}}', { test: '11d1' }), '11d1')
-  assert.strictEqual(await resolveTemplate('{{test}}', { test: Observable.of('11d1') }), '11d1')
+  assert.strictEqual(await resolveTemplate('{{test}}', { test: rxjs.of('11d1') }), '11d1')
   assert.strictEqual(
-    await resolveTemplate('{{test.asd}}', { test: Observable.of({ asd: '11d1' }) }),
+    await resolveTemplate('{{test.asd}}', { test: rxjs.of({ asd: '11d1' }) }),
     '11d1',
   )
   assert.strictEqual(
-    await resolveTemplate('{{test.asd}}', { test: { asd: Observable.of('11d1') } }),
+    await resolveTemplate('{{test.asd}}', { test: { asd: rxjs.of('11d1') } }),
     '11d1',
   )
 })
