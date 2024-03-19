@@ -257,7 +257,7 @@ export function makeCouch(opts) {
 
       return stream.pipeline(
         res.body,
-        split2({ writableHighWaterMark: highWaterMark ?? 128 * 1024 }),
+        split2('\n', { writableHighWaterMark: highWaterMark ?? 128 * 1024 }),
         () => {},
       )
     }
