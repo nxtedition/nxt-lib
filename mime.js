@@ -29,29 +29,29 @@ export function lookup(name) {
   return mime.getType(name)
 }
 
-export function extension(type, name) {
-  if (typeof type !== 'string' || type.length === 0) {
+export function extension(mimeType, fileName) {
+  if (typeof mimeType !== 'string' || mimeType.length === 0) {
     return null
   }
-  if (/video\/(x-)?nut/.test(type)) {
+  if (/video\/(x-)?nut/.test(mimeType)) {
     return 'nut'
   }
-  if (/video\/(x-)?dnxhd/.test(type)) {
+  if (/video\/(x-)?dnxhd/.test(mimeType)) {
     return 'dnxhd'
   }
-  if (/audio\/(x-)?pcm-s32le/.test(type)) {
+  if (/audio\/(x-)?pcm-s32le/.test(mimeType)) {
     return 'pcm-s32le'
   }
-  if (/audio\/(x-)?pcm-s24le/.test(type)) {
+  if (/audio\/(x-)?pcm-s24le/.test(mimeType)) {
     return 'pcm-s24le'
   }
-  if (/audio\/(x-)?pcm-s16le/.test(type)) {
+  if (/audio\/(x-)?pcm-s16le/.test(mimeType)) {
     return 'pcm-s16le'
   }
 
-  const extension = mime.getExtension(type) || (type || '').split('/').pop()
+  const extension = mime.getExtension(mimeType) || (mimeType || '').split('/').pop()
 
-  if (extension === 'qt' && typeof name === 'string' && name.endsWith('.mov')) {
+  if (extension === 'qt' && typeof fileName === 'string' && fileName.endsWith('.mov')) {
     return 'mov'
   }
 
