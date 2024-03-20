@@ -312,7 +312,7 @@ export function makeCouch(opts) {
                   params.since = data.last_seq
                 } else {
                   params.since = data.seq || params.since
-                  this.push(data)
+                  changes.push(data)
                 }
               } else {
                 // NOTE: This makes some assumptions about the format of the JSON.
