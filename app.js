@@ -661,7 +661,7 @@ export function makeApp(appConfig, onTerminate) {
     }
   }
 
-  if (appConfig.trace) {
+  if (appConfig.trace && isProduction) {
     const traceConfig = { ...appConfig.trace, ...config.trace }
     if (traceConfig.url) {
       trace = makeTrace({ ...traceConfig, destroyers: appDestroyers, logger, serviceName })

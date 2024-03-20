@@ -367,7 +367,7 @@ export function makeCouch(opts) {
             await delay(err, retryCount, { signal })
           }
         } finally {
-          src.destroy()
+          src?.on('error', () => {}).destroy()
         }
       }
     } finally {
