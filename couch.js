@@ -230,6 +230,7 @@ export function makeCouch(opts) {
     let remaining = Number(options.limit) || Infinity
     try {
       while (true) {
+        let src
         try {
           const query = { ...params, feed: live ? 'continuous' : 'normal' }
 
@@ -237,7 +238,7 @@ export function makeCouch(opts) {
             query.limit = remaining
           }
 
-          const req = {
+          const ureq = {
             path: `${dbPathname}/_changes`,
             query,
             idempotent: false,
@@ -254,18 +255,18 @@ export function makeCouch(opts) {
             bodyTimeout: 2 * (params.heartbeat || 60e3),
           }
 
-          const res = await client.request(req)
+          const ures = await client.request(ureq)
 
-          if (res.statusCode < 200 || res.statusCode >= 300) {
-            throw makeError(req, {
-              status: res.statusCode,
-              headers: res.headers,
-              data: await res.body.text(),
+          if (ures.statusCode < 200 || ures.statusCode >= 300) {
+            throw makeError(ureq, {
+              status: ures.statusCode,
+              headers: ures.headers,
+              data: await ures.body.text(),
             })
           }
 
-          const src = stream.pipeline(
-            res.body,
+          src = stream.pipeline(
+            ures.body,
             split2('\n', { writableHighWaterMark: highWaterMark ?? 256 * 1024 }),
             () => {},
           )
@@ -277,24 +278,24 @@ export function makeCouch(opts) {
           let ended = false
           let state = 0
 
+          function maybeResume() {
+            if (resume) {
+              resume()
+              resume = null
+            }
+          }
+
           src
-            .on('readable', () => {
-              if (resume) {
-                resume()
-                resume = null
-              }
-            })
+            .on('readable', maybeResume)
             .on('error', (err) => {
               error = err
-
-              if (resume) {
-                resume()
-                resume = null
-              }
+              maybeResume()
             })
             .on('end', () => {
               ended = true
+              maybeResume()
             })
+            .on('close', maybeResume)
 
           while (true) {
             const line = src.read()
@@ -365,6 +366,8 @@ export function makeCouch(opts) {
           } else {
             await delay(err, retryCount, { signal })
           }
+        } finally {
+          src.destroy()
         }
       }
     } finally {
