@@ -51,7 +51,7 @@ export function extension(type, name) {
 
   const extension = mime.getExtension(type) || (type || '').split('/').pop()
 
-  if (extension === 'qt' && typeof name === 'string' && name.endsWith('mov')) {
+  if (extension === 'qt' && typeof name === 'string' && name.endsWith('.mov')) {
     return 'mov'
   }
 
