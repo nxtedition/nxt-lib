@@ -72,10 +72,9 @@ export function makeCouch(opts) {
     keepAliveTimeout: 2 * 60e3,
     headersTimeout: 10 * 60e3,
     bodyTimeout: 2 * 60e3,
-    connections: 256,
   }
 
-  const userAgent = config.userAgent
+  const userAgent = config.userAgent || globalThis.userAgent
   const defaultClient = new undici.Pool(dbOrigin, defaultClientOpts)
 
   const getClient =
@@ -177,7 +176,7 @@ export function makeCouch(opts) {
     }
 
     if (options.heartbeat != null) {
-      params.heartbeat = options.heartbeat
+      params.heartbeat = Number(options.heartbeat)
     } else {
       params.heartbeat = 10e3
     }
@@ -228,55 +227,49 @@ export function makeCouch(opts) {
       }
     }
 
-    async function parse(live, params) {
-      const req = {
-        path: `${dbPathname}/_changes?${new URLSearchParams(params)}`,
-        idempotent: false,
-        blocking: true,
-        method,
-        body: JSON.stringify(body),
-        signal: ac.signal,
-        headers: {
-          'user-agent': userAgent,
-          'request-id': genReqId(),
-          ...(body ? { 'content-type': 'application/json' } : {}),
-        },
-        highWaterMark: 256 * 1024, // TODO (fix): Needs support in undici...
-        bodyTimeout: 2 * (params.heartbeat || 60e3),
-      }
-
-      const res = await client.request(req)
-
-      if (res.statusCode < 200 || res.statusCode >= 300) {
-        throw makeError(req, {
-          status: res.statusCode,
-          headers: res.headers,
-          data: await res.body.text(),
-        })
-      }
-
-      return stream.pipeline(
-        res.body,
-        split2('\n', { writableHighWaterMark: highWaterMark ?? 128 * 1024 }),
-        () => {},
-      )
-    }
-
     let remaining = Number(options.limit) || Infinity
     try {
       while (true) {
         try {
-          const params2 = {
-            ...params,
-            ...options.query,
-            feed: live ? 'continuous' : 'normal',
-          }
+          const query = { ...params, feed: live ? 'continuous' : 'normal' }
 
           if (Number.isFinite(remaining)) {
-            params.limit = remaining
+            query.limit = remaining
           }
 
-          const src = await parse(live, params2)
+          const req = {
+            path: `${dbPathname}/_changes`,
+            query,
+            idempotent: false,
+            blocking: true,
+            method,
+            body: JSON.stringify(body),
+            signal: ac.signal,
+            headers: {
+              'user-agent': userAgent,
+              'request-id': genReqId(),
+              ...(body ? { 'content-type': 'application/json' } : {}),
+            },
+            highWaterMark: 256 * 1024, // TODO (fix): Needs support in undici...
+            bodyTimeout: 2 * (params.heartbeat || 60e3),
+          }
+
+          const res = await client.request(req)
+
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            throw makeError(req, {
+              status: res.statusCode,
+              headers: res.headers,
+              data: await res.body.text(),
+            })
+          }
+
+          const src = stream.pipeline(
+            res.body,
+            split2('\n', { writableHighWaterMark: highWaterMark ?? 256 * 1024 }),
+            () => {},
+          )
+
           const changes = []
 
           let resume = null
