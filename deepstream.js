@@ -136,11 +136,12 @@ function query(ds, designId, options) {
           .pipe(
             rxjs.switchMap(({ rows, finished }) => {
               const nextRows = prevRows ? [...prevRows, ...rows] : rows
-              if (rows.length < limit && finished) {
+              if (finished) {
                 return rxjs.of({ rows: nextRows })
               } else {
                 const last = rows.pop()
                 assert(last.key)
+                assert(rows.length > 0)
                 return next(last.key, nextRows, limit - rows.length)
               }
             }),
