@@ -119,13 +119,13 @@ function get(ds, name, ...args) {
   )
 }
 
-function query(ds, designId, options, state = options.state ?? ds.record.PROVIDER) {
+function query(ds, designId, options) {
   const next = (startkey, prevRows, limit) =>
     !limit
-      ? rxjs.of({ rows: prevRows ?? [] })
+      ? rxjs.of({ rows: prevRows })
       : ds.nxt.record
           .observe(
-            `${designId}:query?${qs.stringify(
+            `${designId}:design?${qs.stringify(
               {
                 ...options,
                 startkey,
@@ -133,11 +133,14 @@ function query(ds, designId, options, state = options.state ?? ds.record.PROVIDE
               },
               { skipNulls: true },
             )}`,
-            state,
+            ds.record.PROVIDER,
           )
           .pipe(
             rxjs.switchMap(({ rows, finished }) => {
-              const nextRows = prevRows ? [...prevRows, ...rows] : rows
+              assert(Array.isArray(rows))
+              assert(typeof finished === 'boolean')
+
+              const nextRows = prevRows.length ? [...prevRows, ...rows] : rows
               if (finished) {
                 return rxjs.of({ rows: nextRows })
               } else {
@@ -148,7 +151,7 @@ function query(ds, designId, options, state = options.state ?? ds.record.PROVIDE
               }
             }),
           )
-  return next(options.startkey, null, options.limit ?? Infinity)
+  return next(options.startkey, [], options.limit ?? Infinity)
 }
 
 export function makeDeepstream(ds) {
