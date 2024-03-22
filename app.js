@@ -653,7 +653,7 @@ export function makeApp(appConfig, onTerminate) {
         }
       })
 
-      appDestroyers.push(() => {
+      appDestroyers.unshift(() => {
         if (unprovide) {
           unprovide()
         }
