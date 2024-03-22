@@ -1,5 +1,6 @@
 import qs from 'qs'
 import cached from './util/cached.js'
+import * as rxjs from 'rxjs'
 
 function provide(ds, domain, callback, options) {
   if (domain instanceof RegExp) {
@@ -117,6 +118,34 @@ function get(ds, name, ...args) {
   )
 }
 
+function query(ds, designId, options) {
+  const next = (startkey, prevRows, limit) =>
+    !limit
+      ? rxjs.of({ rows: prevRows ?? [] })
+      : ds.nxt.record
+          .observe(
+            designId,
+            {
+              ...options,
+              startkey,
+              limit: Number.isFinite(limit) ? limit : null,
+            },
+            ds.record.PROVIDER,
+          )
+          .pipe(
+            rxjs.switchMap(({ rows, finished }) =>
+              rows.length < limit && finished
+                ? rxjs.of({ rows: prevRows ? [...prevRows, ...rows] : rows })
+                : next(
+                    rows.findLast((x) => x.key), // TODO (fix): Is this correct, is it include or exclusive?
+                    rows,
+                    limit - rows.length,
+                  ),
+            ),
+          )
+  return next(options.startkey, null, options.limit ?? Infinity)
+}
+
 export function makeDeepstream(ds) {
   const nxt = {
     ds,
@@ -124,6 +153,7 @@ export function makeDeepstream(ds) {
       provide: (...args) => provide(ds, ...args),
       observe: (...args) => observe(ds, ...args),
       observe2: (...args) => observe2(ds, ...args),
+      query: (...args) => query(ds, ...args),
       set: (...args) => ds.record.set(...args),
       get: (...args) => get(ds, ...args),
       update: (...args) => ds.record.update(...args),
@@ -137,11 +167,13 @@ Object.assign(makeDeepstream, {
   provide,
   observe,
   observe2,
+  query,
   get,
   record: {
     provide,
     observe,
     observe2,
+    query,
     get,
   },
 })
