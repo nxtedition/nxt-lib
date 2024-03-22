@@ -1,3 +1,4 @@
+import assert from 'node:assert'
 import qs from 'qs'
 import cached from './util/cached.js'
 import * as rxjs from 'rxjs'
@@ -133,15 +134,16 @@ function query(ds, designId, options) {
             ds.record.PROVIDER,
           )
           .pipe(
-            rxjs.switchMap(({ rows, finished }) =>
-              rows.length < limit && finished
-                ? rxjs.of({ rows: prevRows ? [...prevRows, ...rows] : rows })
-                : next(
-                    rows.findLast((x) => x.key), // TODO (fix): Is this correct, is it include or exclusive?
-                    rows,
-                    limit - rows.length,
-                  ),
-            ),
+            rxjs.switchMap(({ rows, finished }) => {
+              const nextRows = prevRows ? [...prevRows, ...rows] : rows
+              if (rows.length < limit && finished) {
+                return rxjs.of({ rows: nextRows })
+              } else {
+                const last = rows.pop()
+                assert(last.key)
+                return next(last.key, nextRows, limit - rows.length)
+              }
+            }),
           )
   return next(options.startkey, null, options.limit ?? Infinity)
 }
