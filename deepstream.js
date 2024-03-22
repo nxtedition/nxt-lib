@@ -121,7 +121,7 @@ function get(ds, name, ...args) {
 
 function query(ds, designId, options) {
   const next = (startkey, prevRows, limit) =>
-    !limit
+    Number.isFinite(limit) && limit <= 0
       ? rxjs.of({ rows: prevRows })
       : ds.nxt.record
           .observe(
