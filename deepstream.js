@@ -119,19 +119,21 @@ function get(ds, name, ...args) {
   )
 }
 
-function query(ds, designId, options) {
+function query(ds, designId, options, state = options.state ?? ds.record.PROVIDER) {
   const next = (startkey, prevRows, limit) =>
     !limit
       ? rxjs.of({ rows: prevRows ?? [] })
       : ds.nxt.record
           .observe(
-            designId,
-            {
-              ...options,
-              startkey,
-              limit: Number.isFinite(limit) ? limit : null,
-            },
-            ds.record.PROVIDER,
+            `${designId}:query?${qs.stringify(
+              {
+                ...options,
+                startkey,
+                limit: Number.isFinite(limit) ? limit : null,
+              },
+              { skipNulls: true },
+            )}`,
+            state,
           )
           .pipe(
             rxjs.switchMap(({ rows, finished }) => {
