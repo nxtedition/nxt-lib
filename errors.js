@@ -22,10 +22,9 @@ export function parseError(error) {
   }
 
   if (Array.isArray(error)) {
-    error = error.map(parseError).filter(Boolean)
-    if (error.length === 1) {
-      error = error.length === 1 ? error[0] : { errors: error }
-    }
+    return error.length > 1
+      ? new AggregateError(error.map(parseError).filter(Boolean))
+      : parseError(error[0])
   }
 
   const { msg, message = msg, errors, cause, data, ...properties } = error
