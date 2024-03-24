@@ -67,7 +67,11 @@ export function serializeError(error) {
   error[kSeen] = undefined
 
   const type =
-    toString.call(error.constructor) === '[object Function]' ? error.constructor.name : error.name
+    typeof error?.type === 'string'
+      ? error.type
+      : toString.call(error.constructor) === '[object Function]'
+        ? error.constructor.name
+        : error.name
 
   let data = error.data || error.body
   if (typeof data === 'string') {
