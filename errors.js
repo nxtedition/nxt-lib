@@ -138,7 +138,7 @@ export function makeMessages(error, options) {
     return fp.pipe(
       fp.flattenDeep,
       fp.flatMap((x) => makeMessages(x, options)),
-      fp.uniqBy('id'),
+      fp.uniqBy(fp.isEqual),
     )(error)
   } else if (Array.isArray(error.messages)) {
     return makeMessages(error.messages, options)
