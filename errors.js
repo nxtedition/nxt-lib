@@ -67,7 +67,7 @@ export function serializeError(error) {
   error[kSeen] = undefined
 
   const type =
-    typeof error?.type === 'string'
+    typeof error?.type === 'string' && fp.isPlainObject(error)
       ? error.type
       : toString.call(error.constructor) === '[object Function]'
         ? error.constructor.name
