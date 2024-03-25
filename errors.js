@@ -105,7 +105,7 @@ export function serializeError(error) {
     signalCode = SIGNALS[signalCode] ?? signalCode
   }
 
-  errors = Array.isArray(errors) ? errors.map(serializeError) : undefined
+  errors = Array.isArray(errors) ? errors.map(serializeError).filter(Boolean) : undefined
   cause = cause ? serializeError(cause) : undefined
 
   delete error[kSeen]
