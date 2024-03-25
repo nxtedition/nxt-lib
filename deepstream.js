@@ -119,6 +119,25 @@ function get(ds, name, ...args) {
   )
 }
 
+function getRecord(ds, name, ...args) {
+  let query = null
+
+  if (args.length > 0 && (args[0] == null || typeof args[0] === 'object')) {
+    query = args.shift()
+  }
+
+  name = `${name}`
+
+  return ds.record.getRecord(
+    `${name}${
+      query && Object.keys(query).length > 0
+        ? `${name.endsWith('?') ? '' : '?'}${qs.stringify(query, { skipNulls: true })}`
+        : ''
+    }`,
+    ...args,
+  )
+}
+
 function query(ds, designId, options) {
   const next = (startkey, prevRows, limit) =>
     Number.isFinite(limit) && limit <= 0
@@ -164,6 +183,7 @@ export function makeDeepstream(ds) {
       query: (...args) => query(ds, ...args),
       set: (...args) => ds.record.set(...args),
       get: (...args) => get(ds, ...args),
+      getRecord: (...args) => getRecord(ds, ...args),
       update: (...args) => ds.record.update(...args),
     },
   }
@@ -177,11 +197,13 @@ Object.assign(makeDeepstream, {
   observe2,
   query,
   get,
+  getRecord,
   record: {
     provide,
     observe,
     observe2,
     query,
     get,
+    getRecord,
   },
 })
