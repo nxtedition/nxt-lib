@@ -23,6 +23,9 @@ function genReqId() {
   return `req-${nextReqId.toString(36)}`
 }
 
+let reqTimeoutError
+let resTimeoutError
+
 export async function request(ctx, next) {
   const { req, res, logger } = ctx
   const startTime = performance.now()
@@ -62,14 +65,14 @@ export async function request(ctx, next) {
       new Promise((resolve, reject) => {
         req
           .on('timeout', function () {
-            this.destroy(new createError.RequestTimeout())
+            this.destroy((reqTimeoutError ??= new createError.RequestTimeout()))
           })
           .on('error', function (err) {
             this.log.error({ err }, 'request error')
           })
         res
           .on('timeout', function () {
-            this.destroy(new createError.RequestTimeout())
+            this.destroy((resTimeoutError ??= new createError.RequestTimeout()))
           })
           .on('error', function (err) {
             reject(err)
