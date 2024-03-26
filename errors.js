@@ -47,7 +47,7 @@ export function serializeError(error) {
   }
 
   if (typeof error === 'string') {
-    return serializeError({ message: error })
+    return [serializeError({ message: error })]
   }
 
   if (Buffer.isBuffer(error)) {
@@ -56,7 +56,7 @@ export function serializeError(error) {
 
   if (Array.isArray(error)) {
     const errors = error.map(serializeError).filter(Boolean)
-    return errors.length === 0 ? null : errors.length === 1 ? errors[0] : errors
+    return errors
   }
 
   if (Object.prototype.hasOwnProperty.call(error, kSeen)) {
@@ -110,21 +110,23 @@ export function serializeError(error) {
 
   delete error[kSeen]
 
-  return JSON.parse(
-    JSON.stringify({
-      ...properties,
-      message,
-      type,
-      code,
-      exitCode,
-      signalCode,
-      statusCode,
-      headers,
-      data,
-      cause,
-      errors,
-    }),
-  )
+  return [
+    JSON.parse(
+      JSON.stringify({
+        ...properties,
+        message,
+        type,
+        code,
+        exitCode,
+        signalCode,
+        statusCode,
+        headers,
+        data,
+        cause,
+        errors,
+      }),
+    ),
+  ]
 }
 
 // TODO (fix): Recursion guard?
