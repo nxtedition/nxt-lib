@@ -26,7 +26,6 @@ class TimerEntry {
 
   dispose() {
     clearTimeout(this.timer)
-
     this.timer = null
   }
 }
@@ -232,6 +231,7 @@ export default function ({ ds, proxify, compiler }) {
       this._subscription = null
       this._args = kEmpty
       this._wrap = null
+      this._suspended = false
 
       if (rxjs.isObservable(args)) {
         this._subscription = args.subscribe({
@@ -262,30 +262,38 @@ export default function ({ ds, proxify, compiler }) {
       throw kSuspend
     }
 
-    fetch(url, init, suspend = true) {
-      return this._getFetch(url, init, suspend)
+    fetch(resource, options, suspend = true) {
+      return this._getFetch(resource, options, suspend)
     }
 
     observe(observable, suspend = true) {
       return this._getObservable(observable, suspend)
     }
 
-    wait(promise, suspend = true) {
-      return this._getWait(promise, suspend)
+    then(promise, suspend = true) {
+      return this._getPromise(promise, suspend)
     }
 
-    ds(id, state, suspend = true) {
-      return this._getRecord(id, state, suspend)
+    ds(key, state, suspend = true) {
+      return this._getRecord(key, state, suspend)
     }
 
-    _ds(key, postfix, state, suspend = true) {
-      return !key || typeof key !== 'string'
-        ? null
-        : this._getRecord(postfix ? key + postfix : key, state, suspend)
+    timer(dueTime, dueValue = dueTime, suspend = true) {
+      return this._getTimer(dueTime, dueValue, suspend)
     }
 
     asset(id, type, state, suspend = true) {
       return this._getHasRawAssetType(id, type, state, suspend)
+    }
+
+    hash(value) {
+      return objectHash(value)
+    }
+
+    _ds(key, postfix, state, suspend) {
+      return !key || typeof key !== 'string'
+        ? null
+        : this._getRecord(postfix ? key + postfix : key, state, suspend)
     }
 
     _asset(id, type, state, suspend) {
@@ -296,14 +304,6 @@ export default function ({ ds, proxify, compiler }) {
       return !id || typeof id !== 'string'
         ? null
         : this._getHasRawAssetType(id, type, state, suspend)
-    }
-
-    timer(dueTime, dueValue, suspend = true) {
-      return this._getTimer(dueTime, dueValue, suspend)
-    }
-
-    hash(value) {
-      return objectHash(value)
     }
 
     _destroy() {
@@ -341,7 +341,12 @@ export default function ({ ds, proxify, compiler }) {
       compiler.current = self
 
       try {
+        assert(self._suspended === false)
         const value = self._script.runInContext(self._context)
+        if (self._suspended) {
+          return
+        }
+
         if (value !== self._value) {
           self._value = value
           self._observer.next(value)
@@ -363,6 +368,7 @@ export default function ({ ds, proxify, compiler }) {
         self._context.$ = null
         self._context.nxt = null
 
+        self._suspended = false
         self._disposing = true
 
         if (self._entries) {
@@ -419,6 +425,7 @@ export default function ({ ds, proxify, compiler }) {
       }
 
       if (!entry.status) {
+        this._suspended = true
         if (suspend ?? true) {
           throw kSuspend
         } else {
@@ -445,6 +452,7 @@ export default function ({ ds, proxify, compiler }) {
       }
 
       if (entry.value === kEmpty) {
+        this._suspended = true
         if (suspend ?? true) {
           throw kSuspend
         } else {
@@ -455,7 +463,7 @@ export default function ({ ds, proxify, compiler }) {
       return entry.value
     }
 
-    _getWait(promise, suspend) {
+    _getPromise(promise, suspend) {
       if (typeof promise?.then !== 'function') {
         throw new Error(`invalid argument: Promise (${promise})`)
       }
@@ -471,6 +479,7 @@ export default function ({ ds, proxify, compiler }) {
       }
 
       if (entry.value === kEmpty) {
+        this._suspended = true
         if (suspend ?? true) {
           throw kSuspend
         } else {
@@ -489,12 +498,12 @@ export default function ({ ds, proxify, compiler }) {
       const timeout = dueTime - Date.now()
 
       if (Number.isFinite(dueTime) && timeout > 0) {
+        this._suspended = true
         this._getEntry(key, TimerEntry, timeout)
-
         if (suspend ?? true) {
           throw kSuspend
         } else {
-          return null
+          return dueValue
         }
       }
 
@@ -521,10 +530,11 @@ export default function ({ ds, proxify, compiler }) {
       const entry = this._getEntry(key, RecordEntry, ds)
 
       if (entry.record.state < state) {
+        this._suspended = true
         if (suspend ?? true) {
           throw kSuspend
         } else {
-          return null
+          return entry.record.data
         }
       }
 
@@ -540,11 +550,7 @@ export default function ({ ds, proxify, compiler }) {
         throw new Error(`invalid argument: type (${type})`)
       }
 
-      const data = this._getRecord(
-        id + ':asset.rawTypes?',
-        state ?? ds.record.PROVIDER,
-        suspend ?? true,
-      )
+      const data = this._getRecord(id + ':asset.rawTypes?', state ?? ds.record.PROVIDER, suspend)
       return data && Array.isArray(data.value) && data.value.includes(type) ? id : null
     }
   }
