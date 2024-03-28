@@ -29,6 +29,10 @@ export default function mergeRanges(ranges) {
     const range = ranges[n]
     const top = stack[stack.length - 1]
 
+    if (range.length !== 2 || !Number.isFinite(range[0]) || !Number.isFinite(range[1])) {
+      continue
+    }
+
     if (top[1] < range[0]) {
       // No overlap, push range onto stack
       stack.push([range[0], range[1]])
