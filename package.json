@@ -9,6 +9,7 @@
     "ass.js",
     "rxjs/*",
     "util/*",
+    "limiter.js",
     "http-client.js",
     "subtract-ranges.js",
     "serializers.js",
